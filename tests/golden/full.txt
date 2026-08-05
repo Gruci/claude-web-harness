@@ -1,0 +1,97 @@
+exit=1
+[REPORT] DEVGUIDE.md: ⑬e 날짜 태그 6개 — 성분 D 의심(경위는 dev/LESSONS.md 로)
+
+[FAIL] 400줄 초과 — 1건
+   - utils/long_report.py: 401줄 (>400)
+
+[FAIL] 중첩 def(클로저) 전 레이어 — 1건
+   - utils/closure.py: 중첩 def outer > inner
+
+[FAIL] db/reads 쓰기 SQL/commit — 1건
+   - db/reads/bad_write.py:5: 쓰기 SQL — conn.execute("DELETE FROM cache")
+
+[FAIL] 축약어 net 변수 — 1건
+   - utils/abbrev.py:3: 축약어 변수 net — net = 0
+
+[FAIL] 축약어 oper_/rev_ — 1건
+   - utils/abbrev.py:4: 축약어 oper_/rev_ — oper_income = 1
+
+[FAIL] UI 라벨 금칙어 — 1건
+   - frontend/src/Label.tsx:1: UI 금칙어 '순신고가' — export const title = "순신고가";
+
+[FAIL] ⑩py Any 타입힌트 — 1건
+   - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
+
+[FAIL] ⑪frontend TS any — 1건
+   - frontend/src/anyts.ts:1: TS any → 구체 타입 (불가피하면 `// any-ok: 사유`)
+
+[FAIL] ①get_db 커넥션 내 가공(B4) — 1건
+   - db/conn_loop.py:5: 커넥션 블록 내 중첩 루프 집계 — fetch 후 블록 밖에서 가공(B4)
+
+[FAIL] ②settings 외 os.getenv(B5) — 1건
+   - utils/env.py:4: settings.py 외 os.getenv/environ — TOKEN = os.getenv("TOKEN")
+
+[FAIL] ③web await없는 async def(B3) — 1건
+   - web/handlers.py:4: await 없는 async def 'ping' — 동기 def 로(B3)
+
+[FAIL] ⑤get_db import 단일경로(B1) — 1건
+   - db/reads/core_import.py:2: get_db 를 core 경유 import — from db.connection 로(B1)
+
+[FAIL] ⑥전역 SSL 패치 위치(B6) — 1건
+   - web/patch.py:4: 전역 SSL 패치를 배치/스크립트 밖에서 호출(B6) — bypass_ssl_verification()
+
+[FAIL] ⑦routes 에러 JSONResponse(B2) — 1건
+   - web/routes/errors.py:5: 에러 반환 JSONResponse(status 404) — raise HTTPException 로(B2)
+
+[FAIL] ⑨frontend 비admin raw fetch(F1) — 1건
+   - frontend/src/RawFetch.tsx:2: 비admin raw fetch() — useApi 경유(F1) — return fetch("/api/board");
+
+[FAIL] ⑧frontend hex 리터럴(F2) — 1건
+   - frontend/src/Hex.tsx:1: hex 리터럴 #ff0000 — constants/colors.ts 또는 CSS var(F2)
+
+[FAIL] ⑫수집/계산 모듈 행동 테스트 짝(B20) — 1건
+   - kofia/collect.py: 대응 행동 테스트 없음 — tests/unit/test_collect.py 작성(exemplar: tests/unit/test_institution_sources_parsers.py) 또는 사유와 함께 static_check_tests_baseline.txt 등재
+
+[FAIL] ⑭DDL 저장 타입 잘림(B21) — 1건
+   - db/schema/tables.py:5: amount REAL — DOUBLE PRECISION(실수)·BIGINT(정수)·NUMERIC(고정소수) 중 하나로. float4 는 2^24 초과 정수를 못 담는다
+
+[FAIL] ⑮API 응답 배열 필드 옵셔널(F3) — 1건
+   - frontend/src/types/api.ts:items: API 응답 타입의 배열 필드는 옵셔널(`?`)로 — 백엔드 배포가 늦으면 undefined 로 도착해 소비처가 크래시한다. 필수로 둬야 하면 baseline 에 등재
+[OK]   ⑰KRX 호출 간격 단일 정본(B22)
+[OK]   ⑱기준일 완전성(B23)
+[OK]   ⑲배치 직접 SELECT 금지(B13)
+[OK]   ⑳LLM 클라이언트 단일 정본(B18)
+[OK]   ㉑region 합산 정본 경유(F16)
+
+[FAIL] ㉒py 헤더 경로 주석 일치 — 1건
+   - utils/moved.py: 헤더 주석 'utils/old_name.py' ≠ 실경로 — 주석을 실경로로 갱신
+[OK]   ㉓admin 배치 경로 레지스트리(B24)
+[OK]   ㉔단일 정본 리터럴(로스터·라벨·분기)
+[OK]   ㉕web 파라미터 가드 정본(clamp·market·프롬프트CRUD)
+
+[FAIL] ⑬ MD 작성 규칙(dev/MD_STANDARD.md) — 4건
+   - DESIGN_GUIDE.md:5: ⑬a 코드펜스 트리 덤프 — 파일 목록의 정본은 Glob
+   - README.md:7: ⑬b 한 줄에 설명 붙은 나열 7개 — 표나 불릿으로 쪼개라
+   - README.md:9: ⑬c 괄호 3중 중첩 — 문장을 다시 써라
+   - notes/GUIDE.md:1: ⑬d 머리 역할 계약 누락 — `> 담는 것: … 담지 않는 것: … 읽는 시점: …`
+
+[FAIL] ④A MD 경로 참조 실존 — 1건
+   - AGENTS.md:5: 실존하지 않는 경로 참조 `db/reads/gone.py`
+
+[FAIL] ④B 배치 스케줄(DEVGUIDE↔batch_runner) — 1건
+   - DEVGUIDE.md:9: BATCH_HOUR=5 인데 배치표 시각 [3] 불일치
+
+[FAIL] ④C .env 키(DEVGUIDE↔settings) — 2건
+   - settings.py 로드 키 'ALPHA_KEY' 가 DEVGUIDE .env 목록에 없음
+   - DEVGUIDE .env 키 'BETA_KEY' 가 settings.py 에 없음(타 모듈 로드 가능 — 확인)
+
+[FAIL] ④D 고아 MD(허브 도달 불가) — 1건
+   - notes/GUIDE.md: ④D 고아 — 허브에서 도달 불가. 라우팅표에 등재하거나 폐기하라
+
+[FAIL] ④E 하네스 지도 대조(HARNESS↔실물) — 1건
+   - HARNESS.md: 스킬 'runbook' 이 지도에 없음 — 같은 턴에 등재하라
+
+[FAIL] ⑯프롬프트 본문↔헤더 버전 — 1건
+   - market_briefing/prompts/market_briefing.md — 대상 프롬프트 파일 없음(경로 변경 시 VERSIONED_PROMPTS 갱신)
+
+총 31건 위반 (활성 게이트).
