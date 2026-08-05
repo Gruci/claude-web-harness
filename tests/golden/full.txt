@@ -57,15 +57,15 @@ exit=1
 
 [FAIL] ⑮API 응답 배열 필드 옵셔널(F3) — 1건
    - frontend/src/types/api.ts:items: API 응답 타입의 배열 필드는 옵셔널(`?`)로 — 백엔드 배포가 늦으면 undefined 로 도착해 소비처가 크래시한다. 필수로 둬야 하면 baseline 에 등재
-[OK]   ⑰KRX 호출 간격 단일 정본(B22)
+[SKIP] ⑰KRX 호출 간격 단일 정본(B22) — 배치 디렉토리 없음
 [OK]   ⑱기준일 완전성(B23)
-[OK]   ⑲배치 직접 SELECT 금지(B13)
+[SKIP] ⑲배치 직접 SELECT 금지(B13) — 배치 디렉토리 없음
 [OK]   ⑳LLM 클라이언트 단일 정본(B18)
 [OK]   ㉑region 합산 정본 경유(F16)
 
 [FAIL] ㉒py 헤더 경로 주석 일치 — 1건
    - utils/moved.py: 헤더 주석 'utils/old_name.py' ≠ 실경로 — 주석을 실경로로 갱신
-[OK]   ㉓admin 배치 경로 레지스트리(B24)
+[SKIP] ㉓admin 배치 경로 레지스트리(B24) — admin 디렉토리 없음
 [OK]   ㉔단일 정본 리터럴(로스터·라벨·분기)
 [OK]   ㉕web 파라미터 가드 정본(clamp·market·프롬프트CRUD)
 

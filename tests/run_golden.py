@@ -5,7 +5,9 @@
 
   python -X utf8 tests/run_golden.py            대조 — 다르면 diff 출력 후 exit 1
   python -X utf8 tests/run_golden.py --update   현재 출력을 정답지로 저장
-  python -X utf8 tests/run_golden.py --checker <디렉토리>   검사기 위치 지정(기본 src/)
+  python -X utf8 tests/run_golden.py --checker <디렉토리>   검사기 위치 지정(기본 kernel/)
+
+`--checker src` 를 주면 리팩터 전 동결 스냅샷으로 돌려 결과를 비교할 수 있다.
 """
 
 from __future__ import annotations
@@ -33,15 +35,22 @@ def capture(checker_dir: Path) -> str:
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "proj"
         shutil.copytree(FIXTURE, work)
-        for src in sorted(checker_dir.glob("static_check*.py")):
-            shutil.copy2(src, work / src.name)
+
+        # 검사기가 평면 배치(static_check*.py)인지 패키지(kernel/)인지에 따라 진입점이 다르다.
+        if (checker_dir / "runner.py").exists():
+            shutil.copytree(checker_dir, work / "kernel",
+                            ignore=shutil.ignore_patterns("__pycache__"))
+            command = [sys.executable, "-X", "utf8", "-m", "kernel.runner"]
+        else:
+            for src in sorted(checker_dir.glob("static_check*.py")):
+                shutil.copy2(src, work / src.name)
+            command = [sys.executable, "-X", "utf8", "static_check.py"]
 
         _git(work, "init", "-q")
         _git(work, "add", "-A")
 
         done = subprocess.run(
-            [sys.executable, "-X", "utf8", "static_check.py"],
-            cwd=work, capture_output=True, text=True,
+            command, cwd=work, capture_output=True, text=True,
             encoding="utf-8", errors="replace",
         )
         body = done.stdout
@@ -51,7 +60,7 @@ def capture(checker_dir: Path) -> str:
 
 
 def main(argv: list[str]) -> int:
-    checker_dir = REPO / "src"
+    checker_dir = REPO / "kernel"
     if "--checker" in argv:
         checker_dir = Path(argv[argv.index("--checker") + 1]).resolve()
     if not FIXTURE.exists():

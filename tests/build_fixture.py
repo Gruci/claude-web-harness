@@ -16,7 +16,7 @@ DEST = Path(__file__).resolve().parent / "fixtures" / "miniproj"
 
 # 검사기 자신은 픽스처의 추적 대상에서 뺀다. 안 그러면 검사기 줄 수가 바뀔 때마다
 # 정답지가 흔들려, 게이트 로직이 깨진 것과 구분이 안 된다.
-GITIGNORE = "static_check*.py\n__pycache__/\n"
+GITIGNORE = "static_check*.py\nkernel/\nprofile.py\n__pycache__/\n"
 
 ROLE = "> 담는 것: {0}. 담지 않는 것: 그 밖의 것(→ `CLAUDE.md`). 읽는 시점: {1}."
 
