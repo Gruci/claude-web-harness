@@ -1,0 +1,674 @@
+﻿<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>하네스 설명서 — 작동 원리</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<button class="theme" onclick="const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">◐ 테마</button>
+
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">fund_monitor</div>
+  <div class="title">Claude Code 하네스</div>
+
+  <div class="grouplbl">문서</div>
+  <div class="pages">
+    <a href="index.html" class="here">작동 원리 <span class="mono" style="color:var(--dim)">설명서</span></a>
+    <a href="hooks.html">훅 레퍼런스</a>
+    <a href="gates.html">게이트 레퍼런스</a>
+    <a href="agents.html">에이전트 · 스킬</a>
+    <a href="docs.html">MD 라우팅 지도</a>
+  </div>
+
+  <div class="grouplbl">이 페이지</div>
+  <a href="#overview"><span class="n">00</span>한 장 요약</a>
+  <a href="#timeline"><span class="n">01</span>세션 타임라인</a>
+  <a href="#contract"><span class="n">02</span>훅 계약 — exit 코드</a>
+  <a href="#hooks"><span class="n">03</span>훅 7종 해부</a>
+  <a href="#pipeline"><span class="n">04</span>static_check 파이프라인</a>
+  <a href="#gates"><span class="n">05</span>게이트 전량 목록</a>
+  <a href="#exceptions"><span class="n">06</span>예외 3종과 래칫</a>
+  <a href="#selfcheck"><span class="n">07</span>자기검사 루프</a>
+  <a href="#agents"><span class="n">08</span>에이전트와 스킬</a>
+  <a href="#playbook"><span class="n">09</span>차단 대응 플레이북</a>
+  <a href="#extend"><span class="n">10</span>규칙을 새로 넣을 때</a>
+  <a href="#run"><span class="n">11</span>실제 실행 출력</a>
+</nav>
+
+<main>
+<header class="hero">
+  <h1>이 레포는 나를 어떻게 붙잡아 두는가</h1>
+  <p class="lead">
+    fund_monitor의 하네스는 "잘 하자"는 산문이 아니라, 세션의 정해진 순간에 실제로 프로세스를 띄워
+    판정하고 진행을 막는 기계다. 이 문서는 그 기계가 언제·무엇을·어떻게 판정하는지를 단계별로 푼다.
+    모든 서술은 <code>.claude/settings.json</code>·훅 스크립트 7개·<code>static_check.py</code> 계열 14개 모듈을
+    직접 읽고 실행해 확인했다.
+  </p>
+  <div class="meta">
+    <span class="chip">작성 <b>2026-08-04</b></span>
+    <span class="chip">훅 <b>7</b></span>
+    <span class="chip">게이트 섹션 <b>35</b></span>
+    <span class="chip">에이전트 <b>5</b></span>
+    <span class="chip">스킬 <b>13</b></span>
+    <span class="chip">정본 <b>코드</b> · 이 문서는 사람용 해설</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════ -->
+<section id="overview">
+  <h2><span class="num">00</span>한 장 요약</h2>
+  <p class="sub">하네스는 세 층이다. 위층은 사람이 읽는 규칙, 가운데는 그 규칙을 발화시키는 배선, 아래층은 기계가 판정하는 검사다. 층이 내려갈수록 강제력이 세진다.</p>
+
+  <div class="layers">
+    <div class="layer">
+      <div class="name">① 규칙<small>*.md</small></div>
+      <div class="desc"><b>산문 규칙.</b> <code>CLAUDE.md</code>가 진입점이고 작업 종류별로 읽을 MD를 라우팅한다. 강제력은 0 — 세션이 길어지면 흘러내린다. 그래서 이 층은 <b>검사 불가능한 것만</b> 담는 게 원칙이다.</div>
+    </div>
+    <div class="layer">
+      <div class="name">② 배선<small>.claude/</small></div>
+      <div class="desc"><b>훅 등록.</b> <code>.claude/settings.json</code>이 "어떤 이벤트에 어떤 커맨드를 실행할지"를 선언한다. 훅은 Claude가 아니라 <b>런타임이 실행</b>하므로 내가 잊거나 건너뛸 수 없다.</div>
+    </div>
+    <div class="layer">
+      <div class="name">③ 판정<small>static_check*.py</small></div>
+      <div class="desc"><b>정적 검사기.</b> 25개 번호의 규칙을 코드로 판정한다. 위반이 있으면 <code>exit 1</code>, 그걸 받은 훅이 <code>exit 2</code>로 <b>세션 종료 자체를 막는다.</b></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b class="h">설계 의도 한 줄</b>
+    검사 가능한 규칙을 MD 산문으로 단속하는 것 자체가 실패 메커니즘이다. 그래서 새 규칙이 기계로 검사 가능하면
+    MD에 문장을 더하는 게 아니라 <code>static_check.py</code>에 검사를 더한다.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="timeline">
+  <h2><span class="num">01</span>세션 타임라인</h2>
+  <p class="sub">세션이 시작해서 끝날 때까지 훅이 발화하는 순서다. 빨간 점은 <b>진행을 막을 수 있는</b> 지점이다.</p>
+
+  <div class="timeline">
+    <div class="tl-item info">
+      <div class="ev">SessionStart</div>
+      <div class="what">세션 열림 — 커맨드 3개가 순서대로 실행된다.
+        <small>① <code>lazy-persona.md</code>를 통째로 출력해 내 컨텍스트에 주입 ② <code>node --version</code>으로 impeccable UI 훅 생존 확인 ③ <code>git_staleness.py</code>가 공유 체크아웃이 origin/main보다 뒤졌는지 검사</small>
+      </div>
+    </div>
+    <div class="tl-item info">
+      <div class="ev">UserPromptSubmit</div>
+      <div class="what">사용자가 프롬프트를 보낼 때마다 — <code>check_context_growth.py</code>
+        <small>transcript 파일 크기가 15MB를 넘으면 경고를 띄우고 <code>/clear</code>를 권고한다. 차단은 하지 않는다 — 세션 분리는 사용자 결정이다.</small>
+      </div>
+    </div>
+    <div class="tl-item blocking">
+      <div class="ev">PreToolUse · Read</div>
+      <div class="what">내가 파일을 읽기 <b>직전</b> — <code>check_context_diet.py</code>
+        <small>추정 16,000토큰이 넘는 파일을 <code>limit</code> 없이 통으로 읽으려 하면 여기서 잘린다. 툴이 실행되기 전에 막히므로 컨텍스트가 오염되지 않는다.</small>
+      </div>
+    </div>
+    <div class="tl-item blocking">
+      <div class="ev">PostToolUse · Edit / Write / MultiEdit</div>
+      <div class="what">파일을 저장한 <b>직후</b> — <code>check_file_rules.py</code> + impeccable <code>hook.mjs</code>
+        <small>레거시 UI 경로면 즉시 차단. 그 외 <code>.py·.ts·.tsx·.md</code>는 방금 저장한 그 파일만 <code>static_check.py --file</code>로 검사한다. 위반이면 그 턴 안에 고치라는 피드백이 돌아온다.</small>
+      </div>
+    </div>
+    <div class="tl-item blocking">
+      <div class="ev">SubagentStop</div>
+      <div class="what">서브에이전트가 반환하려 할 때 — <code>check_agent_return.py</code>
+        <small>최종 반환문이 20,000자를 넘으면 종료를 막는다. 그 반환은 통째로 메인 루프에 얹혀 남은 세션 내내 재전송되기 때문이다.</small>
+      </div>
+    </div>
+    <div class="tl-item blocking">
+      <div class="ev">Stop</div>
+      <div class="what">내가 턴을 끝내려 할 때 — <code>check_editing_lock.py</code> → <code>check_coding_rules.py</code>
+        <small>① <code>EDITING.md</code> 과업 보드에 내 <code>#sid</code> 행이 남아 있으면 차단 ② <code>static_check.py</code> 전체 검사에 위반이 하나라도 있으면 차단. 둘 다 통과해야 세션이 끝난다.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <b class="h">읽는 법</b>
+    같은 규칙이 <b>두 번</b> 걸린다. PostToolUse는 "쓰는 순간", Stop은 "끝내는 순간". 앞의 것은 잔 리팩토링이 쌓이는 걸 막고,
+    뒤의 것은 앞의 것을 우회한 경로(<code>Bash</code> 리다이렉트 등)를 마지막에 잡는다.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="contract">
+  <h2><span class="num">02</span>훅 계약 — exit 코드와 출력 채널</h2>
+  <p class="sub">훅이 런타임과 주고받는 규약은 단순하다. 이걸 알면 훅 코드를 읽을 때 판정 결과가 바로 보인다.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>신호</th><th>의미</th><th>내가 받는 것</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">exit 0</td><td>통과</td><td>아무것도 없음 — 조용히 진행</td></tr>
+      <tr><td class="mono">exit 2 + stderr</td><td><span class="tag block">차단</span></td><td>stderr 내용이 그대로 나에게 전달된다. <b>stdout은 무시된다</b> — 그래서 모든 차단 훅이 <code>file=sys.stderr</code>로 출력한다</td></tr>
+      <tr><td class="mono">exit 0 + JSON stdout</td><td>비차단 주입</td><td><code>systemMessage</code>는 사용자 화면에, <code>additionalContext</code>는 내 컨텍스트에. <code>check_context_growth.py</code>만 이 방식을 쓴다</td></tr>
+      <tr><td class="mono">stdin JSON</td><td>훅 입력</td><td>훅은 <code>tool_input.file_path</code>·<code>session_id</code>·<code>transcript_path</code>·<code>stop_hook_active</code>를 여기서 읽는다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>fail-open과 fail-closed — 훅이 자기 판단을 못 할 때</h3>
+  <p>훅 자신이 고장났을 때 통과시킬지 막을지는 훅마다 <b>다르게</b> 정해져 있다. 기준은 "틀렸을 때 어느 쪽이 덜 위험한가"다.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>훅</th><th>고장 상황</th><th>선택</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">check_file_rules</td><td>페이로드 파싱 실패 / 검사 30초 무응답</td><td><span class="tag block">fail-closed</span></td><td>검사 대상조차 모르는 상태다. 조용히 통과시키면 규칙 위반 코드가 그대로 남는다</td></tr>
+      <tr><td class="mono">check_editing_lock</td><td><code>session_id</code>를 못 읽음</td><td><span class="tag block">fail-closed</span></td><td>내 행인지 남의 행인지 구분 불가 — 전 행을 차단해 완료 보고를 강제한다</td></tr>
+      <tr><td class="mono">check_agent_return</td><td>반환문을 못 찾음</td><td><span class="tag pass">fail-open</span></td><td>페이로드 스키마가 버전마다 달라질 수 있다. 전 에이전트가 종료 못 하는 쪽이 더 위험하다</td></tr>
+      <tr><td class="mono">check_context_diet</td><td>페이로드·파일 읽기 실패</td><td><span class="tag pass">fail-open</span></td><td>읽기 자체를 막으면 세션이 아무 일도 못 한다</td></tr>
+      <tr><td class="mono">git_staleness</td><td>오프라인·인증 실패·타임아웃</td><td><span class="tag pass">fail-open</span></td><td>세션 시작을 막을 이유가 없다. 조용히 통과한다</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="hooks">
+  <h2><span class="num">03</span>훅 7종 해부</h2>
+  <p class="sub">각 훅의 정확한 판정식이다. 임계값의 정본은 코드이고, 여기엔 <b>왜 그 값인지</b>를 함께 적었다.
+  파일별 원문 배선과 상수는 <a href="hooks.html">훅 레퍼런스</a>에 있다.</p>
+
+  <div class="card">
+    <h4>lazy-persona 주입 <span class="tag pass">비차단</span></h4>
+    <div class="path">.claude/hooks/lazy-persona.md · SessionStart · timeout 10s</div>
+    <p style="margin:10px 0 0">파일을 <code>print()</code>로 통째로 출력하는 것뿐이다. SessionStart 훅의 stdout은 내 컨텍스트에 주입되므로,
+    결과적으로 매 세션 첫 줄부터 "lazy 시니어 개발자" 페르소나 — 사다리(YAGNI → 기존 코드 재사용 → 표준 라이브러리 → …)와
+    게으르면 안 되는 경계(입력 검증·에러 처리·보안·접근성)가 내 안에 들어와 있다.</p>
+    <dl class="kv">
+      <dt>발화</dt><dd><code>startup</code> · <code>resume</code> · <code>clear</code> · <code>compact</code> 네 경우 모두</dd>
+      <dt>함의</dt><dd><code>/clear</code>를 해도 페르소나는 살아남는다. 컨텍스트가 날아가도 규칙은 재주입된다</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h4>node 생존 확인 <span class="tag warn">경고</span></h4>
+    <div class="path">인라인 셸 · SessionStart · timeout 10s</div>
+    <p style="margin:10px 0 0"><code>node --version</code>이 실패하면 경고 문자열을 출력한다. impeccable UI 디자인 훅이
+    <code>.mjs</code>라서 node 없이는 통째로 무력화되는데, <b>조용히</b> 무력화되면 UI 작업을 하면서도 검사받고 있다고 착각하게 된다.</p>
+  </div>
+
+  <div class="card">
+    <h4>git_staleness.py <span class="tag warn">경고 / 자동정렬</span></h4>
+    <div class="path">.claude/hooks/git_staleness.py · SessionStart · timeout 25s</div>
+    <p style="margin:10px 0 0">공유 체크아웃(main 고정 읽기 구역)은 아무도 pull하지 않으면 뒤처진다. 그 상태로 <code>EDITING.md</code> 백로그를 읽으면
+    <b>이미 끝난 일을 다시 계획하게 된다.</b> 실제로 그 사고가 나서 생긴 훅이다.</p>
+    <div class="flow">
+      <div class="node"><div class="lbl">1</div><div class="val">현재 브랜치가 <code>main</code>이 아니면 조용히 통과 — worktree 세션은 자기 브랜치가 정본</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">2</div><div class="val"><code>git fetch origin</code> 실패하면 통과 (오프라인)</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">3</div><div class="val"><code>HEAD..origin/main</code> 커밋 수가 0이면 통과</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">4</div><div class="val"><code>pull --ff-only</code> 시도 — 성공하면 <span class="tag pass">GIT SYNC</span>, 거부되면 <span class="tag warn">GIT STALE</span> 경고</div></div>
+    </div>
+    <p style="margin:8px 0 0; color:var(--muted); font-size:13px">ff-only라 커밋을 잃을 수 없다. 로컬 변경과 부딪히는지는 자체 dirty 검사가 아니라 git이 판정한다 —
+    자체 검사를 쓰던 구버전은 상시 변경되는 파일 하나에 막혀 영영 발화하지 않았다.</p>
+  </div>
+
+  <div class="card">
+    <h4>check_context_growth.py <span class="tag warn">경고</span></h4>
+    <div class="path">.claude/hooks/check_context_growth.py · UserPromptSubmit · timeout 10s</div>
+    <dl class="kv">
+      <dt>판정</dt><dd><code>transcript_path</code> 파일 크기 ≥ <b>15,000,000 바이트</b></dd>
+      <dt>동작</dt><dd>JSON을 stdout으로 내보내 사용자에게 <code>systemMessage</code> 경고 + 내 컨텍스트에 <code>/clear</code> 권고 주입</dd>
+      <dt>근거</dt><dd>transcript는 실제 컨텍스트의 3~5배 프록시라 15MB ≈ 30~50만 토큰. 1M 컨텍스트의 3분의 1 지점</dd>
+      <dt>한계</dt><dd>컴팩션 후에는 과대평가된다. 코드에 <code>lazy:</code> 주석으로 그 천장이 명시돼 있다</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h4>check_context_diet.py <span class="tag block">차단</span></h4>
+    <div class="path">.claude/hooks/check_context_diet.py · PreToolUse(Read) · timeout 10s</div>
+    <p style="margin:10px 0 0">한 번 읽은 대용량 파일은 <b>남은 세션 내내 매 턴 재전송·재과금</b>된다. "요약만 받는다"는 산문 규칙은 드리프트하므로 훅으로 강제한다.</p>
+    <h3 style="margin:18px 0 8px; font-size:15px">판정 순서</h3>
+    <div class="flow">
+      <div class="node"><div class="lbl">제외</div><div class="val">이미지 7종과 PDF는 통과. PDF는 Read 자체가 <code>pages</code> 분할을 강제한다</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">추정</div><div class="val">ASCII 4자 = 1토큰, 그 외 1자 = 1토큰</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">비교</div><div class="val">16,000토큰 이하면 통과</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">탈출구</div><div class="val"><code>limit</code> ≤ 500줄이면 통과. 없으면 <span class="tag block">exit 2</span></div></div>
+    </div>
+    <div class="note warn" style="margin-top:14px">
+      <b class="h">왜 바이트가 아니라 토큰 추정인가</b>
+      한글은 UTF-8 3바이트/자다. 바이트로 재던 구버전은 423줄짜리 정본 MD가 62KB로 걸려,
+      <b>라우팅표가 "읽어라"고 지시하는 필독 문서를 훅이 막는</b> 자기모순이 났다.
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>check_file_rules.py <span class="tag block">차단</span> <span class="tag block">fail-closed</span></h4>
+    <div class="path">.claude/hooks/check_file_rules.py · PostToolUse(Edit·Write·MultiEdit)</div>
+    <p style="margin:10px 0 0">작성 시점 게이트. Stop 훅만 있으면 "다 짜놓고 마지막에 고치는" 잔 리팩토링이 생긴다. 이 훅은 저장한 그 순간 위반을 돌려준다.</p>
+    <div class="tablewrap" style="margin-top:14px">
+    <table>
+      <thead><tr><th style="width:34px">#</th><th>검사</th><th>결과</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td>stdin JSON 파싱</td><td>실패 시 <span class="tag block">차단</span> — 검사 대상을 모르면 통과 없음</td></tr>
+        <tr><td class="mono">2</td><td><code>file_path</code>가 비었나</td><td>통과</td></tr>
+        <tr><td class="mono">3</td><td>레거시 UI 경로인가 — <code>web/templates/</code>, <code>web/admin/templates/</code>, <code>web/static/*.js</code>(<code>assets/</code> 제외)</td><td><span class="tag block">차단</span> + "되돌리고 <code>frontend/src/</code> React로 구현하라"</td></tr>
+        <tr><td class="mono">4</td><td>확장자가 <code>.py .ts .tsx .md</code>인가</td><td>아니면 통과 (<code>.html</code>·<code>.json</code>·<code>.css</code>는 대상 아님)</td></tr>
+        <tr><td class="mono">5</td><td><code>static_check.py --file &lt;경로&gt;</code> 실행 (30초 제한)</td><td>타임아웃 또는 <code>exit 1</code>이면 <span class="tag block">차단</span> + 위반 목록 그대로 전달</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="note danger" style="margin-top:14px">
+      <b class="h">이 훅에 남아 있는 알려진 한계</b>
+      PostToolUse라서 <b>쓰기 자체는 이미 일어난다.</b> 레거시 경로 차단은 "되돌리라"는 즉시 피드백으로 작동하는 것이지 사전 차단이 아니다.
+      코드에 <code>lazy:</code> 주석으로 "사전 차단이 필요해지면 PreToolUse 훅으로 분리"라고 업그레이드 경로가 적혀 있다.
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>check_agent_return.py <span class="tag block">차단</span> <span class="tag pass">fail-open</span></h4>
+    <div class="path">.claude/hooks/check_agent_return.py · SubagentStop · timeout 15s</div>
+    <dl class="kv">
+      <dt>판정</dt><dd><code>last_assistant_message</code> 길이, 없으면 transcript <code>.jsonl</code>을 훑어 마지막 assistant 텍스트 길이</dd>
+      <dt>상한</dt><dd><b>20,000자</b> 초과 시 <span class="tag block">exit 2</span></dd>
+      <dt>요구</dt><dd>다시 쓸 형식까지 지정해 돌려준다 — 결론 요약 ≤1,500토큰 + <code>file:line</code> 근거 포인터 + 상세는 파일로 저장한 <code>detail_path</code></dd>
+      <dt>무한루프</dt><dd><code>stop_hook_active</code>가 참이면 통과 — 훅이 훅을 부르는 루프 차단</dd>
+      <dt>값의 내력</dt><dd>8,000자였다가 20,000자로 올렸다. 과도한 손실 압축이 오히려 재조사를 유발해 총비용이 더 컸다</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h4>check_editing_lock.py <span class="tag block">차단</span> <span class="tag block">fail-closed</span></h4>
+    <div class="path">.claude/hooks/check_editing_lock.py · Stop</div>
+    <p style="margin:10px 0 0"><code>EDITING.md</code>의 <b>Active Edits</b> 표를 파싱해 이 세션이 등록한 과업 행이 남아 있으면 종료를 막는다.
+    = 머지까지 끝내고 행을 지우는 <b>완료 보고를 강제</b>하는 장치다.</p>
+    <div class="tablewrap" style="margin-top:14px">
+    <table>
+      <thead><tr><th>행의 상태</th><th>판정</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td>내 <code>#sid:xxxxxxxx</code>가 붙은 행</td><td><span class="tag block">차단</span></td><td>내가 해제하지 않은 잠금</td></tr>
+        <tr><td>다른 sid 행 · 태그 없는 행</td><td><span class="tag pass">통과</span></td><td>다른 세션이 작업 중일 수 있다</td></tr>
+        <tr><td>세션 ID를 못 읽음</td><td><span class="tag block">전 행 차단</span></td><td>구분 불가 시 안전한 쪽</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:12px 0 0; color:var(--muted); font-size:13px">
+      <code>#sid</code>는 내 scratchpad 경로 UUID의 앞 8자다. 이 태그 체계는 사고의 산물이다 —
+      구버전은 잠금 행 <b>전체</b>를 차단해서, 다른 세션이 작업 중이면 이 세션이 영원히 종료 못 하는 데드락이 났다.
+    </p>
+    <p style="margin:8px 0 0; color:var(--muted); font-size:13px">
+      파서는 HTML 주석 블록·표 헤더·구분선을 건너뛴다. 그래서 <code>EDITING.md</code> 안의 예시 행은 잠금으로 세지 않는다.
+    </p>
+  </div>
+
+  <div class="card">
+    <h4>check_coding_rules.py <span class="tag block">차단</span></h4>
+    <div class="path">.claude/hooks/check_coding_rules.py · Stop</div>
+    <p style="margin:10px 0 0">가장 단순하고 가장 센 훅이다. <code>static_check.py</code>를 <b>인자 없이</b> 실행해 전체 검사를 돌리고,
+    <code>exit 1</code>이면 위반 목록을 stderr로 뱉으며 종료를 막는다. 내가 고친 뒤에야 세션이 끝나므로,
+    사용자에게는 <b>통과한 최종물만</b> 올라간다.</p>
+    <p style="margin:10px 0 0; color:var(--muted); font-size:13px">
+      자식 프로세스를 <code>-X utf8</code>로 띄우는 건 장식이 아니다. Windows 기본 <code>cp949</code> 출력이 부모의 utf-8 디코드에서 깨져
+      한글 위반 메시지가 통째로 유실된 적이 있다. 같은 이유로 모든 훅이 <code>sys.stderr.reconfigure(encoding="utf-8")</code>로 시작한다.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="pipeline">
+  <h2><span class="num">04</span>static_check 파이프라인</h2>
+  <p class="sub">게이트의 본체다. 진입 경로가 둘인데, 무엇을 검사하느냐가 경로마다 다르다. 이 차이가 실무에서 제일 자주 헷갈리는 지점이다.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>전체 모드 <span class="tag plain">python static_check.py</span></h4>
+      <dl class="kv">
+        <dt>호출</dt><dd>Stop 훅 · 사람이 수동 실행 · CI</dd>
+        <dt>대상</dt><dd><code>git ls-files</code>로 모은 추적 파일 전량 — <code>.py</code>, <code>frontend</code>의 <code>.ts/.tsx</code>, 스타일 검사 대상 <code>.md</code></dd>
+        <dt>범위</dt><dd>전 게이트. MD 전역 교차검사 ④A~④E와 프롬프트 버전 ⑯까지 포함</dd>
+        <dt>결과</dt><dd>위반 1건이라도 있으면 <code>exit 1</code></dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h4>단일 파일 모드 <span class="tag plain">--file &lt;경로&gt;</span></h4>
+      <dl class="kv">
+        <dt>호출</dt><dd>PostToolUse 훅 (<code>check_file_rules.py</code>)</dd>
+        <dt>대상</dt><dd>방금 저장한 그 파일 하나</dd>
+        <dt>범위</dt><dd>확장자로 분류해 해당 게이트만. 단 <b>MD는 예외</b> — 아래 참조</dd>
+        <dt>결과</dt><dd>위반 시 <code>exit 1</code> → 훅이 <code>exit 2</code>로 승격</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h3>단일 파일 모드의 분류 규칙</h3>
+  <p>저장된 파일 하나가 어느 검사 목록에 들어가는지를 결정한다. 순서대로 판정한다.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>조건</th><th>들어가는 목록</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>레포 밖 경로</td><td>없음 — 검사 안 함</td><td>상대경로 변환 실패</td></tr>
+      <tr><td><code>harness/</code> · <code>idea/</code> · <code>web/static/</code> · <code>web/templates/</code> 하위</td><td>없음</td><td>템플릿 참고 사본·내부자료·레거시</td></tr>
+      <tr><td><code>.py</code></td><td>파이썬 게이트 전량</td><td>경로 무관</td></tr>
+      <tr><td><code>.ts</code> · <code>.tsx</code></td><td>프론트 게이트</td><td><b><code>frontend/src/</code> 하위일 때만</b></td></tr>
+      <tr><td><code>.md</code></td><td>⑬ 스타일 + <b>④A~④E·⑯ 전역 교차검사</b></td><td>전역 검사는 <code>.claude/</code>·<code>docs/</code> 하위 MD 편집일 때는 생략</td></tr>
+      <tr><td>그 외 확장자</td><td>없음</td><td><code>.html</code>·<code>.json</code>·<code>.css</code>·<code>.sql</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note">
+    <b class="h">MD를 고치면 레포 전체가 검사된다</b>
+    정본 MD 한 줄을 고쳐도 ④A~④E가 통째로 돈다. MD 참조 경로 실존, 배치 스케줄 표와 코드 상수, <code>.env</code> 키 목록,
+    고아 MD, 하네스 지도 대조까지 전부. <b>MD 편집이 가장 비싼 편집</b>인 이유이자, MD와 코드의 드리프트가 자동으로 잡히는 이유다.
+  </div>
+
+  <h3>출력 등급 — [OK] · [FAIL] · [REPORT]</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>등급</th><th>의미</th><th>총계 합산</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag pass">[OK]</span></td><td>해당 섹션 위반 0</td><td>—</td></tr>
+      <tr><td><span class="tag block">[FAIL]</span></td><td>강제 위반 — 건수와 위치를 나열</td><td>합산 → <code>exit 1</code></td></tr>
+      <tr><td><span class="tag soft">[REPORT]</span></td><td>MD 스타일 게이트 ⑬의 <b>연성</b> 신호 (날짜 태그·경로 토큰·시그니처 밀도)</td><td>합산 안 함 — 차단하지 않는다</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--muted); font-size:13px">⑬의 연성 항목이 차단하지 않는 이유는 오탐 여지 때문이다. "이 줄이 성분 A·C의 재유입 신호"라는 건 기계가 힌트만 줄 수 있고,
+  최종 판정은 월 1회 <code>/md-audit</code>이 사람 판단으로 한다.</p>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="gates">
+  <h2><span class="num">05</span>게이트 전량 목록</h2>
+  <p class="sub">번호는 도입 순서라 종류별로 흩어져 있다. 검사별 판정 로직과 예외 파일은 <a href="gates.html">게이트 레퍼런스</a>에 있다.</p>
+
+  <h3>코어 — <code>static_check.py</code> 본체</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:52px">번호</th><th>검사</th><th>막는 것</th><th>예외</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">1</td><td>파일 400줄 초과</td><td>단일 책임을 잃은 파일. 상한이지 목표가 아니다</td><td>—</td></tr>
+      <tr><td class="mono">2</td><td>중첩 def (클로저)</td><td>테스트 불가능한 숨은 로직</td><td><code>scripts/</code>·<code>docs/</code> 일회성</td></tr>
+      <tr><td class="mono">3</td><td><code>db/reads</code> 쓰기 SQL·<code>commit()</code></td><td>읽기 레이어의 부작용</td><td>—</td></tr>
+      <tr><td class="mono">4·4b</td><td>축약어 <code>net</code>·<code>oper_</code>·<code>rev_</code></td><td>내부 코드가 이름에 새는 것</td><td>dict 키·레거시 경로</td></tr>
+      <tr><td class="mono">5</td><td>UI 라벨 금칙어</td><td>사용자에게 노출되는 마케팅 조어</td><td>—</td></tr>
+      <tr><td class="mono">⑩·⑪</td><td>py <code>Any</code> · TS <code>any</code></td><td>타입으로 게이트 때우기</td><td>allowlist 파일 · <code>any-ok:</code> 주석</td></tr>
+      <tr><td class="mono">㉒</td><td>py 헤더 경로 주석 일치</td><td>파일 이사 후 남은 잘못된 경로 주석</td><td><code>docs/</code>·<code>scripts/</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>레이어 관례 — <code>static_check_gates.py</code></h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:52px">번호</th><th>검사</th><th>막는 것</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">①</td><td><code>get_db</code> 커넥션 내 가공</td><td>커넥션을 쥔 채 계산 — 커넥션 점유 시간 증가</td></tr>
+      <tr><td class="mono">②</td><td>settings 밖 <code>os.getenv</code></td><td>환경변수 읽는 지점이 흩어지는 것</td></tr>
+      <tr><td class="mono">③</td><td>web의 <code>await</code> 없는 <code>async def</code></td><td>비동기인 척하는 동기 핸들러</td></tr>
+      <tr><td class="mono">⑤</td><td><code>get_db</code> import 단일 경로</td><td>같은 함수를 두 경로로 부르는 것</td></tr>
+      <tr><td class="mono">⑥</td><td>전역 SSL 패치 위치</td><td>검증 우회가 아무 데서나 켜지는 것</td></tr>
+      <tr><td class="mono">⑦</td><td>routes 에러 <code>JSONResponse</code></td><td>에러 응답 형식이 라우트마다 다른 것</td></tr>
+      <tr><td class="mono">⑧</td><td>frontend hex 리터럴</td><td>색 하드코딩 — 토큰·팔레트 우회</td></tr>
+      <tr><td class="mono">⑨</td><td>비admin raw <code>fetch</code></td><td>캐시·에러 처리 없는 직접 호출</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>도메인 규칙 — 전용 모듈</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:52px">번호</th><th>검사</th><th>정의 파일</th><th>이 게이트가 생긴 사건</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">⑫</td><td>수집·계산 모듈 ↔ 행동 테스트 짝</td><td class="mono">static_check_tests.py</td><td>깨져도 아무도 모르는 수집 로직</td></tr>
+      <tr><td class="mono">⑭</td><td>DDL 저장 타입 잘림 — <code>REAL</code> 금지</td><td class="mono">static_check_schema.py</td><td>부동소수 저장으로 값이 조용히 뭉개짐</td></tr>
+      <tr><td class="mono">⑮</td><td>API 응답 배열 필드 옵셔널</td><td class="mono">static_check_api_types.py</td><td>프론트 번들만 먼저 배포된 창에 <code>undefined</code>가 도착해 화면 백지</td></tr>
+      <tr><td class="mono">⑯</td><td>프롬프트 본문 ↔ 헤더 버전 동시 갱신</td><td class="mono">static_check_prompt.py</td><td>생성 시점 프롬프트가 DB에 안 남아 첫 줄 버전이 유일한 판정 근거</td></tr>
+      <tr><td class="mono">⑰</td><td>KRX 호출 간격 단일 정본</td><td class="mono">static_check_krx.py</td><td>간격 값이 흩어지면 한 파일만 되돌아가도 IP 차단 방어가 뚫림</td></tr>
+      <tr><td class="mono">⑱</td><td>기준일 완전성 — bare <code>MAX(date)</code> 금지</td><td class="mono">static_check_complete_date.py</td><td>부분 수집일이 화면에 기준일로 노출됨</td></tr>
+      <tr><td class="mono">⑲</td><td>배치 직접 <code>SELECT</code> 금지</td><td class="mono">static_check_batches.py</td><td>조회 로직이 배치에 복제됨 — <code>db/reads</code> 경유가 계약</td></tr>
+      <tr><td class="mono">⑳</td><td>LLM 클라이언트 단일 정본</td><td class="mono">static_check_llm.py</td><td>Gemini URL·CLI 탐지·코드펜스 파싱의 재구현</td></tr>
+      <tr><td class="mono">㉑</td><td>region 국내+해외 합산 정본</td><td class="mono">static_check_region.py</td><td>프론트 이중 region fetch가 합산을 각자 하던 것</td></tr>
+      <tr><td class="mono">㉓</td><td>admin 배치 경로 레지스트리</td><td class="mono">static_check_batches.py</td><td>배치 경로가 admin 코드에 흩어짐</td></tr>
+      <tr><td class="mono">㉔</td><td>단일 정본 리터럴 — 로스터·시장명·라벨 짝</td><td class="mono">static_check_dup.py</td><td>같은 목록을 여러 파일이 각자 나열</td></tr>
+      <tr><td class="mono">㉕</td><td>web 파라미터 가드 정본 — 인라인 clamp 금지</td><td class="mono">static_check_dup.py</td><td>검증 로직이 라우트마다 제각각</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>문서 대조 — <code>static_check_md.py</code> · <code>static_check_md_style.py</code></h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:52px">번호</th><th>검사</th><th>대조 대상</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">④A</td><td>MD 백틱 경로 실존</td><td>MD 안의 <code>`경로`</code> ↔ 레포 실물. 삭제·리네임 후 남은 stale 참조를 잡는다</td></tr>
+      <tr><td class="mono">④B</td><td>배치 스케줄 표</td><td><code>DEVGUIDE.md</code>의 <code>*_HOUR</code> 시각 ↔ <code>batch_runner.py</code> 상수값</td></tr>
+      <tr><td class="mono">④C</td><td><code>.env</code> 키 목록</td><td><code>DEVGUIDE.md</code> ↔ <code>settings.py</code>의 <code>os.getenv</code> 키 <b>양방향</b> diff</td></tr>
+      <tr><td class="mono">④D</td><td>고아 MD</td><td>허브 6개에서 참조 그래프로 도달 가능한가. 도달 불가 = 읽힐 타이밍이 없는 문서</td></tr>
+      <tr><td class="mono">④E</td><td>하네스 지도</td><td><code>HARNESS.md</code> 본문 ↔ <code>settings.json</code> 훅 파일명·<code>agents/</code>·<code>skills/</code> 실물</td></tr>
+      <tr><td class="mono">⑬a~d</td><td>MD 작성 규칙 <b>강제</b></td><td>코드펜스 트리 덤프 · 나열 뭉개기 · 괄호 3중 중첩 · 머리 역할 계약 누락</td></tr>
+      <tr><td class="mono">⑬e~g</td><td>MD 작성 규칙 <b>리포트</b></td><td>날짜 태그 6개↑ · 경로 토큰 5개↑ · 시그니처 4개↑ — 차단하지 않는다</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--muted); font-size:13px">
+    ④D의 허브 시드는 <code>CLAUDE.md</code>·<code>AGENTS.md</code>·<code>DEVGUIDE.md</code>·<code>DESIGN_GUIDE.md</code>·<code>README.md</code>·<code>HARNESS.md</code> 여섯이다.
+    패키지명과 파일명이 같은 도메인 MD(예: <code>macro/MACRO.md</code>)는 총칭 라우팅으로 도달을 인정받는다.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="exceptions">
+  <h2><span class="num">06</span>예외 3종과 래칫</h2>
+  <p class="sub">게이트를 통과 못 하는 정당한 코드는 있다. 예외를 <b>어떻게</b> 주느냐가 하네스의 수명을 결정한다.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>① allowlist 파일</h4>
+      <p style="margin:8px 0 0; font-size:13px">파일 단위 영구 면제. 게이트 도입 시점의 기존 실태를 담는다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">실물: <code>md_ref_allowlist.txt</code>, 모듈 안의 <code>ANY_ALLOWLIST</code>·<code>HEX_ALLOWLIST</code>·<code>ROSTER_ALLOWLIST</code> 등</p>
+    </div>
+    <div class="card">
+      <h4>② 인라인 주석</h4>
+      <p style="margin:8px 0 0; font-size:13px">줄 단위 예외. <b>사유를 같이 쓴다.</b> 신규 코드는 allowlist 등재 대신 이쪽을 쓰는 게 원칙이다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">실물: <code># any-ok: 사유</code> · <code>// any-ok: 사유</code></p>
+    </div>
+    <div class="card">
+      <h4>③ baseline 래칫</h4>
+      <p style="margin:8px 0 0; font-size:13px">기존 위반을 동결하고 <b>증가만</b> 막는다. 파일에서 줄을 <b>지우는 방향으로만</b> 수정 가능하다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">실물: <code>static_check_tests_baseline.txt</code> · <code>static_check_schema_baseline.txt</code> · <code>static_check_api_array_baseline.txt</code> + 모듈 안 <code>BASELINE</code> 상수</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <b class="h">래칫 원칙</b>
+    대규모 정리는 <b>그 상태를 잠그는 검사와 같은 커밋으로</b> 끝낸다. 게이트 없는 정리는 재발한다 —
+    실제로 게이트 ④A~④E가 활성화된 시점이 대규모 MD 정리 완료 커밋이다.
+  </div>
+
+  <div class="note warn">
+    <b class="h">현재 실측 상태 (2026-08-04)</b>
+    MD 스타일 게이트 ⑬의 유예 파일 <code>static_check_md_baseline.txt</code>는 <b>레포에 존재하지 않는다.</b>
+    코드는 파일이 없으면 빈 집합으로 처리하므로 — 유예 대상이 하나도 없고 전 MD가 강제 검사를 받는 상태다. 래칫이 끝까지 감겨 있다.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="selfcheck">
+  <h2><span class="num">07</span>자기검사 루프 — 하네스가 하네스를 감시한다</h2>
+  <p class="sub">이 구조에서 제일 재미있는 부분이다. 하네스를 바꾸면 하네스 문서도 같이 바뀌어야 하고, 그걸 게이트가 확인한다.</p>
+
+  <div class="flow">
+    <div class="node"><div class="lbl">변경</div><div class="val">훅 추가 · 에이전트 신설 · 스킬 생성</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="lbl">④E 판정</div><div class="val"><code>settings.json</code>의 훅 파일명, <code>agents/*.md</code> 파일명, <code>skills/*/SKILL.md</code>의 디렉토리명을 모아 <b>전부 <code>HARNESS.md</code> 본문에 등장하는지</b> 확인</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="lbl">누락</div><div class="val"><span class="tag block">exit 1</span> "같은 턴에 등재하라"</div></div>
+  </div>
+
+  <div class="note warn">
+    <b class="h">④E는 한 방향만 본다</b>
+    실물 → 지도 방향이다. 실물에 있는데 지도에 없으면 잡히지만, <b>지도에만 남은 유령 항목은 안 잡힌다.</b>
+    또 이름의 <b>존재</b>만 확인하고 서술 내용은 검사하지 않는다 — 실제로 <code>HARNESS.md</code>의 PostToolUse 행은 매처를
+    <code>Edit·Write</code>로 적고 있지만 <code>settings.json</code>의 실제 매처는 <code>Edit|Write|MultiEdit</code>다.
+    이런 종류의 드리프트는 게이트가 아니라 월 1회 <code>/md-audit</code>이 잡는 몫이다.
+  </div>
+
+  <h3>같은 패턴의 다른 자기검사</h3>
+  <ul class="tight">
+    <li><b>④D 고아 MD</b> — 새 MD를 만들고 허브 라우팅표에 등재하지 않으면 잡힌다. 문서가 존재하는데 읽힐 경로가 없는 상태를 막는다.</li>
+    <li><b>④B 배치 스케줄</b> — <code>batch_runner.py</code>의 실행 시각 상수를 바꾸고 <code>DEVGUIDE.md</code> 표를 안 고치면 잡힌다.</li>
+    <li><b>④C .env 키</b> — 양방향이다. 코드에만 있어도, 문서에만 있어도 잡힌다.</li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="agents">
+  <h2><span class="num">08</span>에이전트와 스킬</h2>
+  <p class="sub">훅이 "막는" 층이라면, 이쪽은 "부르는" 층이다. 각 에이전트의 판정 기준과 스킬 절차 전량은 <a href="agents.html">에이전트 · 스킬</a>에 있다.</p>
+
+  <h3>에이전트 — <code>.claude/agents/</code></h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>이름</th><th>모델</th><th>effort</th><th>존재 이유</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">qa</td><td class="mono">opus</td><td class="mono">medium</td><td>API 응답과 프론트 소비의 경계면 교차검증 — 양쪽 코드를 동시에 로드할 별도 컨텍스트가 필요하다</td></tr>
+      <tr><td class="mono">data</td><td class="mono">sonnet</td><td class="mono">medium</td><td>KOFIA·DB 무결성 점검, 백필 범위 산정 — 대량 기계적 정독</td></tr>
+      <tr><td class="mono">ceo-reviewer</td><td class="mono">fable</td><td class="mono">high</td><td>자산운용사 대표 페르소나 검수 — 역할 분리가 본질인 저볼륨 고스테이크 판단</td></tr>
+      <tr><td class="mono">orchestrator</td><td class="mono">fable</td><td class="mono">high</td><td>독립 트랙 3개 이상의 병렬 구현 지휘 — 공유 파일 소유권 조정이 런타임 판단이다</td></tr>
+      <tr><td class="mono">impeccable-manual-edit-applier</td><td class="mono">inherit</td><td class="mono">medium</td><td>벤더 스킬 소속 — 수정하지 않는다</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--muted); font-size:13px">메인 루프는 Opus 5다. 위임은 비용 회피가 아니라 <b>독립·병렬 대규모 작업의 병렬화 수단</b>이다.
+  몇 번의 툴 호출로 끝날 일은 위임하지 않는다.</p>
+
+  <h3>스킬 — <code>.claude/skills/&lt;이름&gt;/SKILL.md</code></h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>이름</th><th>트리거</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">feature-workflow</td><td>기능·버그 요청 — 0~4단계 워크플로우를 강제한다</td></tr>
+      <tr><td class="mono">deploy</td><td>배포 요청</td></tr>
+      <tr><td class="mono">test</td><td>테스트 작성·실행</td></tr>
+      <tr><td class="mono">md-audit</td><td>월 1회 MD 드리프트 감사 — 게이트가 못 잡는 의미 단위 판정</td></tr>
+      <tr><td class="mono">briefing-eval</td><td>시황 프롬프트 변경 전 골든셋 회귀 평가</td></tr>
+      <tr><td class="mono">review-loop</td><td>대표 검수 루프 — ceo-reviewer 반복 호출</td></tr>
+      <tr><td class="mono">kofia-ops · news-ops · businfo-ops</td><td>도메인별 데이터 운영</td></tr>
+      <tr><td class="mono">lazy-review · lazy-audit · lazy-debt</td><td>과설계 리뷰 · 레포 감사 · <code>lazy:</code> 부채 수확</td></tr>
+      <tr><td class="mono">impeccable</td><td>UI 디자인 전반 — 벤더 스킬, 수정하지 않는다</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="playbook">
+  <h2><span class="num">09</span>차단당했을 때 — 메시지별 대응</h2>
+  <p class="sub">각 차단 메시지의 접두어를 보면 어느 훅이 막았는지 바로 안다.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>메시지 접두</th><th>막은 훅</th><th>올바른 대응</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">[CONTEXT GUARD]</td><td>check_context_diet</td><td><code>offset</code>/<code>limit</code>(≤500줄)로 필요한 부분만 나눠 읽는다. 수십 파일 독립 스캔이면 Sonnet 에이전트 팬아웃이 정답</td></tr>
+      <tr><td class="mono">[WRITE-TIME GATE]</td><td>check_file_rules</td><td>레거시 경로면 되돌리고 <code>frontend/src/</code>에 다시 만든다. 규칙 위반이면 <b>그 턴 안에</b> 고친다 — Stop에서 또 막힌다</td></tr>
+      <tr><td class="mono">[RETURN DIET]</td><td>check_agent_return</td><td>상세를 파일로 저장하고 요약 + <code>file:line</code> 포인터 + <code>detail_path</code> 형식으로 다시 반환</td></tr>
+      <tr><td class="mono">[EDITING LOCK]</td><td>check_editing_lock</td><td>과업이 실제로 끝났으면(머지까지) <code>EDITING.md</code>에서 그 행을 지운다. 안 끝났으면 세션을 끝낼 때가 아니다</td></tr>
+      <tr><td class="mono">[CODING RULES]</td><td>check_coding_rules</td><td>나열된 위반을 고친다. 예외가 정당하면 인라인 주석으로 <b>사유와 함께</b> 등재한다</td></tr>
+      <tr><td class="mono">[GIT STALE]</td><td>git_staleness</td><td>차단은 아니다. 착수 전 <code>git log --oneline HEAD..origin/main</code>으로 그 사이 들어온 것을 먼저 본다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note danger">
+    <b class="h">해서는 안 되는 대응</b>
+    게이트를 우회하는 것. 소스 생성·수정은 반드시 Edit/Write로 한다 — <b><code>Bash</code> 리다이렉트는 작성 시점 훅을 통째로 건너뛴다.</b>
+    400줄이나 나열 상한을 기계적으로 분할해 때우는 것, <code>Any</code>/<code>any</code>로 타입 게이트를 뭉개는 것도 같은 범주다.
+    게이트는 하한선이지 목표가 아니다.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="extend">
+  <h2><span class="num">10</span>규칙을 새로 넣을 때</h2>
+  <p class="sub">판단 기준 하나로 갈린다 — <b>기계가 검사할 수 있는가.</b></p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>검사 가능하다</h4>
+      <ol class="tight" style="padding-left:18px">
+        <li><code>static_check*.py</code>에 검사 함수를 추가한다</li>
+        <li><code>_build_sections()</code>에 섹션 한 줄로 등록한다</li>
+        <li>기존 위반이 많으면 baseline으로 동결하고 <b>같은 커밋에서</b> 잠근다</li>
+        <li><code>HARNESS.md</code> 게이트 표에 행을 추가한다</li>
+      </ol>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">MD에 문장을 더하는 것은 이 경우 <b>틀린 대응</b>이다.</p>
+    </div>
+    <div class="card">
+      <h4>검사 불가능하다</h4>
+      <ol class="tight" style="padding-left:18px">
+        <li>해당 정본 MD에 <b>한 사실 한 곳</b> 원칙으로 적는다</li>
+        <li>새 MD를 만들었으면 <b>같은 턴에</b> 허브 라우팅표에 등재한다 (안 하면 ④D가 잡는다)</li>
+        <li>산문 드리프트는 월 1회 <code>/md-audit</code>이 상한선이다</li>
+      </ol>
+    </div>
+  </div>
+
+  <h3>훅을 새로 붙일 때 주의점</h3>
+  <ul class="tight">
+    <li>훅 <code>command</code>는 <b>상대경로</b>로 등록한다. <code>%CLAUDE_PROJECT_DIR%</code> cmd 표기는 이 환경에서 확장되지 않아 훅이 통째로 실패한다. cwd는 프로젝트 루트가 보장된다.</li>
+    <li>차단 사유는 반드시 <b>stderr</b>로 낸다. stdout은 무시된다.</li>
+    <li>Windows 콘솔 인코딩 때문에 <code>sys.stderr.reconfigure(encoding="utf-8")</code>와 자식 프로세스 <code>-X utf8</code>이 사실상 필수다.</li>
+    <li>같은 턴에 <code>HARNESS.md</code>를 갱신한다. 안 하면 ④E가 다음 검사에서 막는다.</li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<section id="run">
+  <h2><span class="num">11</span>실제 실행 출력</h2>
+  <p class="sub">2026-08-04 이 레포에서 <code>python static_check.py</code>를 실행한 결과다. 위가 연성 리포트, 아래가 강제 섹션이다.</p>
+
+<pre><span class="c">$ python -X utf8 static_check.py</span>
+
+<span class="w">[REPORT]</span> .claude/skills/md-audit/SKILL.md:16: ⑬f 경로 토큰 5개 — 성분 A·C 재유입 신호
+<span class="w">[REPORT]</span> CLAUDE.md:8: ⑬f 경로 토큰 5개 — 성분 A·C 재유입 신호
+<span class="w">[REPORT]</span> dept_issues/DEPT_ISSUES.md: ⑬e 날짜 태그 40개 — 성분 D 의심
+<span class="w">[REPORT]</span> dev/CONVENTIONS.md: ⑬e 날짜 태그 11개 — 성분 D 의심
+<span class="s">[OK]</span>   400줄 초과
+<span class="s">[OK]</span>   중첩 def(클로저) 전 레이어
+<span class="s">[OK]</span>   db/reads 쓰기 SQL/commit
+<span class="s">[OK]</span>   축약어 net 변수
+<span class="s">[OK]</span>   축약어 oper_/rev_
+<span class="s">[OK]</span>   UI 라벨 금칙어
+<span class="s">[OK]</span>   ⑩py Any 타입힌트
+<span class="s">[OK]</span>   ⑪frontend TS any
+<span class="c">           … ① ~ ㉕ 레이어·도메인 게이트 전량 …</span>
+<span class="s">[OK]</span>   ⑬ MD 작성 규칙(dev/MD_STANDARD.md)
+<span class="s">[OK]</span>   ④A MD 경로 참조 실존
+<span class="s">[OK]</span>   ④B 배치 스케줄(DEVGUIDE↔batch_runner)
+<span class="s">[OK]</span>   ④C .env 키(DEVGUIDE↔settings)
+<span class="s">[OK]</span>   ④D 고아 MD(허브 도달 불가)
+<span class="s">[OK]</span>   ④E 하네스 지도 대조(HARNESS↔실물)
+<span class="s">[OK]</span>   ⑯프롬프트 본문↔헤더 버전
+
+활성 게이트 모두 통과.
+<span class="c">$ echo $?
+0</span></pre>
+
+  <p style="color:var(--muted); font-size:13px">전 게이트 통과 = Stop 훅이 세션 종료를 허용하는 상태다.
+  <code>[REPORT]</code> 4건은 총계에 합산되지 않아 <code>exit 0</code>을 막지 않는다.</p>
+
+  <footer>
+    <p style="margin:0">
+      <b>정본은 코드다.</b> 이 문서는 사람이 한 번에 파악하기 위한 해설이고, 임계값·판정식이 갈리면
+      <code>.claude/settings.json</code>과 <code>static_check*.py</code>가 이긴다.
+      한 페이지 지도는 <code>HARNESS.md</code>, 규칙의 사고 경위는 <code>dev/LESSONS.md</code>에 있다.
+    </p>
+  </footer>
+</section>
+
+</main>
+</div>
+</body>
+</html>

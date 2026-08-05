@@ -1,0 +1,64 @@
+# static_check_api_types.py
+# ⑮ API 응답 타입의 배열 필드는 옵셔널 (F3) — static_check.py 가 호출한다.
+# 게이트별 파일 분리는 ⑫(static_check_tests.py)·⑭(static_check_schema.py) 관례를 따른다.
+#
+# 왜 이 게이트가 있나 (2026-07-31 같은 사고 2회):
+#   프론트 번들과 파이썬 코드는 **같은 배포에서 함께 갱신되지 않는다.** 번들만 먼저 올라간 창에
+#   새 응답 필드가 undefined 로 도착하는데, 소비처가 `entry.asset_groups.find(...)` 처럼 무방비로
+#   접근하면 **보드 전체가 런타임 크래시로 백지**가 된다. 순서 폴백과 달리 조용히 넘어가지도 않고,
+#   로컬은 백엔드가 항상 새 코드라 재현되지 않아 검증도 통과한다.
+#
+# 선언부만 검사하는 이유: 소비처를 정적으로 훑으면 로컬 변수까지 걸려 오탐이 쏟아진다(실측 43건).
+#   타입을 옵셔널로 강제하면 **tsc 가 소비처 전부를 대신 잡아준다** — 검사 한 줄이 타입체커를 부린다.
+#
+# 래칫: 기존 필드는 baseline 에 동결하고 **새로 추가되는 것만** 막는다(감소만 허용).
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+
+BASELINE = ROOT / "static_check_api_array_baseline.txt"
+# `field: T[];` — 옵셔널(`field?:`)은 `\w+\s*:` 에 걸리지 않아 자연히 빠진다.
+_ARRAY_FIELD = re.compile(r"^\s*(\w+)\s*:\s*[^;{}()]*\[\]\s*;", re.M)
+
+
+def _rel(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def _api_type_files(ui_files: list[Path]) -> list[Path]:
+    """API 응답 계약을 담는 타입 파일 — 파일명이 types.ts 이거나 types/ 아래.
+    컴포넌트 안의 로컬 인터페이스는 대상이 아니다. 배포 창에 undefined 로 도착할 수 있는 것은
+    **서버 응답을 받는 계약**뿐이고, 그 계약은 이 파일들에 모여 있다."""
+    return [f for f in ui_files
+            if f.suffix == ".ts" and (f.name == "types.ts" or "types" in f.parts)]
+
+
+def collect_required_array_fields(ui_files: list[Path]) -> set[str]:
+    """현재 소스의 필수(non-optional) 배열 필드 — `경로:필드명` 집합. baseline 갱신에도 쓴다."""
+    found: set[str] = set()
+    for f in _api_type_files(ui_files):
+        rel = _rel(f)
+        for m in _ARRAY_FIELD.finditer(f.read_text(encoding="utf-8")):
+            found.add(f"{rel}:{m.group(1)}")
+    return found
+
+
+def check_api_array_optional(ui_files: list[Path]) -> list[str]:
+    """API 응답 타입에 **필수 배열 필드**가 새로 늘면 위반.
+    옵셔널(`field?: T[]`)로 선언하면 tsc 가 소비처에서 폴백을 강제한다."""
+    if not BASELINE.exists():
+        return []
+    frozen = {line.strip() for line in BASELINE.read_text(encoding="utf-8").splitlines()
+              if line.strip() and not line.startswith("#")}
+    return [
+        f"{item}: API 응답 타입의 배열 필드는 옵셔널(`?`)로 — 백엔드 배포가 늦으면 undefined 로"
+        " 도착해 소비처가 크래시한다. 필수로 둬야 하면 baseline 에 등재"
+        for item in sorted(collect_required_array_fields(ui_files) - frozen)
+    ]

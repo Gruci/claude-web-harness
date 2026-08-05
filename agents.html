@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>에이전트 · 스킬 — 하네스</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<button class="theme" onclick="const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">◐ 테마</button>
+
+<div class="wrap">
+<nav class="toc">
+  <div class="brand">fund_monitor</div>
+  <div class="title">Claude Code 하네스</div>
+
+  <div class="grouplbl">문서</div>
+  <div class="pages">
+    <a href="index.html">작동 원리 <span class="mono" style="color:var(--dim)">설명서</span></a>
+    <a href="hooks.html">훅 레퍼런스</a>
+    <a href="gates.html">게이트 레퍼런스</a>
+    <a href="agents.html" class="here">에이전트 · 스킬</a>
+    <a href="docs.html">MD 라우팅 지도</a>
+  </div>
+
+  <div class="grouplbl">이 페이지</div>
+  <a href="#routing">위임 판단 기준</a>
+  <a href="#agents">에이전트 5종</a>
+  <a href="#pitfalls">서브에이전트 함정</a>
+  <a href="#skills">스킬 13종</a>
+</nav>
+
+<main>
+<header class="hero">
+  <h1>에이전트 · 스킬</h1>
+  <p class="lead">
+    훅과 게이트가 <b>막는</b> 층이라면 이쪽은 <b>부르는</b> 층이다. 에이전트는 별도 컨텍스트를 가진 위임 대상이고,
+    스킬은 특정 요청에 밟을 절차를 미리 적어둔 대본이다. 모델·effort의 정본은 각 에이전트 파일 frontmatter다.
+  </p>
+  <div class="meta">
+    <span class="chip">에이전트 <b>5</b></span>
+    <span class="chip">스킬 <b>13</b></span>
+    <span class="chip">벤더 소속 <b>2</b></span>
+    <span class="chip">메인 루프 <b>Opus 5 · high</b></span>
+  </div>
+</header>
+
+<section id="routing">
+  <h2>위임 판단 기준</h2>
+  <p class="sub">토큰 볼륨과 판단 스테이크 두 축이다. 위임은 비용 회피 수단이 아니라 <b>병렬화 수단</b>이다.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>역할</th><th>모델</th><th>effort</th><th>언제</th></tr></thead>
+    <tbody>
+      <tr><td>메인 루프 — 계획·구현·리서치·검수</td><td class="mono">Opus 5</td><td class="mono">high</td><td>상시. 1M 컨텍스트라 정본 MD와 소스는 직접 Read가 기본</td></tr>
+      <tr><td>plan 최종 검토·아키텍처 중재</td><td class="mono">Fable 5</td><td class="mono">high</td><td>plan 승인 요청 직전 1회</td></tr>
+      <tr><td>DB 스키마 설계 판단</td><td class="mono">Fable 5</td><td class="mono">high</td><td>테이블·컬럼 신설이 담긴 plan</td></tr>
+      <tr><td>디자인 미감 판단</td><td class="mono">Fable 5</td><td class="mono">high</td><td>새 디자인 언어·시안 채택</td></tr>
+      <tr><td>대규모 병렬 구현 지휘</td><td class="mono">Fable 5</td><td class="mono">high</td><td>승인된 plan이 독립 트랙 3개 이상일 때</td></tr>
+      <tr><td>대량 기계적 정독·팬아웃</td><td class="mono">Sonnet 5</td><td class="mono">medium</td><td>수십 파일 독립 스캔</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <ul class="tight">
+    <li><b>스폰 최소화</b> — 몇 번의 툴 호출로 끝날 일은 위임하지 않는다. 유일한 예외가 오케스트레이션이고, 발동 조건은 겹침을 공유로 뺀 뒤 <b>서로소 트랙 3개 이상</b>이다. 크지만 순차인 과업은 발동하지 않는다.</li>
+    <li><b>git·검증·보드는 메인 세션 전담.</b> 오케스트레이션 중에도 마찬가지다. 워커 보고는 증거가 아니다.</li>
+    <li><b>비용 절감은 effort 하향이지 모델 다운그레이드가 아니다.</b> 장황함은 effort가 아니라 프롬프트로 제어한다.</li>
+  </ul>
+</section>
+
+<section id="agents">
+  <h2>에이전트 5종</h2>
+  <p class="sub"><code>.claude/agents/&lt;이름&gt;.md</code>. 각 파일이 페르소나·판정 기준·출력 형식을 모두 담는다.</p>
+
+  <div class="card">
+    <h4>qa <span class="tag plain">opus · medium</span></h4>
+    <div class="path">.claude/agents/qa.md · 통합 정합성 검증</div>
+    <p style="margin:10px 0 0">"존재 확인"이 아니라 <b>경계면 교차 비교</b>가 핵심이다. 양쪽 코드를 동시에 읽고 shape을 나란히 대조한다.</p>
+    <div class="tablewrap" style="margin-top:12px">
+    <table>
+      <thead><tr><th style="width:150px">경계면</th><th>대조 내용</th></tr></thead>
+      <tbody>
+        <tr><td>API ↔ 프론트 <span class="tag warn">최우선</span></td><td><code>web/routes/</code> 응답 dict 키·구조 ↔ <code>frontend/src/</code>의 <code>useApi</code> 호출부·타입·구조분해. 키 이름·중첩·타입·null 가능성을 필드별로</td></tr>
+        <tr><td>DB ↔ 백엔드</td><td><code>db/reads/</code> 반환 키 ↔ <code>web/routes/</code> 사용 키, 스키마 컬럼명 ↔ SELECT 컬럼</td></tr>
+        <tr><td>orphan 검출</td><td>소비 컴포넌트 없는 API(사용자에게 안 보임) · 라우트 없는 fetch 경로(404 예정)</td></tr>
+        <tr><td>실행 검증</td><td><code>pytest -x -q</code> 회귀 · <code>npx tsc --noEmit</code> · 가능하면 실응답 shape</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <dl class="kv">
+      <dt>작업 원칙</dt><dd>모듈 완성 <b>직후</b> 점진 실행. 전체 완성 후 1회가 아니다</dd>
+      <dt>금지</dt><dd>코드 수정. 발견·보고만 하고 수정은 메인 루프가 한다</dd>
+      <dt>추측 금지</dt><dd>"일치할 것이다"가 아니라 양쪽을 실제로 Read한 근거를 인용</dd>
+      <dt>재호출</dt><dd>이전 보고가 있으면 "불일치" 항목의 수정 반영 여부부터 재검증</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h4>data <span class="tag plain">sonnet · medium</span></h4>
+    <div class="path">.claude/agents/data.md · KOFIA·DB 무결성</div>
+    <p style="margin:10px 0 0">작업 전 <code>db/DB.md</code>와 <code>kofia/KOFIA.md</code>를 반드시 로드한다. 대량 기계적 정독이라 Sonnet이다.</p>
+    <div class="tablewrap" style="margin-top:12px">
+    <table>
+      <thead><tr><th>불변 규칙</th></tr></thead>
+      <tbody>
+        <tr><td>같은 날짜의 <code>전체_국내_NAV</code> 행 수 = <code>전체_국내_설정원본</code> 행 수. 공모·사모·일임도 동일</td></tr>
+        <tr><td><code>kofia_agg.last_date</code> = 해당 월의 실제 마지막 영업일</td></tr>
+        <tr><td><code>kofia_empty_dates</code> 기록 날짜 = KOFIA API 미제공. <b>진짜 누락이 아니라 재백필 불필요</b></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:12px 0 0; font-size:13px; color:var(--muted)">상황별 권장 액션이 표로 박혀 있다. config 하나만 지연이면 <code>from_date=latest_date</code> catch-up,
+    여럿이면 <code>from_year</code> 전체 스캔, 데이터가 아예 없으면 <code>from_year=2015</code>, NAV 행 수 불일치면 <code>rebuild_agg_table()</code> 후 재점검이다.</p>
+  </div>
+
+  <div class="card">
+    <h4>ceo-reviewer <span class="tag plain">fable · high</span></h4>
+    <div class="path">.claude/agents/ceo-reviewer.md · 자산운용사 대표 페르소나</div>
+    <p style="margin:10px 0 0">국내 중형 자산운용사 대표이사 페르소나다. 운용업계 15년, 대표 5년차.
+    <b>숫자보다 "이 숫자가 무슨 결정을 위한 건지"를 먼저 묻는다.</b></p>
+    <div class="tablewrap" style="margin-top:12px">
+    <table>
+      <thead><tr><th style="width:110px">검수 4기준</th><th>묻는 것</th></tr></thead>
+      <tbody>
+        <tr><td>의미성</td><td>이 지표가 실제 경영 의사결정에 쓰이는가, 보여주기용인가</td></tr>
+        <tr><td>완결성</td><td>지표 옆에 맥락(비교 기준·기간·경쟁사)이 있는가</td></tr>
+        <tr><td>누락</td><td>의사결정에 필요한데 빠진 지표나 정보가 있는가</td></tr>
+        <tr><td>우선순위</td><td>중요도 순서로 배치됐는가, 핵심이 묻혀 있지 않은가</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:12px 0 0; font-size:13px; color:var(--muted)">출력은 잘 된 부분 / 보완 필요 / 누락 / 개선 순서 / 최종 판정(승인·조건부 승인·반려) 고정 형식이다.
+    금지 사항이 명시돼 있다 — 코드 칭찬 금지(대표는 코드를 안 본다), 추상적 피드백 금지, yes-man 검수 금지.</p>
+  </div>
+
+  <div class="card">
+    <h4>orchestrator <span class="tag plain">fable · high</span></h4>
+    <div class="path">.claude/agents/orchestrator.md · 병렬 구현 지휘</div>
+    <p style="margin:10px 0 0">가치는 스폰이 아니라 <b>소유권 판단</b>이다. 배정만 옮기는 일이면 메인 세션이 직접 스폰하는 게 낫다.</p>
+
+    <div class="tablewrap" style="margin-top:12px">
+    <table>
+      <thead><tr><th>한다</th><th>하지 않는다</th></tr></thead>
+      <tbody>
+        <tr><td>트랙을 실제 파일 집합으로 확정</td><td>기능 코드 직접 작성</td></tr>
+        <tr><td>공유 파일을 단독·직렬로 편집</td><td>git 커밋·브랜치 조작·push</td></tr>
+        <tr><td>워커 스폰과 겹침·실패 조정</td><td><code>EDITING.md</code> 보드 행 등록·제거</td></tr>
+        <tr><td>발동이 부적합하면 반려</td><td>pytest·빌드·static_check 실행</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h4 style="margin-top:20px">소유권 3분류</h4>
+    <p style="margin:0; font-size:13px; color:var(--muted)">워커 전원이 한 worktree를 공유해 git이 파일 충돌을 못 잡는다. 방어는 소유권을 겹치지 않게 자르는 것뿐이다.</p>
+    <div class="tablewrap" style="margin-top:10px">
+    <table>
+      <thead><tr><th>분류</th><th>편집 주체</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>트랙 전용</td><td>배정받은 워커 1명</td><td>한 트랙만 건드리는 파일</td></tr>
+        <tr><td>공유</td><td>오케스트레이터, 워커 전원 종료 후</td><td>둘 이상 트랙이 건드리는 파일</td></tr>
+        <tr><td>금지</td><td>메인 세션</td><td><code>EDITING.md</code>와 이 과업의 plan 파일</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:10px 0 0; font-size:13px"><b>애매하면 공유로 올린다.</b> 잘못 올리면 직렬 작업이 조금 늘 뿐이고,
+    잘못 안 올리면 조용한 덮어쓰기가 난다. 비대칭이 크므로 보수적으로 판단한다.</p>
+
+    <h4 style="margin-top:20px">자주 새는 파일</h4>
+    <p style="margin:0; font-size:13px; color:var(--muted)">plan의 트랙 후보는 작성 시점 추정이라 낙관적이다. <b>후보가 빠뜨렸을 파일을 찾는 게</b> 트랙 확정의 본체다.</p>
+    <ul class="tight">
+      <li><code>web/app.py</code> — 새 페이지는 SPA 라우트 등록이 필요하다</li>
+      <li><code>db/__init__.py</code>·<code>db/core.py</code> — 신규 리드·라이트 함수는 재수출을 탄다</li>
+      <li>도메인 동명 대문자 MD — MD 시냅스 규칙이 같은 턴 갱신을 요구한다</li>
+      <li><code>DEVGUIDE.md</code>·<code>dev/DATA_MODEL.md</code> — 배치·스키마 추가는 허브 표를 건드린다</li>
+      <li><code>frontend/src</code> 공유 타입 — API 응답 타입은 여러 화면이 함께 쓴다</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h4>impeccable-manual-edit-applier <span class="tag plain">inherit · medium</span></h4>
+    <div class="path">.claude/agents/impeccable-manual-edit-applier.md · 벤더</div>
+    <p style="margin:10px 0 0">impeccable live 세션의 수동 편집 배치를 소스에 반영한다. 벤더 스킬 소속이라 수정하지 않는다.
+    <code>maxTurns: 12</code>가 걸려 있고 툴도 <code>Read·Write·Edit·Bash·Glob·Grep</code>으로 제한돼 있다.</p>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>서브에이전트 함정</h2>
+  <p class="sub">실측으로 확인된 것들이다. 스폰 프롬프트를 쓰기 전에 본다.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>함정</th><th>증상</th><th>대응</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>lazy-persona 미주입</td>
+        <td>SessionStart는 메인 세션에만 발화한다. 워커는 사다리 없이 과설계한다</td>
+        <td>프롬프트에 "<code>.claude/hooks/lazy-persona.md</code>를 먼저 Read하라"를 명시</td>
+      </tr>
+      <tr>
+        <td><code>isolation:"worktree"</code></td>
+        <td>워커마다 브랜치가 갈라져 브랜치 1개 계약이 깨진다</td>
+        <td>주지 않는다. 비격리 워커는 부모 worktree를 cwd로 상속한다</td>
+      </tr>
+      <tr>
+        <td>반환 20,000자 초과</td>
+        <td>SubagentStop 훅이 종료를 막는다</td>
+        <td>요약 + <code>file:line</code> 포인터 + <code>detail_path</code> 형식으로 반환</td>
+      </tr>
+      <tr>
+        <td><code>run_in_background</code> 미지정</td>
+        <td>백그라운드 워커를 남긴 채 반환하고 SubagentStop이 떠 버린다</td>
+        <td>오케스트레이터는 <code>run_in_background:false</code>로 스폰</td>
+      </tr>
+      <tr>
+        <td>워커의 게이트 위반 방치</td>
+        <td>위반이 메인의 Stop 훅에서야 터지고, 그때 워커는 이미 없다</td>
+        <td>"게이트 피드백을 반환 전에 해소하라"를 프롬프트에 넣는다</td>
+      </tr>
+      <tr>
+        <td>깊이 3 이상 스폰</td>
+        <td>워커도 Agent 툴을 갖는다. 그 아래는 실측되지 않았다</td>
+        <td>워커에게 서브에이전트 스폰 금지를 명시</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note danger">
+    <b class="h">PreToolUse 훅은 서브에이전트에도 발화한다</b>
+    <code>check_context_diet.py</code>는 메인·서브 구분 없이 동작하도록 설계돼 있다. 워커가 대용량 파일을 통으로 읽으려 해도 똑같이 막힌다.
+    반대로 SessionStart는 발화하지 않는다 — 이 비대칭이 위의 첫 번째 함정을 만든다.
+  </div>
+</section>
+
+<section id="skills">
+  <h2>스킬 13종</h2>
+  <p class="sub"><code>.claude/skills/&lt;이름&gt;/SKILL.md</code>. 요청 유형별로 밟을 절차를 미리 적어둔 대본이다.</p>
+
+  <h3>워크플로우</h3>
+
+  <div class="card">
+    <h4>feature-workflow</h4>
+    <div class="path">기능 추가·수정·버그 수정 요청 (단순 오탈자·설정값 1줄 제외)</div>
+    <p style="margin:10px 0 0">0~4단계 각각에서 <b>그대로 쓰는 프롬프트 문구</b>를 담는다. 단계 규칙의 정본은 <code>CLAUDE.md</code>다.</p>
+    <div class="tablewrap" style="margin-top:12px">
+    <table>
+      <thead><tr><th style="width:120px">단계</th><th>핵심</th></tr></thead>
+      <tbody>
+        <tr><td>0 범위 인터뷰</td><td>갈림길을 AskUserQuestion으로 <b>먼저</b> 묻는다. 스코프·노출 위치·데이터 3요소가 요청에 이미 담겼으면 생략(브리프 패스트트랙)</td></tr>
+        <tr><td>1 리서치</td><td><code>docs/tasks/research.md</code>로 남긴다. 채팅 요약 금지, 소스 수정 금지</td></tr>
+        <tr><td>2 계획</td><td><code>docs/tasks/plan.md</code> — 실제 코드 스니펫·정확한 경로·파일 설계표·행동 검증 테스트·트랙 후보·트레이드오프. <b>No Placeholders</b></td></tr>
+        <tr><td>2-1 검토 반복</td><td>사용자가 plan에 메모를 달면 전부 반영해 재작성. 승인 전 구현 금지</td></tr>
+        <tr><td>3 구현</td><td>Todo 순서대로, 완료마다 체크. 트랙 3개 이상이면 orchestrator 발동</td></tr>
+        <tr><td>4 수정·롤백</td><td>부분 수정은 그 부분만. 전면 롤백은 되돌린 뒤 가장 심플하게 재작성</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:12px 0 0; font-size:13px; color:var(--muted)">구현 완료 즉시 같은 턴에 <code>docs/tasks/archive/YYYY-MM-DD-{작업명}/</code>으로 옮긴다.
+    오케스트레이션 발동 시에도 Todo 체크·커밋·PR·머지는 메인 세션 전담이고, 워커는 plan 파일을 편집하지 않는다.</p>
+  </div>
+
+  <div class="card">
+    <h4>test</h4>
+    <div class="path">테스트 작성·실행 요청 · 수집·계산 도메인에 <code>.py</code> 추가 직후</div>
+    <div class="tablewrap" style="margin-top:10px">
+    <table>
+      <thead><tr><th>함수 패턴</th><th>테스트 타입</th><th>Mock</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">_format_*()</td><td>Unit</td><td>없음 (순수 함수)</td></tr>
+        <tr><td class="mono">_fetch_*()</td><td>Integration</td><td>없음 (Test DB)</td></tr>
+        <tr><td class="mono">kofia/ businfo/ news/</td><td>Mock</td><td>HTTP만</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:12px 0 0; font-size:13px"><b>금지</b>: 내부 모듈 간 Mock. <code>_fetch_*</code>를 mock하고 <code>get_*</code>를 테스트하지 않는다.
+    현행 <code>tests/</code>는 flat + <code>unit/</code>뿐이라 <code>integration/</code>·<code>mock/</code> 경로에 새 파일을 만들지 않는다.
+    <code>@pytest.mark.integration</code>은 마커 설정 자체가 없어 동작하지 않는다.</p>
+  </div>
+
+  <div class="card">
+    <h4>deploy</h4>
+    <div class="path">"배포해줘"·"서버에 반영해줘"</div>
+    <p style="margin:10px 0 0">컨테이너 3개(<code>db</code>·<code>web</code>·<code>batch</code>) 구성이다. Claude는 서버 SSH 접근이 없으므로
+    Phase 2 명령은 사용자에게 전달한다.</p>
+    <p style="margin:10px 0 0; font-size:13px; color:var(--muted)"><b>주의</b>: <code>db</code> 컨테이너는 데이터 손실 위험이라 <code>--build</code>만 쓰고 <code>down</code>은 금지다.
+    DB 스키마 변경이 있으면 마이그레이션을 코드 배포 <b>전</b>에 돌린다. 영업일 오전 9시 전후 배포는 지양한다.</p>
+  </div>
+
+  <h3>데이터 운영</h3>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>kofia-ops</h4>
+      <div class="path">kofia 점검·무결성·갭 백필</div>
+      <p style="margin:8px 0 0; font-size:13px">현황 파악 → 백필 범위 결정 → 실행 → 후처리 판단 4단계.
+      전수조사급 대량 분석만 <code>data</code> 에이전트에 위임하고 나머지는 직접 한다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">KOFIA API 쿼터는 100콜마다 30초 자동 대기 — 강제 중단 금지.
+      <code>kofia_empty_dates</code> 등록 날짜는 재백필 불필요.</p>
+    </div>
+    <div class="card">
+      <h4>news-ops</h4>
+      <div class="path">뉴스 배치 이상·중복 정리·DB 머지</div>
+      <p style="margin:8px 0 0; font-size:13px"><code>importance IS NULL</code> 다수면 <code>--fill-nulls</code> 소급 재분석,
+      dedup 기준 변경 후면 <code>news_dedup_retro.py --apply</code>, 로컬↔서버 불일치면 <code>news_merge.py</code>다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">Gemini 429는 30s→60s→120s 자동 재시도가 내장이라 수동 중단 금지.
+      <code>user_rating</code>이 있는 행은 dedup에서 무조건 보존한다.</p>
+    </div>
+    <div class="card">
+      <h4>businfo-ops</h4>
+      <div class="path">경영공시 배치·월초 bas_ym 갱신</div>
+      <p style="margin:8px 0 0; font-size:13px">금융위 API는 전월 말 기준을 다음 달 초에 제공한다. 5월 초면 <code>bas_ym=202504</code>가 최신이다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">검증식이 명시돼 있다 — 임원(A) + 직원(B) = 총임직원(C).
+      <code>verify=False</code>는 사내 방화벽 SSL 우회를 위한 의도적 설정이라 변경 금지다.</p>
+    </div>
+  </div>
+
+  <h3>검수·평가</h3>
+
+  <div class="card">
+    <h4>briefing-eval</h4>
+    <div class="path">시황 브리핑 프롬프트를 고친 뒤 배포하기 <b>전</b></div>
+    <p style="margin:10px 0 0">프롬프트를 고쳤을 때 산출물이 <b>실제로 좋아졌는지</b>를 배포 전에 확인하는 유일한 절차다.
+    <code>market_briefings.sources</code>가 기사 원문을 전량 보존하므로 과거 입력을 100% 복원해 같은 입력·다른 프롬프트로 A/B를 돌린다.</p>
+    <div class="flow">
+      <div class="node"><div class="lbl">1</div><div class="val"><code>scripts/briefing_eval.py</code> 재분석. DB는 건드리지 않아 골든이 그대로 남는다</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">2</div><div class="val">후보 생성 실패가 1건이라도 있으면 즉시 <b>회귀: 파싱 실패</b></div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">3</div><div class="val"><code>ceo-reviewer</code>로 골든 vs 후보 정성 비교</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="lbl">4</div><div class="val">회귀 ≥1건이면 <b>배포 보류</b>. 전건 동등·개선이면 배포 가능</div></div>
+    </div>
+    <p style="margin:10px 0 0; font-size:13px; color:var(--muted)">문체 취향 차이는 회귀가 아니다.
+    <code>prompt_snapshot.md</code>가 그 산출물을 만든 프롬프트의 유일한 버전 기록이다 — DB는 생성 시점 프롬프트를 저장하지 않는다.
+    이 스킬이 생긴 계기는 프롬프트 지침 2줄 추가가 산출물을 안 바꿨는데 배포된 실사고다.</p>
+  </div>
+
+  <div class="card">
+    <h4>review-loop</h4>
+    <div class="path">"대표 검수 돌려줘"·"CEO 리뷰"·새 지표 추가 후 비즈니스 검증</div>
+    <p style="margin:10px 0 0"><code>ceo-reviewer</code>를 호출하고 판정에 따라 분기한다. 승인이면 종료, 조건부 승인이면 보완 후 재검수,
+    반려면 전체 재작업 후 재진입이다.</p>
+    <p style="margin:10px 0 0; font-size:13px; color:var(--muted)"><b>종료 조건이 두 개다.</b> 승인 판정이거나,
+    3회 반복 후에도 반려가 유지되면 사용자에게 에스컬레이션한다 — 지표 설계 자체를 재논의해야 한다는 신호다.</p>
+  </div>
+
+  <div class="card">
+    <h4>md-audit</h4>
+    <div class="path">월 1회 MD 드리프트 감사</div>
+    <p style="margin:10px 0 0">게이트 ④가 잡는 기계 검사분(경로·배치표·env)을 먼저 소거한 뒤,
+    <b>게이트가 못 잡는 의미 서술</b>만 대상으로 삼는다. 읽기 전용 Sonnet 에이전트 4~6개로 MD 그룹을 분담한다.</p>
+    <p style="margin:10px 0 0; font-size:13px">판정은 4분류다 — 정확 / stale(코드가 변했는데 MD 미갱신) / 적극적 오류(처음부터 틀림) / 누락(코드에 있는데 MD에 없어 혼동 유발).</p>
+    <div class="note warn" style="margin-top:12px">
+      <b class="h">자동 수정 금지</b>
+      보고서(<code>docs/tasks/md_audit_findings_YYYY-MM.md</code>)만 내고 수정 여부와 범위는 사용자가 결정한다.
+      전수감사에서 26개 MD에 91건 드리프트가 나온 이력이 이 절차의 근거다.
+    </div>
+  </div>
+
+  <h3>lazy 3종</h3>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>lazy-review</h4>
+      <div class="path">diff 과설계 리뷰</div>
+      <p style="margin:8px 0 0; font-size:13px">태그 5종으로 한 줄씩 — <code>delete:</code> <code>stdlib:</code> <code>native:</code> <code>yagni:</code> <code>shrink:</code>.
+      끝에 <code>net: -N lines possible.</code>로 닫는다. 자를 게 없으면 <code>Lean already. Ship.</code></p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">정확성·보안·성능은 <b>명시적 스코프 밖</b>이다. 적용은 하지 않고 목록만 낸다.</p>
+    </div>
+    <div class="card">
+      <h4>lazy-audit</h4>
+      <div class="path">레포 전역 과설계 감사</div>
+      <p style="margin:8px 0 0; font-size:13px">같은 태그로 트리 전체를 훑고 <b>큰 절단부터</b> 순위를 매긴다.
+      끝에 <code>net: -N lines, -M deps possible.</code></p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">사냥 대상 — 표준 라이브러리가 이미 주는 의존성, 구현 1개짜리 인터페이스, 위임만 하는 래퍼, 죽은 플래그·설정.</p>
+    </div>
+    <div class="card">
+      <h4>lazy-debt</h4>
+      <div class="path"><code>lazy:</code> 마커 부채 장부</div>
+      <p style="margin:8px 0 0; font-size:13px">주석 마커를 긁어 파일별로 묶는다. 각 행은 <b>무엇을 단순화했나 · 천장 · 재검토 트리거</b>다.</p>
+      <p style="margin:8px 0 0; font-size:13px; color:var(--muted)">업그레이드 경로가 없는 마커에는 <code>no-trigger</code> 태그가 붙는다.
+      조용히 썩는 건 그것들이다.</p>
+    </div>
+  </div>
+
+  <h3>벤더</h3>
+  <div class="card">
+    <h4>impeccable <span class="tag plain">수정하지 않는다</span></h4>
+    <div class="path">.claude/skills/impeccable/ · UI 디자인 전반</div>
+    <p style="margin:10px 0 0">디자인·리디자인·비평·감사·폴리시·접근성·모션까지 프론트엔드 UI 작업 전반을 담당한다.
+    <code>reference/</code> 아래에 <code>audit</code>·<code>polish</code>·<code>critique</code>·<code>typeset</code> 등 목적별 지침이 분리돼 있고,
+    <code>scripts/</code>에 안티패턴 탐지기와 live 편집 서버가 들어 있다.</p>
+    <p style="margin:10px 0 0; font-size:13px; color:var(--muted)">PostToolUse 훅(<code>hook.mjs</code>)이 이 스킬 소속이다.
+    UI 파일을 저장할 때마다 안티패턴을 검사해 리마인더를 돌려준다 — node가 없으면 통째로 무력화된다.</p>
+  </div>
+
+  <footer>
+    <p style="margin:0">정본은 <code>.claude/agents/*.md</code>와 <code>.claude/skills/*/SKILL.md</code>다.
+    모델·effort는 각 파일 frontmatter가 이기고, 위임 판단 기준의 정본은 <code>CLAUDE.md</code> 모델 라우팅 절이다.</p>
+  </footer>
+</section>
+
+</main>
+</div>
+</body>
+</html>
