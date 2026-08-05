@@ -23,6 +23,8 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 FIXTURE = HERE / "fixtures" / "miniproj"
 GOLDEN = HERE / "golden" / "full.txt"
+# 프로파일을 뺀 채로 돌린 결과 — "하네스만 얹은 새 프로젝트 첫날"이 이 모습이다.
+GOLDEN_BARE = HERE / "golden" / "bare.txt"
 
 
 def _git(cwd: Path, *args: str) -> None:
@@ -30,11 +32,17 @@ def _git(cwd: Path, *args: str) -> None:
                    capture_output=True, text=True)
 
 
-def capture(checker_dir: Path) -> str:
-    """픽스처+검사기를 임시 레포에 세우고 전체 검사 출력을 받는다."""
+def capture(checker_dir: Path, bare: bool = False) -> str:
+    """픽스처+검사기를 임시 레포에 세우고 전체 검사 출력을 받는다.
+
+    bare=True 면 프로파일을 지운다 — 프로젝트를 모르는 상태에서 게이트가 어떻게 처신하는지가
+    새 프로젝트 첫날의 모습이고, 그게 이 하네스의 존재 이유라 정답지로 함께 동결한다.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "proj"
         shutil.copytree(FIXTURE, work)
+        if bare:
+            (work / "harness_profile.py").unlink(missing_ok=True)
 
         # 검사기가 평면 배치(static_check*.py)인지 패키지(kernel/)인지에 따라 진입점이 다르다.
         if (checker_dir / "runner.py").exists():
@@ -67,25 +75,27 @@ def main(argv: list[str]) -> int:
         print("픽스처가 없다 — 먼저 tests/build_fixture.py 를 돌려라", file=sys.stderr)
         return 2
 
-    actual = capture(checker_dir)
+    bare = "--bare" in argv
+    golden = GOLDEN_BARE if bare else GOLDEN
+    actual = capture(checker_dir, bare=bare)
+    label = "프로파일 없음" if bare else "전 게이트"
 
     if "--update" in argv:
-        GOLDEN.parent.mkdir(parents=True, exist_ok=True)
-        GOLDEN.write_text(actual, encoding="utf-8")
-        fails = sum(1 for ln in actual.splitlines() if ln.startswith("[FAIL]"))
-        reports = sum(1 for ln in actual.splitlines() if ln.startswith("[REPORT]"))
-        oks = sum(1 for ln in actual.splitlines() if ln.startswith("[OK]"))
-        print(f"정답지 저장: {GOLDEN}")
-        print(f"  [FAIL] {fails}개 섹션 · [OK] {oks}개 · [REPORT] {reports}줄")
+        golden.parent.mkdir(parents=True, exist_ok=True)
+        golden.write_text(actual, encoding="utf-8")
+        counts = {tag: sum(1 for ln in actual.splitlines() if ln.startswith(f"[{tag}]"))
+                  for tag in ("FAIL", "OK", "SKIP", "REPORT")}
+        print(f"정답지 저장: {golden}  ({label})")
+        print("  " + " · ".join(f"[{tag}] {n}" for tag, n in counts.items()))
         return 0
 
-    if not GOLDEN.exists():
+    if not golden.exists():
         print("정답지가 없다 — --update 로 먼저 떠라", file=sys.stderr)
         return 2
 
-    expected = GOLDEN.read_text(encoding="utf-8")
+    expected = golden.read_text(encoding="utf-8")
     if actual == expected:
-        print(f"정답지 일치 ({checker_dir.name})")
+        print(f"정답지 일치 ({checker_dir.name} · {label})")
         return 0
 
     print("정답지와 다르다 — 아래가 바뀐 줄이다:\n", file=sys.stderr)

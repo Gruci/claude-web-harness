@@ -8,7 +8,7 @@
 
 소급 유예: static_check_md_baseline.txt 등재 파일은 강제→리포트 강등. 감소만 허용(래칫).
 
-⑬b 판정 근거: 구분자 개수만 세면 `db/`·`kofia/`·`etf/` 같은 정상 나열(코드명 12개 = 한 의미)이
+나열 판정 근거: 구분자 개수만 세면 패키지명을 죽 늘어놓은 정상 나열(코드명 12개 = 한 의미)이
 걸린다. 그래서 인라인 코드를 걷어낸 뒤 남는 '산문 조각'만 센다 — 구분자 사이에 설명이 붙어야
 독립 사실이 여럿이라는 뜻이다.
 """
@@ -17,12 +17,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from kernel import profile
 from kernel.context import ROOT, _rel
 
-BASELINE_FILE = "static_check_md_baseline.txt"
-EXCLUDE_PREFIXES = ("docs/", ".agents/", ".codex/", ".claude/skills/impeccable/")
-EXCLUDE_FILES = {"EDITING.md"}
-DATE_EXEMPT = {"dev/LESSONS.md"}
+BASELINE_FILE = "md_style_baseline.txt"
 
 MAX_PROSE_ITEMS = 6        # ⑬b 한 줄 안 '설명 붙은 나열' 조각 수
 MIN_ITEM_CHARS = 15        # 조각이 이 길이 이상이면 산문으로 본다
@@ -44,11 +42,11 @@ ROLE_CONTRACT = re.compile(r"^>\s*담는 것:.*담지 않는 것:.*읽는 시점
 
 
 def style_target(rel: str) -> bool:
-    """게이트 ⑬ 검사 대상 여부. 벤더·Codex 전용·작업 산출물·동적 파일은 제외."""
-    return (rel.endswith(".md")
-            and rel not in EXCLUDE_FILES
-            and not rel.startswith(EXCLUDE_PREFIXES)
-            and "/prompts/" not in rel)
+    """스타일 검사 대상 여부. 벤더 사본·작업 산출물·동적 파일은 프로파일이 뺀다."""
+    exclude = tuple(profile.MD["style_exclude"])
+    if not rel.endswith(".md"):
+        return False
+    return not (exclude and (rel.startswith(exclude) or rel in exclude))
 
 
 def _load_baseline() -> set[str]:
@@ -136,7 +134,7 @@ def _scan_lines(rel: str, lines: list[str], hard: list[str], soft: list[str]) ->
         if len(SIG_TOKEN.findall(prose)) >= MAX_SIGNATURES:
             soft.append(f"{rel}:{number}: ⑬g 시그니처 패턴 다수 — 성분 B 재유입 신호")
 
-    if rel not in DATE_EXEMPT and dates >= MAX_DATES:
+    if rel not in tuple(profile.MD["date_exempt"]) and dates >= MAX_DATES:
         soft.append(f"{rel}: ⑬e 날짜 태그 {dates}개 — 성분 D 의심(경위는 dev/LESSONS.md 로)")
 
 

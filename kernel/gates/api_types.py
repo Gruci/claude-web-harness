@@ -20,7 +20,7 @@ from pathlib import Path
 
 from kernel.context import ROOT
 
-BASELINE = ROOT / "static_check_api_array_baseline.txt"
+BASELINE = ROOT / "api_array_baseline.txt"
 # `field: T[];` — 옵셔널(`field?:`)은 `\w+\s*:` 에 걸리지 않아 자연히 빠진다.
 _ARRAY_FIELD = re.compile(r"^\s*(\w+)\s*:\s*[^;{}()]*\[\]\s*;", re.M)
 

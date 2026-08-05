@@ -13,15 +13,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from kernel.context import ROOT
-BASELINE_FILE = ROOT / "static_check_tests_baseline.txt"
+from kernel import profile
+from kernel.context import ROOT, _rel
 
-# 수집/계산 도메인 (CLAUDE.md 모듈 소유권 표 기준 — db/·web/·frontend/ 는 스코프 밖)
-DOMAIN_PREFIXES = (
-    "kofia/", "etf/", "news/", "dart/", "businfo/", "macro/",
-    "us_cycle/", "kr_cycle/", "analyst_reports/", "market_briefing/",
-    "dept_issues/", "batches/",
-)
+BASELINE_FILE = ROOT / "test_pairing_baseline.txt"
 
 
 def _load_baseline() -> set[str]:
@@ -32,27 +27,31 @@ def _load_baseline() -> set[str]:
 
 
 def _test_file_stems() -> list[str]:
-    """tests/ 아래 test_*.py 파일명(접두·확장자 제거) — 미커밋 신규 테스트도 인정(rglob)."""
-    tests_dir = ROOT / "tests"
-    if not tests_dir.exists():
+    """테스트 루트 아래 test_*.py 파일명(접두·확장자 제거) — 미커밋 신규 테스트도 인정(rglob)."""
+    tests = profile.layer("tests")
+    tests_dir = ROOT / tests if tests else None
+    if tests_dir is None or not tests_dir.exists():
         return []
     return [p.stem[len("test_"):] for p in tests_dir.rglob("test_*.py")]
 
 
 def check_module_test_pairing(py_files: list[Path]) -> list[str]:
-    """게이트 ⑫: 수집/계산 .py 모듈에 대응 행동 테스트 부재 시 위반."""
+    """수집·계산 모듈에 대응 행동 테스트가 없으면 위반."""
+    roots = tuple(profile.BEHAVIOR_TESTED_ROOTS)
+    if not roots:
+        return []
     baseline = _load_baseline()
     test_stems = _test_file_stems()
+    tests = profile.layer("tests") or "tests/"
     bad: list[str] = []
     for f in py_files:
-        rel = f.relative_to(ROOT).as_posix()
-        if not rel.startswith(DOMAIN_PREFIXES) or f.name == "__init__.py" or rel in baseline:
+        rel = _rel(f)
+        if not rel.startswith(roots) or f.name == "__init__.py" or rel in baseline:
             continue
         if any(f.stem in stem for stem in test_stems):
             continue
         bad.append(
-            f"{rel}: 대응 행동 테스트 없음 — tests/unit/test_{f.stem}.py 작성"
-            f"(exemplar: tests/unit/test_institution_sources_parsers.py)"
-            f" 또는 사유와 함께 static_check_tests_baseline.txt 등재"
+            f"{rel}: 대응 행동 테스트 없음 — {tests}test_{f.stem}.py 작성 "
+            f"또는 사유와 함께 {BASELINE_FILE.name} 등재"
         )
     return bad

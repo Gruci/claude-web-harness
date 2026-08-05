@@ -1,0 +1,42 @@
+exit=1
+[SETUP] harness_profile.py 없음 — 프로젝트를 모르는 상태다. 레이어를 요구하는 게이트는 전부 [SKIP] 이다.
+[REPORT] DEVGUIDE.md: ⑬e 날짜 태그 6개 — 성분 D 의심(경위는 dev/LESSONS.md 로)
+[REPORT] AGENTS.md:5: 실존하지 않는 경로 참조 `db/reads/gone.py`
+
+[FAIL] 파일 길이 상한 — 1건
+   - utils/long_report.py: 401줄 (>400)
+
+[FAIL] 중첩 def(클로저) — 1건
+   - utils/closure.py: 중첩 def outer > inner
+[SKIP] 읽기 레이어의 쓰기 SQL·commit — 프로파일에 read 레이어 미선언
+[SKIP] 축약 이름 단독 대입 — 프로파일에 금지 축약 이름 없음
+[SKIP] 축약 접두 식별자 — 프로파일에 금지 축약 접두 없음
+[SKIP] UI 라벨 금칙어 — 프로파일에 UI 금칙어 없음
+
+[FAIL] py Any 타입힌트 — 1건
+   - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
+[SKIP] TS any 타입 — 프론트 소스 없음
+[SKIP] 커넥션 블록 내 가공 — 프로파일에 db_accessor 심볼 미선언
+[SKIP] 설정 밖 환경변수 조회 — 프로파일에 settings 파일 미선언
+[SKIP] await 없는 async 핸들러 — 프로파일에 web 레이어 미선언
+[SKIP] 커넥션 접근자 import 단일 경로 — 프로파일에 db_accessor_module 심볼 미선언
+[SKIP] 전역 SSL 패치 호출 위치 — 프로파일에 ssl_bypass 심볼 미선언
+[SKIP] 라우트 에러 응답 형식 — 프로파일에 error_response 심볼 미선언
+[SKIP] 공용 래퍼 없는 fetch — 프론트 소스 없음
+[SKIP] 프론트 hex 리터럴 — 프론트 소스 없음
+[SKIP] 수집·계산 모듈의 행동 테스트 짝 — 프로파일에 행동 테스트 대상 루트 없음
+[SKIP] DDL 저장 타입 잘림 — 프로파일에 schema 레이어 미선언
+[SKIP] API 응답 배열 필드 옵셔널 — 프론트 소스 없음
+
+[FAIL] MD 작성 규칙 — 4건
+   - DESIGN_GUIDE.md:5: ⑬a 코드펜스 트리 덤프 — 파일 목록의 정본은 Glob
+   - README.md:7: ⑬b 한 줄에 설명 붙은 나열 7개 — 표나 불릿으로 쪼개라
+   - README.md:9: ⑬c 괄호 3중 중첩 — 문장을 다시 써라
+   - notes/GUIDE.md:1: ⑬d 머리 역할 계약 누락 — `> 담는 것: … 담지 않는 것: … 읽는 시점: …`
+[SKIP] MD 경로 참조 실존 — greenfield — 리포트로만
+[SKIP] 고아 MD(허브 도달 불가) — 프로파일에 허브 목록 없음
+
+[FAIL] 하네스 지도 대조 — 1건
+   - HARNESS.md: 스킬 'runbook' 이 지도에 없음 — 같은 턴에 등재하라
+
+총 8건 위반.

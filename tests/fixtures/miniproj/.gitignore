@@ -1,4 +1,4 @@
 static_check*.py
 kernel/
-profile.py
+harness_profile.py
 __pycache__/

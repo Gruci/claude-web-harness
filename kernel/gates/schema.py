@@ -1,8 +1,8 @@
 """static_check 확장 게이트 ⑭ — DDL 저장 타입 잘림 금지 (래칫).
 
-kofia_data·kofia_agg 금액 20컬럼이 REAL(float4)이라 원 단위 AUM 이 유효 8자리로 잘려 저장돼 왔다.
-엑셀 다운로드·화면 수치·CAGR·브리핑이 전부 뭉개진 값을 썼다. 같은 감사에서 us_fundamentals.
-shares_short(REAL·주식수)와 etf_pdf.contracts(NUMERIC(18,1)·소스는 소수 2자리)도 확인됐다.
+금액 컬럼을 REAL(float4)로 선언하면 원 단위 값이 유효 8자리에서 잘려 저장된다. 화면·다운로드·
+파생 계산이 전부 뭉개진 값을 쓰는데 예외는 나지 않는다 — 조용히 틀린다. 실제로 20개 컬럼이
+이 상태로 운영되다 발견된 적이 있고, 그 감사가 이 게이트를 만들었다.
 
 ⑭A REAL/FLOAT4/FLOAT(n<=24) 선언 금지 — float4 는 2^24(16,777,216) 초과 정수를 표현하지 못한다.
     비율·점수라도 DOUBLE PRECISION 을 쓴다. 4바이트를 아껴서 얻는 것이 없고, "이건 비율이니 REAL
@@ -19,10 +19,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from kernel.context import ROOT
-BASELINE_FILE = ROOT / "static_check_schema_baseline.txt"
+from kernel import profile
+from kernel.context import ROOT, _rel
 
-TARGET_PREFIX = "db/schema"
+BASELINE_FILE = ROOT / "ddl_types_baseline.txt"
 
 # `"합계" REAL` · `shares_short REAL` · `x FLOAT(24)` — 한 줄에 여러 컬럼이 오므로 finditer.
 LOSSY_FLOAT = re.compile(
@@ -41,11 +41,14 @@ def _load_baseline() -> set[str]:
 
 def check_ddl_lossy_types(py_files: list[Path]) -> list[str]:
     """게이트 ⑭: DDL 에서 소스 정밀도를 담지 못하는 타입 선언 검출."""
+    target = profile.layer_raw("schema")
+    if not target:
+        return []
     baseline = _load_baseline()
     bad: list[str] = []
     for f in py_files:
-        rel = f.relative_to(ROOT).as_posix()
-        if not rel.startswith(TARGET_PREFIX):
+        rel = _rel(f)
+        if not rel.startswith(target):
             continue
         for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
             if line.lstrip().startswith("#"):

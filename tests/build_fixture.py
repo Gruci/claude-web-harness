@@ -16,7 +16,7 @@ DEST = Path(__file__).resolve().parent / "fixtures" / "miniproj"
 
 # 검사기 자신은 픽스처의 추적 대상에서 뺀다. 안 그러면 검사기 줄 수가 바뀔 때마다
 # 정답지가 흔들려, 게이트 로직이 깨진 것과 구분이 안 된다.
-GITIGNORE = "static_check*.py\nkernel/\nprofile.py\n__pycache__/\n"
+GITIGNORE = "static_check*.py\nkernel/\nharness_profile.py\n__pycache__/\n"
 
 ROLE = "> 담는 것: {0}. 담지 않는 것: 그 밖의 것(→ `CLAUDE.md`). 읽는 시점: {1}."
 
@@ -305,8 +305,47 @@ def test_placeholder():
     assert True
 '''
 
-# 게이트 ⑮ 는 baseline 파일이 없으면 통째로 꺼진다 — 빈 파일로 켜둔다.
-FILES["static_check_api_array_baseline.txt"] = "# 픽스처: 동결분 없음\n"
+# 배열 옵셔널 게이트는 baseline 파일이 없으면 통째로 꺼진다 — 빈 파일로 켜둔다.
+FILES["api_array_baseline.txt"] = "# 픽스처: 동결분 없음\n"
+
+# 커널이 프로젝트에 대해 아는 것 전부. 픽스처는 게이트를 전부 켜도록 다 채운다.
+FILES["harness_profile.py"] = '''"""픽스처 프로젝트 프로파일 — 게이트 전량을 켠다."""
+
+STAGE = "mature"
+
+LAYERS = {
+    "read": "db/reads", "write": "db/writes", "db": "db",
+    "web": "web", "routes": "web/routes",
+    "ui": "frontend/src", "ui_admin": "frontend/src/admin", "ui_tokens": None,
+    "tests": "tests", "schema": "db/schema", "shared": "utils", "batch": "batches",
+}
+FILES = {"settings": "settings.py", "ssl_util": "utils/ssl_utils.py"}
+SYMBOLS = {
+    "db_accessor": "get_db", "db_accessor_module": "db.connection",
+    "ssl_bypass": "bypass_ssl_verification", "error_response": "JSONResponse",
+}
+SCOPE = {"exclude_all": (), "exclude_scratch": ("scripts/", "docs/")}
+HUBS = ("CLAUDE.md", "AGENTS.md", "DEVGUIDE.md", "DESIGN_GUIDE.md", "README.md", "HARNESS.md")
+VOCAB = {
+    "ui_denylist": ("순신고가",),
+    "abbrev_prefixes": ("oper_", "rev_"),
+    "abbrev_names": ("net",),
+}
+ALLOWLIST = {"py_any": (), "ui_hex": (), "ui_fetch": (), "ui_fetch_wrappers": (), "env_access": ()}
+MD = {
+    "doc_exclude": (".claude/", "docs/"),
+    "ref_exclude": ("docs/", "idea/", "memory/"),
+    "style_exclude": (),
+    "date_exempt": (),
+}
+DOC_SYNC = [
+    {"doc": "DEVGUIDE.md", "code": "batch_runner.py", "kind": "int_consts", "marker": "_HOUR"},
+    {"doc": "DEVGUIDE.md", "code": "settings.py", "kind": "env_keys",
+     "section": "## .env 키 목록", "allow": ()},
+]
+BEHAVIOR_TESTED_ROOTS = ("kofia/",)
+LOCAL_GATES = ()
+'''
 
 FILES[".gitignore"] = GITIGNORE
 
