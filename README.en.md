@@ -2,205 +2,376 @@
 
 # claude-web-harness
 
-**It asks first. It writes the design first. It blocks you when you break it.**
+**Design first · Machine enforced · Stack agnostic**
 
-Harness v3.0.0 · Works with any stack
+Harness v3.0.0
 
 [한국어](README.md) · [English](README.en.md)
 
 </div>
 
-AI forgets when the conversation ends. The next session's AI doesn't know what was agreed and writes in its own style. Stack enough of that up and nobody can read the code.
+`claude-web-harness` is an automated validation tool that prevents context loss and code quality degradation during developer–AI collaboration. It is not tied to any technology stack. It enforces an agreed design up front and maintains code consistency through checks that run at save time.
 
-Writing "please do it this way" in a document isn't enough. Rules that live only in prose are easy to skip past — for people and for AI.
+## Table of contents
 
-So this harness doesn't ask nicely. It gets the design out of you first, and a machine measures whether you kept to it. Break it and nothing passes.
+1. [Overview](#1-overview)
+2. [Quick start](#2-quick-start)
+3. [Daily workflow](#3-daily-workflow)
+4. [Validation rules](#4-validation-rules)
+5. [Project structure and configuration](#5-project-structure-and-configuration)
+6. [Maintenance and scaling](#6-maintenance-and-scaling)
+7. [FAQ](#7-faq)
 
-## Getting started
+---
+
+## 1. Overview
+
+When an AI session ends, previously agreed conventions and coding style are lost. The next session generates code on its own judgment without that context, and the accumulated divergence eventually breaks the consistency of the codebase.
+
+Recording rules in documents alone provides no enforcement. Conventions written as prose are easy to bypass, for both people and AI. This harness implements rules as **blocks**, not requests.
+
+### 1.1 Design principles
+
+| Principle | Implementation |
+|:--|:--|
+| **Design first** | A design document is written to a file and approved before any code. No source changes occur before approval |
+| **Save-time validation** | Static checks run immediately after a file is saved; violations block the change and require a fix |
+| **Exit-time revalidation** | The full check re-runs when the conversation tries to end. Unresolved violations prevent the session from closing |
+| **Stack agnostic** | The checking logic has no knowledge of the project. Project-specific values are isolated in a single configuration file |
+
+### 1.2 Check statuses
+
+Results are reported in four grades. The distinction between `[OK]` and `[SKIP]` is the core design element of this tool.
+
+| Grade | Meaning | Session exit |
+|:--|:--|:--:|
+| `[OK]` | Check ran, no violations | Allowed |
+| `[SKIP]` | **Not performed — required configuration is missing** | Allowed |
+| `[FAIL]` | Violation detected | Blocked |
+| `[REPORT]` | Soft signal with false-positive potential. Not counted in totals | Allowed |
+
+> **`[SKIP]` is not a pass.** It means the check is inactive due to missing configuration. Previous-generation tooling treated this state as a pass, so a single mismatched folder name left eight checks inert while returning a green signal.
+
+---
+
+## 2. Quick start
+
+### 2.1 Installation
 
 ```bash
+# 1. Clone and enter the repository
 git clone https://github.com/WooriGrunda/claude-web-harness.git my-project
 cd my-project
+
+# 2. Reset git history and make the initial commit
 rm -rf .git && git init && git add -A && git commit -m "init"
+
+# 3. Launch Claude Code
 claude
 ```
 
-Then say **"set up the harness"**.
+Then instruct the session:
 
-It asks one thing during setup: what you're building.
+```
+set up the harness
+```
 
-> - Something people use in a browser — they log in, look at screens, press buttons
-> - Something other programs call — no screens, just data
-> - Something that runs on a schedule — scraping, aggregation, report generation
-> - Not sure yet
+The onboarding procedure identifies the project type, generates the configuration file, connects the remote repository, and reviews any inactive checks.
 
-Answer that and the rest is handled. It picks the tech for you and tells you why, fills in the settings, creates a private GitHub repo and pushes, and finally tells you in plain words what will be blocked from now on.
+### 2.2 Project type selection
 
-**You don't need to know any tech names.** It won't ask "FastAPI or Django". "Not sure yet" is a fine answer — it installs the most common setup, and whatever you don't use simply switches itself off.
+One of four types is selected during setup. Only the checks relevant to that type are activated.
 
-There are exactly two things you click yourself: the prompt asking whether you trust the new folder, and the one-time consent prompt on that machine. Those are Claude Code's own safeguards; the harness can't remove them.
+| Type | Target | Preset applied |
+|:--|:--|:--|
+| Screen-based service | Applications used in a browser — login, dashboards, interaction | `web_fastapi_react` |
+| API-only service | Backend that exchanges data with no screens | `api_fastapi` |
+| Batch / automation | Scheduled work such as scraping, aggregation, report generation | `batch_python` |
+| Undecided | Pre-decision stage. Installs the most common configuration; unused checks stay inactive | `web_fastapi_react` |
 
-## What a day looks like
+No prior knowledge of stack names is required. Onboarding asks about the shape of the deliverable; selecting the stack and explaining the rationale is the tool's responsibility.
 
-Say "build me a dashboard" and it doesn't start coding.
+### 2.3 Manual installation
 
-**It asks.** Which screen this goes on, what data it uses, how far to take it.
+To install without going through a session:
 
-**It reads.** It opens the relevant code. Not just filenames — it follows where the data comes from and where it goes.
+```bash
+python -X utf8 harness_install.py --list                      # List presets and their purpose
+python -X utf8 harness_install.py --preset web_fastapi_react  # Generate the configuration file
+# After adjusting folder names in harness_profile.py to match the real structure
+python -X utf8 harness_install.py                             # Register existing violations and verify
+python -X utf8 setup_global_permissions.py                    # Merge global permissions
+```
 
-**It writes.** The design goes into a file. Exact paths, real code snippets, what could break. Blanks like "implement later" or "similar to the above" mean it isn't a design yet. For screens, both the desktop and phone layouts have to be there.
+### 2.4 Prerequisites
 
-**It stops.** Until you read it and approve. Not one line of code is touched before that.
+| Item | Required | Reason |
+|:--|:--:|:--|
+| Git repository | Yes | The check target list is collected via `git ls-files`. Without it the target set is empty and every check is inert |
+| GitHub remote | Yes | Session exit is blocked while unset. With `gh` authenticated, a private repository is created automatically |
+| Python | Yes | Runtime for the checker |
+| Node.js | Optional | Needed only for the UI quality tooling |
 
-**It builds.** Following the approved design. Checks run on every save, and violations are blocked on the spot.
+---
 
-**It cleans up.** Related documents get updated and working files are filed away. When it tries to end the conversation, the full check runs again. If anything is left, the conversation doesn't end.
+## 3. Daily workflow
 
-Across one feature you speak twice: answering the questions, and approving the design. Everything between is on its own.
+Feature additions and changes proceed through five stages. The developer is involved at two points: **answering questions** and **approving the design**.
 
-## What gets blocked
+```
+[1. Ask & analyze] → [2. Write design] → [3. Await approval] → [4. Build & check] → [5. Clean & revalidate]
+                                                 ▲
+                                        developer involvement
+```
 
-Checks run the moment a file is saved. For example:
+| Stage | Activity | Source changes |
+|:--:|:--|:--:|
+| 1 | Asks which screen, which data, and how far to take the work. Reads the relevant code directly to analyze data flow and module dependencies | None |
+| 2 | Writes the design to a file: exact paths, real code snippets, expected blast radius | None |
+| 3 | Waits for developer review and approval | None |
+| 4 | Implements per the approved design. Checks run on every save | Yes |
+| 5 | Updates related documents and files away working artifacts. Re-runs the full check at exit | Yes |
 
-| Write this | And this happens |
+### 3.1 Design document requirements
+
+An artifact missing any of the following is not accepted as a design, and stage 2 is rejected.
+
+- Exact file paths with a single-responsibility statement per file
+- Real code snippets (pseudocode is not accepted)
+- Breaking changes and trade-offs stated explicitly
+- For screen work, a responsive layout table covering both desktop and mobile
+- No unresolved placeholders such as `TBD`, "implement later", or "similar to the above"
+
+---
+
+## 4. Validation rules
+
+Thirty checks run at file save time. On detection, the change is blocked and a fix is requested. The full list and the rationale for each are defined in `HARNESS.md`.
+
+### 4.1 Representative rules
+
+| Violation | Reason and remedy |
 |:--|:--|
-| Code that deletes data in a read-only folder | Blocked on the spot |
-| A color literal `#ff8800` in a screen file | Colors come from one designated place |
-| A fixed width `width: 420px` that breaks phones | Use something that adapts to screen size |
-| A file over 400 lines | Split it by feature |
-| An API key pasted into code | Route it through settings |
-| A file path in a document that doesn't exist | Fix the document |
+| Data-modifying SQL in a read-only layer | Layer responsibility violation. Move write operations to the write layer |
+| Hard-coded color literal in screen code (`#ff8800`) | Restricted to the color source file or CSS variables |
+| Fixed pixel width (`width: 420px`) | Mobile viewport support. Replace with `max-width`, `%`, or `clamp` |
+| Single file exceeding 400 lines | Single responsibility lost. Split by feature |
+| API keys or credentials hard-coded in source | Route through the settings module. If already committed, key rotation is required |
+| File path stated in a document does not exist | Document–code synchronization. Remove stale references after deletion or rename |
+| Missing type hints on public functions | Module interface specification |
+| Agent definition inconsistent with the model policy table | Prevents model routing drift |
 
-There are thirty of these. They all run once more when you try to end the conversation, and if a single one fails, the conversation doesn't end.
+### 4.2 Reviewing inactive checks
 
-### Checks that aren't running say so
-
-This is the most important part of the harness.
-
-If a check hasn't been told what it needs, it does not count as passing. It prints this instead:
+Checks not performed due to missing configuration are reported with their reason.
 
 ```
 [SKIP] 브라우저 API 직접 호출 — 설정에 브라우저 API 래퍼를 안 적었음
+[SKIP] DDL 저장 타입 잘림 — 설정에 schema 폴더를 안 적었음
 ```
 
-That means "this check is currently looking at nothing." It is not a pass.
+If the check is relevant to the project, populate the corresponding entry in `harness_profile.py` to activate it. If it is genuinely inapplicable — UI checks in a service with no screens, for example — leave it inactive; the inactive state continues to be reported on every run.
 
-The previous generation treated that as a pass. So one mismatched folder name left eight checks doing nothing while showing green. **Believing you're protected when you aren't is the most dangerous state of all.**
+### 4.3 Execution points
 
-## Adding it to a project that already has code
+| Point | Scope | On violation |
+|:--|:--|:--|
+| Immediately after file save | That file | Change blocked, fix requested |
+| Attempted session exit | Full | Session exit blocked |
+| Manual run (`python -X utf8 -m kernel.runner`) | Full | Exit code 1 |
 
-Drop this onto an existing codebase and the first run can produce hundreds of findings. At that point people just switch the checks off entirely. That's the usual way tools like this die.
+---
 
-So during setup, **whatever is already broken gets recorded as "was already like this"** and passes. That list never grows. Next time you touch one of those files, fix it and delete its line. Files you create from now on have to pass everything from the start.
+## 5. Project structure and configuration
 
-If you're copying files instead of cloning, take `kernel/`, `profiles/`, `.claude/`, and `harness_install.py`, then merge just the `hooks` section of `.claude/settings.json`.
+### 5.1 Directory layout
 
-## Change anything that doesn't fit
+```
+project-root/
+├── harness_profile.py      # Project configuration source (folder names, vocabulary, exemptions)
+├── harness_install.py      # Setup and existing-violation registration script
+├── CLAUDE.md               # AI behavior rules. Stack-agnostic skeleton, auto-loaded each session
+├── PROJECT.md              # Service domain, vocabulary, layer structure
+├── HARNESS.md              # Full map of checks, hooks, agents, and skills
+├── DEVGUIDE.md             # Server development rules (paired with dev/)
+├── DESIGN_GUIDE.md         # Screen design rules (paired with design/)
+├── EDITING.md              # Work board preventing concurrent-session conflicts
+├── kernel/                 # Checking engine. No knowledge of the project
+├── profiles/               # Configuration presets by project type
+├── harness_gates/          # Checks specific to this repository (optional)
+├── tests/                  # Regression fixtures and expected output for the checker itself
+└── .claude/                # 14 hooks, 6 agents, 10 skills, session configuration
+```
 
-Folder names, which checks are on, the line limit. All of it lives in one file, `harness_profile.py`. It's also the only file you change when moving to another project.
+### 5.2 Layer structure
 
-If your project uses an `api/` folder, write `"web": "api"`. If there are no screens, leave the screen entries empty and six screen checks switch off. Decide later to add screens and writing that one line switches them back on.
+```
+User
+ └─ Claude Code session
+     ├─ Skills (work procedures)
+     ├─ Agents (domain specialists)
+     └─ Hooks (automation)
+         └─ kernel/ (checking logic — project agnostic)
+             └─ harness_profile.py (project-specific values)
+```
 
-If the settings and the real folders disagree, the checks catch it. Create code in an undeclared folder and the save is blocked; setup also points it out once. And if something still slips through, the disabled check shows up as `[SKIP]` above.
+Lower layers enforce upper ones. The checking logic holds only the **shape** of a rule; the target that rule applies to is designated by the configuration file. For example, the judgment "no write SQL in a read-only layer" lives in `kernel/`, while that layer's actual path is defined in `harness_profile.py`.
 
-## Routine maintenance
+### 5.3 Configuration
 
-As a project grows, documents drift from the code, code gets more complicated than it needs to be, and things marked "improve this later" pile up.
+When porting to another project, `harness_profile.py` is in principle the only file to modify.
 
-**There are no commands to memorize.** The harness keeps count and, when the time comes, tells you at the start of a session and runs the pass itself once your current work is done. Five of them: documents versus code, needlessly complex code, deferred items, screen usability, and whether the metrics and wording make sense to a real user.
+```python
+# harness_profile.py — layer path definitions
+# Keys are roles the checker knows; values are this project's real paths.
+# A value of None puts every check that uses that role into [SKIP].
 
-They all produce reports and change no code. That's why they run without asking. Whether to act on the findings is a separate decision afterwards. Projects without screens never see the two screen-related ones.
+LAYERS: dict[str, str | None] = {
+    "read":      "db/reads",      # Read-only. Target of the write-SQL check
+    "write":     "db/writes",     # Mutations only
+    "db":        "db",            # Target of the connection-scope check
+    "web":       "api",           # Example of changing the default "web"
+    "routes":    "api/routes",    # Update alongside the parent path
+    "ui":        "frontend/src",  # None disables 7 screen-related checks
+    "tests":     "tests",
+    "schema":    "db/schema",
+    "shared":    "utils",
+    "batch":     "batches",
+}
+```
 
-Adjust the intervals in `harness_profile.py`.
+Principal configuration entries:
 
-## How checks accumulate
-
-The checks weren't designed up front. Each one was added after something went wrong.
-
-When something goes wrong, the account goes into `dev/LESSONS.md` first — what happened and what it cost. A rule on its own gets waved through by the next session as "surely this is an exception", but a rule with a price attached doesn't.
-
-Then you ask whether a machine can check it. If it can, it becomes a check, and from that point the rule isn't a request but a wall. If it can't, you write down "prose only" and why. Write neither and a check catches you, because that's the state of having recorded a problem and deferred the judgment.
-
-So the prose-only list is exactly the queue of checks to build next.
-
-The longer a project runs, the more closely the checks fit the accidents that project actually had. Not somebody else's best practices — the things that happened to us.
-
-## Which model does what
-
-Models come in tiers: the ones that think deeply but cost more, and the fast cheap ones. Judgment goes up, labor goes down, and only summaries come back.
-
-**Opus** designs, judges, and reviews. The more complex a service gets, the harder design becomes. This seat never gets downgraded.
-
-**Fable** implements an approved design end to end. Use it when the judgment is done and what's left is labor. If the design has blanks, it doesn't fill them in — it stops and sends it back.
-
-**Sonnet** takes on reading and cross-checking dozens of files and reports back a summary.
-
-A check enforces this assignment too. Quietly swapping in a cheaper model means the conversation won't end.
-
-## What's inside
-
-| File | Role |
+| Entry | Purpose |
 |:--|:--|
-| `CLAUDE.md` | AI behavior rules. Read automatically every session |
-| `PROJECT.md` | What this project is. Its domain, vocabulary, folder layout |
-| `HARNESS.md` | Full map of checks, automation scripts, and specialist AIs |
-| `DEVGUIDE.md` · `DESIGN_GUIDE.md` | Server rules → `dev/`, screen rules → `design/` |
-| `EDITING.md` | Work board. Keeps parallel sessions off the same files |
-| `harness_profile.py` | This project's folder names and vocabulary. The one settings file |
-| `harness_install.py` | Setup script |
-| `kernel/` | The checking logic. Knows nothing about your project |
-| `profiles/` | Setting templates, chosen by what you're building |
-| `tests/` | The mechanism that catches the checker itself breaking |
-| `.claude/` | Automation scripts, specialist AIs, work procedures |
-| `AGENTS.md` · `.agents/` · `.codex/` | For other AI tools (Codex). Claude doesn't read these |
+| `STAGE` | Project maturity: `greenfield` / `growing` / `mature` |
+| `LAYERS` | Real path per role. Undeclared roles disable their checks |
+| `FILES` · `SYMBOLS` | Framework-specific names such as the settings module and connection helper |
+| `SCOPE` | Excluded paths: vendored copies, build output, fixtures |
+| `VOCAB` | Forbidden abbreviations and screen-facing terminology |
+| `ALLOWLIST` | Permanent file-level exemptions |
+| `DOC_SYNC` | Pairs of values duplicated between documents and code |
+| `AGENT_MODEL_POLICY` | Fixed model and effort per role |
+| `MAINTENANCE` | Trigger thresholds for routine reviews |
+| `LOCAL_GATES` | Repository-specific checks to enable |
 
-The checking logic knows nothing about your project, and everything project-specific lives in one settings file. "You must not delete data in a read-only folder" is the checker's judgment; which folder that is comes from the settings. That's why the same checker fits any combination of technologies.
+> Mismatches between configuration and the real structure are detected by the placement check. Creating application code in an undeclared folder is blocked at save time, and the setup script reports out-of-scope code folders once.
 
-Rules that are true only for your project go into `harness_gates/`, not into the checker itself — so the checker never carries somebody else's circumstances around.
+### 5.4 Model role delegation
 
-## Who checks the checker
+Model tiers are separated by the nature of the work. This assignment is itself a check: if the policy table and agent definitions disagree, the session will not close.
 
-`tests/` holds a fake project with exactly one violation planted per check, plus the expected output of checking it.
+| Model | Responsibility | Assignment criterion |
+|:--|:--|:--|
+| **Opus** | Architecture, judgment, review | High-cost-to-reverse decisions. Never downgraded |
+| **Fable** | Full implementation of an approved design | Judgment complete, volume remaining. Halts and returns the design if it contains unresolved items |
+| **Sonnet** | Multi-file reading and cross-checking | Narrow judgment, high throughput. Returns summaries only |
+
+---
+
+## 6. Maintenance and scaling
+
+### 6.1 Adopting into an existing project
+
+Introducing the harness to a legacy codebase can surface a large number of violations on the first run. Left unaddressed, this leads to disabling the checks entirely, so the setup script **registers violations present at adoption time as exempt**.
+
+| Target | Handling |
+|:--|:--|
+| Violations already present at adoption | Registered per `(check, file)` and excluded |
+| When a registered file is later modified | Fix the violation and delete its entry |
+| Newly created files | Must pass every check with no exceptions |
+
+The registry is monotonically decreasing. Completed items are harvested with:
 
 ```bash
-python -X utf8 tests/run_golden.py
+python -X utf8 harness_install.py --dry-run   # Preview what would be registered
+python -X utf8 harness_install.py --prune     # Remove entries that are now fixed
 ```
 
-That compares the current result against the expected one. If you're editing the checker and some check quietly weakens, that line shows up immediately.
+Commit the generated registry. The state must be shared across sessions and machines for the monotonic decrease to hold.
 
-## Common questions
+### 6.2 Adding a check
 
-**Do I really need git?** Yes. The checks use git's list of tracked files to decide what to look at. Without git there's nothing to check, so it blocks with "set up git first" rather than passing.
+When an incident or mistake occurs, add a rule through the following procedure.
 
-**Do I have to create the GitHub repo?** It creates it. As long as you're logged in with the `gh` command, it makes a private repository and pushes. The folder name becomes the repository name. Public repositories are hard to undo, so that's the one thing you have to say yourself. If you're not logged in, that's the only time it asks.
+| Stage | Activity | Artifact |
+|:--:|:--|:--|
+| 1 | Record the incident and what it cost. A bare rule invites the next session to treat it as an exception; a recorded cost does not | `dev/LESSONS.md` |
+| 2 | Determine whether it is machine-detectable | — |
+| 3 | If detectable, implement it as a check. General rules go in `kernel/`, repository-specific ones in `harness_gates/` | Check module |
+| 4 | If not detectable, record `prose only` with the reason | `dev/LESSONS.md` |
 
-**What if what I'm building changes later?** Starting without screens and adding them later is one line of settings. The reverse is the same.
+Recording neither stage 3 nor stage 4 is itself caught by a check, because that is the state of having logged a problem and deferred the judgment. As a result, the prose-only list is the queue of checks to implement next.
 
-**So what do I actually fill in?** Nothing at setup. Folder names and a few framework function names are needed, and they all get filled in for you.
+### 6.3 Routine reviews
 
-The only thing you know that it can't is **the knowledge of the field this service operates in**, and that goes in `PROJECT.md`. What it deals with, what vocabulary it uses, which numbers are meaningful. And even that isn't filled in up front — it accumulates as you build.
+As a project grows, document–code divergence, over-engineering, and deferred work accumulate. The tool measures thresholds from the repository itself and decides when a review is due; no command input is required.
 
-**Could I turn this into an app later?**
+| Review | Measurement |
+|:--|:--|
+| Document–code divergence | Commits or days since last run |
+| Over-engineering and complexity | Commits or days since last run |
+| Deferred work | Count of remaining markers in source |
+| Screen usability | Number of changed screen files |
+| User-perspective review | Number of changed screen files |
+
+When a threshold is exceeded it is reported at session start and runs automatically once current work completes. All reviews produce reports and change no source, so they require no approval. Projects with no screen layer are excluded from the two screen-related reviews.
+
+Thresholds are adjusted in the `MAINTENANCE` entry of `harness_profile.py`.
+
+### 6.4 Validating the checker itself
+
+To prevent a check from being silently disabled during checker maintenance, the repository holds a fixture with exactly one violation planted per check, plus the expected output of checking it.
+
+```bash
+python -X utf8 tests/run_golden.py          # Compare against the full-configuration baseline
+python -X utf8 tests/run_golden.py --bare   # Compare against the no-configuration baseline
+```
+
+Differences between the current output and the baseline are reported line by line. This comparison is the acceptance criterion for any checker refactor.
+
+---
+
+## 7. FAQ
+
+**Can I install without having decided on a stack?**
+Yes. Onboarding asks about the shape of the deliverable, not technology names. Selecting "undecided" installs the most common configuration, and checks for unused areas remain inactive.
+
+**What if the nature of the project changes after installation?**
+Modify the corresponding entry in `harness_profile.py`. Adding screens to a project that started without them means filling in `LAYERS["ui"]`, after which seven screen-related checks begin collecting targets. Two of them — screen terminology and the browser API wrapper — require additional configuration.
+
+**Can a specific check be disabled if it does not suit the project?**
+Emptying the corresponding configuration entry moves it to `[SKIP]`. Note that the inactive state is printed with its reason on every run; no setting suppresses that output.
+
+**What does the developer need to write?**
+Nothing at installation. Folder names and framework function names are handled by the onboarding procedure. The only information unique to the developer is domain knowledge for the service, recorded in `PROJECT.md` — what it deals with, what vocabulary it uses, which value ranges are meaningful. That accumulates during development rather than being written up front.
+
+**Do I need to create the GitHub repository beforehand?**
+If `gh` is authenticated, a private repository is created and pushed automatically, named after the directory. Public repositories are difficult to reverse, so they are created only on explicit request. The repository address is requested only when authentication is absent.
+
+**Is preparation needed for a future mobile app?**
 
 <details>
-<summary>Things worth doing up front if your project has screens</summary>
+<summary>App-portability rules for projects that include screens</summary>
 
-Development here assumes the web. But what carries over to an app and what doesn't is already known, so the parts that carry over are separated from the start.
+Development assumes the web. However, what carries over to an app and what does not is known in advance, so portable parts are separated from the start.
 
-| Rule | When you move to an app |
+| Rule | On porting |
 |:--|:--|
 | Calculation and data shaping live outside screen files | Logic moves as is |
-| Colors, spacing, and font sizes only from designated files | Values reused as is |
-| Browser-only features go through a single file | Replace that one file |
-| Navigation code only at the page level | Minimal replacement surface |
+| Colors, spacing, and font sizes referenced only from source files | Values reused as is |
+| Browser-only features go through a single wrapper | Only that file is replaced |
+| Navigation code confined to the page layer | Minimal replacement surface |
 
-When you need an app, you rebuild only the screens. Server, logic, and design values carry over. If you never build the app, you lose nothing — the separation is good structure on its own.
+When an app becomes necessary, only the screen layer is reimplemented; server, logic, and design values carry over. Nothing is lost if the app is never built — the separation is sound structure on its own.
 
-Screens are only approved once desktop and phone are settled together at the design stage. "Mobile too" after the fact is a rebuild; decided at design time it's just design.
+Screens are approved only when desktop and mobile layouts are settled together at the design stage.
 
 </details>
 
-## Author
+---
+
+## License and author
 
 Daehyun Kim · [LinkedIn](https://www.linkedin.com/in/daehyun-kim-b00365176/)
 
