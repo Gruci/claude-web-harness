@@ -13,7 +13,7 @@ exit=1
 [SKIP] 축약 접두 식별자 — 설정에 금지할 축약 접두어를 안 적었음
 [SKIP] UI 라벨 금칙어 — 설정에 화면 금칙어를 안 적었음
 
-[FAIL] py Any 타입힌트 — 1건
+[FAIL] Any 타입힌트 — 1건
    - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
 
 [FAIL] 공개 함수 타입힌트 — 10건

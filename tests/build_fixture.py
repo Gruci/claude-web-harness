@@ -16,8 +16,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fixture_files import FILES          # noqa: E402  (경로 삽입 후에만 import 가능)
+from fixture_go import FILES as GO_FILES  # noqa: E402
 
-DEST = Path(__file__).resolve().parent / "fixtures" / "miniproj"
+HERE = Path(__file__).resolve().parent
+DEST = HERE / "fixtures" / "miniproj"
+DEST_GO = HERE / "fixtures" / "goproj"
 
 # 파일 길이 상한 게이트용 — 상한을 정확히 1줄 넘긴다
 LONG_FILE = DEST / "utils" / "long_report.py"
@@ -30,17 +33,24 @@ def write_long_file() -> None:
     LONG_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def main() -> int:
-    if DEST.exists():
-        shutil.rmtree(DEST)
-    for rel, body in FILES.items():
-        path = DEST / rel
+def write_all(dest: Path, files: dict[str, str]) -> None:
+    if dest.exists():
+        shutil.rmtree(dest)
+    for rel, body in files.items():
+        path = dest / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
-    write_long_file()
 
+
+def main() -> int:
+    write_all(DEST, FILES)
+    write_long_file()
     print(f"픽스처 생성: {DEST}")
     print(f"  파일 {len(FILES) + 1}개")
+
+    write_all(DEST_GO, GO_FILES)
+    print(f"픽스처 생성: {DEST_GO}")
+    print(f"  파일 {len(GO_FILES)}개")
     return 0
 
 

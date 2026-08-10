@@ -110,6 +110,19 @@ def _entry(slug: str, title: str, violations: list[str], ok: object, need: str) 
     return (slug, title, violations, None) if ok else (slug, title, [], need)
 
 
+def _syntax_section(slug: str, title: str, check: object, args: tuple,
+                    ok: object, need: str) -> Section:
+    """파이썬 구문 분석·관용구에 의존하는 검사.
+
+    언어가 다르면 **실행하지 않고** [SKIP] 으로 찍는다. 두 가지를 동시에 막는다.
+    `ast.parse` 를 다른 언어에 돌리면 전 파일이 '파싱 실패' 위반이 되고, `os.getenv` 같은
+    파이썬 관용구 정규식은 아무것도 안 걸려 [OK] 로 통과한다 — 후자가 더 위험하다.
+    """
+    if not profile.syntax_ready():
+        return (slug, title, [], profile.need_syntax())
+    return _entry(slug, title, check(*args), ok, need)   # type: ignore[operator]
+
+
 def _need_layer(name: str) -> str:
     return f"설정에 {name} 폴더를 안 적었음"
 
@@ -126,7 +139,7 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
 
     return [
         _entry("line_limit", "파일 길이 상한", core.check_line_limit(files), files, NO_PY),
-        _entry("closures", "중첩 def(클로저)", core.check_closures(files), files, NO_PY),
+        _syntax_section("closures", "중첩 def(클로저)", core.check_closures, (files,), files, NO_PY),
         _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", core.check_reads_writes(files),
                reads, _need_layer("read")),
         _entry("abbrev_names", "축약 이름 단독 대입", core.check_abbrev_names(files),
@@ -135,25 +148,28 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
                both and vocab["abbrev_prefixes"], "설정에 금지할 축약 접두어를 안 적었음"),
         _entry("ui_jargon", "UI 라벨 금칙어", core.check_ui_jargon(ui_files),
                ui_files and vocab["ui_denylist"], "설정에 화면 금칙어를 안 적었음"),
-        _entry("py_any", "py Any 타입힌트", core.check_py_any(files), files, NO_PY),
-        _entry("type_hints", "공개 함수 타입힌트", core.check_type_hints(files), files, NO_PY),
+        _syntax_section("py_any", "Any 타입힌트", core.check_py_any, (files,), files, NO_PY),
+        _syntax_section("type_hints", "공개 함수 타입힌트", core.check_type_hints, (files,), files, NO_PY),
         _entry("secrets", "시크릿 토큰 하드코딩", core.check_secrets(both), both, NO_PY),
         _entry("ts_any", "TS any 타입", core.check_ts_any(ui_files), ui_files, NO_UI),
-        _entry("conn_processing", "커넥션 블록 내 가공", layers.check_connection_processing(files),
-               _under(files, "db") and profile.symbol("db_accessor"), _need_symbol("db_accessor")),
-        _entry("env_access", "설정 밖 환경변수 조회", layers.check_env_access(files),
-               files and settings, "설정에 환경변수 모듈을 안 적었음"),
-        _entry("web_async", "await 없는 async 핸들러", layers.check_web_async_no_await(files),
-               web, _need_layer("web")),
-        _entry("accessor_import", "커넥션 접근자 import 단일 경로",
-               layers.check_accessor_import_path(files),
-               (reads or _under(files, "write")) and profile.symbol("db_accessor_module"),
-               _need_symbol("db_accessor_module")),
+        _syntax_section("conn_processing", "커넥션 블록 내 가공",
+                        layers.check_connection_processing, (files,),
+                        _under(files, "db") and profile.symbol("db_accessor"),
+                        _need_symbol("db_accessor")),
+        _syntax_section("env_access", "설정 밖 환경변수 조회", layers.check_env_access, (files,),
+                        files and settings, "설정에 환경변수 모듈을 안 적었음"),
+        _syntax_section("web_async", "await 없는 async 핸들러",
+                        layers.check_web_async_no_await, (files,), web, _need_layer("web")),
+        _syntax_section("accessor_import", "커넥션 접근자 import 단일 경로",
+                        layers.check_accessor_import_path, (files,),
+                        (reads or _under(files, "write")) and profile.symbol("db_accessor_module"),
+                        _need_symbol("db_accessor_module")),
         _entry("ssl_bypass", "전역 SSL 패치 호출 위치", layers.check_ssl_bypass_location(files),
                files and profile.symbol("ssl_bypass"), _need_symbol("ssl_bypass")),
-        _entry("routes_error", "라우트 에러 응답 형식", layers.check_routes_error_response(files),
-               _under(files, "routes") and profile.symbol("error_response"),
-               _need_symbol("error_response")),
+        _syntax_section("routes_error", "라우트 에러 응답 형식",
+                        layers.check_routes_error_response, (files,),
+                        _under(files, "routes") and profile.symbol("error_response"),
+                        _need_symbol("error_response")),
         _entry("raw_fetch", "공용 래퍼 없는 fetch", layers.check_frontend_raw_fetch(ui_files),
                ui_files, NO_UI),
         _entry("hex_literal", "프론트 색 리터럴", layers.check_frontend_hex(ui_files),
@@ -248,10 +264,15 @@ def _in_scope(f: Path) -> bool:
 
 
 def source_files() -> tuple[list[Path], list[Path]]:
-    """전 게이트가 볼 (py, ui) 목록. 하네스 자기 발자국과 스코프 제외를 뺀 것이다."""
+    """전 게이트가 볼 (서버, 화면) 목록. 하네스 자기 발자국과 스코프 제외를 뺀 것이다.
+
+    확장자는 프로파일이 정한다. 커널에 `*.py` 를 박아두면 다른 언어 프로젝트에서 대상이
+    0건이 되고, 그 상태가 화면에는 초록불로 보인다.
+    """
     ui = profile.layer("ui")
-    files = [f for f in app_code("*.py") if _in_scope(f)]
-    ui_files = [f for f in app_code("*.tsx", "*.ts", under=ui) if _in_scope(f)] if ui else []
+    files = [f for f in app_code(*profile.SOURCE_EXT) if _in_scope(f)]
+    ui_files = ([f for f in app_code(*profile.UI_EXT, under=ui) if _in_scope(f)]
+                if ui else [])
     return files, ui_files
 
 

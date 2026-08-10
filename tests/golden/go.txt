@@ -1,0 +1,39 @@
+exit=1
+[OK]   파일 길이 상한
+[SKIP] 중첩 def(클로저) — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+
+[FAIL] 읽기 레이어의 쓰기 SQL·commit — 1건
+   - db/reads/board.go:5: 쓰기 SQL — conn.Exec("DELETE FROM board_cache")
+[SKIP] 축약 이름 단독 대입 — 설정에 금지할 축약어를 안 적었음
+[SKIP] 축약 접두 식별자 — 설정에 금지할 축약 접두어를 안 적었음
+[SKIP] UI 라벨 금칙어 — 설정에 화면 금칙어를 안 적었음
+[SKIP] Any 타입힌트 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+[SKIP] 공개 함수 타입힌트 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+
+[FAIL] 시크릿 토큰 하드코딩 — 1건
+   - batches/leak.go:3: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, 이미 커밋됐다면 키를 회전하라
+[SKIP] TS any 타입 — 화면 소스 없음
+[SKIP] 커넥션 블록 내 가공 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+[SKIP] 설정 밖 환경변수 조회 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+[SKIP] await 없는 async 핸들러 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+[SKIP] 커넥션 접근자 import 단일 경로 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+[SKIP] 전역 SSL 패치 호출 위치 — 설정에 ssl_bypass 이름을 안 적었음
+[SKIP] 라우트 에러 응답 형식 — 서버 언어가 go 라 파이썬 구문·관용구 검사를 못 함
+[SKIP] 공용 래퍼 없는 fetch — 화면 소스 없음
+[SKIP] 프론트 색 리터럴 — 화면 소스 없음
+[SKIP] 폰을 깨뜨리는 고정 폭 — 화면 소스 없음
+[SKIP] 브라우저 API 직접 호출 — 설정에 브라우저 API 래퍼를 안 적었음
+
+[FAIL] 앱 코드 배치 — 1건
+   - stray.go: 루트에 앱 코드 금지 — batches/·db/·db/reads/·db/writes/·tests/·utils/ 중 하나로 옮기거나 프로파일 ROOT_FILES 에 등재하라
+[SKIP] 수집·계산 모듈의 행동 테스트 짝 — 설정에 테스트 대상 폴더를 안 적었음
+[SKIP] DDL 저장 타입 잘림 — 설정에 schema 폴더를 안 적었음
+[SKIP] API 응답 배열 필드 옵셔널 — 화면 소스 없음
+[OK]   MD 작성 규칙
+[OK]   MD 경로 참조 실존
+[OK]   고아 MD(허브 도달 불가)
+[SKIP] 하네스 지도 대조 — greenfield — HARNESS.md 아직 없음
+[SKIP] 에이전트 모델 정책 — 설정에 담당 AI 모델 표를 안 적었음
+[SKIP] 사고 절 승격 상태 — 설정에 사고 기록 문서를 안 적었음
+
+총 3건 위반.

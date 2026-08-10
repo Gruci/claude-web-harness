@@ -10,7 +10,9 @@ Harness v3.0.0
 
 </div>
 
-`claude-web-harness` is an automated validation tool that prevents context loss and code quality degradation during developer–AI collaboration. It is not tied to any technology stack. It enforces an agreed design up front and maintains code consistency through checks that run at save time.
+`claude-web-harness` is an automated validation tool that prevents context loss and code quality degradation during developer–AI collaboration. It enforces an agreed design up front and maintains code consistency through checks that run at save time.
+
+The languages under inspection are set by configuration. Of the 32 checks, **24 operate independently of language**; the **8 that rely on Python syntax analysis run only when the server language is Python**. Those 8 are never treated as passing in other languages — they are reported as `[SKIP]` with a reason.
 
 ## Table of contents
 
@@ -38,6 +40,7 @@ Recording rules in documents alone provides no enforcement. Conventions written 
 | **Save-time validation** | Static checks run immediately after a file is saved; violations block the change and require a fix |
 | **Exit-time revalidation** | The full check re-runs when the conversation tries to end. Unresolved violations prevent the session from closing |
 | **Stack agnostic** | The checking logic has no knowledge of the project. Project-specific values are isolated in a single configuration file |
+| **Unverified reported as unverified** | A check that cannot run — because of language or missing configuration — is reported as `[SKIP]` with a reason, never as a pass |
 
 ### 1.2 Check statuses
 
@@ -222,7 +225,12 @@ Lower layers enforce upper ones. The checking logic holds only the **shape** of 
 When porting to another project, `harness_profile.py` is in principle the only file to modify.
 
 ```python
-# harness_profile.py — layer path definitions
+# harness_profile.py — languages under inspection
+SOURCE_EXT = ("*.go",)            # Server source extensions
+UI_EXT     = ("*.tsx", "*.ts")    # Screen source extensions
+SYNTAX     = "go"                 # The 8 syntax checks run only when this is "python"
+
+# Layer path definitions
 # Keys are roles the checker knows; values are this project's real paths.
 # A value of None puts every check that uses that role into [SKIP].
 
@@ -333,6 +341,17 @@ Differences between the current output and the baseline are reported line by lin
 ---
 
 ## 7. FAQ
+
+**Can I use this with a language other than Python?**
+Yes. Set `SOURCE_EXT` to that language's extensions and its files become check targets. The eight checks that depend on Python syntax analysis — nested functions, type hints, `Any`, connection scope, environment access, `async` without `await`, import paths, route response shape — will not run, and are reported as `[SKIP]` with a reason rather than as passes.
+
+Measured on a Go project (the regression fixture ships in the repository at `tests/fixtures/goproj`):
+
+| Category | Count |
+|:--|:--:|
+| Actually performed | 7 |
+| `[SKIP]` — Python only | 8 |
+| `[SKIP]` — configuration incomplete (activates once filled in) | 15 |
 
 **Can I install without having decided on a stack?**
 Yes. Onboarding asks about the shape of the deliverable, not technology names. Selecting "undecided" installs the most common configuration, and checks for unused areas remain inactive.

@@ -25,6 +25,9 @@ FIXTURE = HERE / "fixtures" / "miniproj"
 GOLDEN = HERE / "golden" / "full.txt"
 # 프로파일을 뺀 채로 돌린 결과 — "하네스만 얹은 새 프로젝트 첫날"이 이 모습이다.
 GOLDEN_BARE = HERE / "golden" / "bare.txt"
+# 서버 언어가 파이썬이 아닌 레포. 언어 무관 검사는 돌고, 구문·관용구 검사는 [SKIP] 이어야 한다.
+FIXTURE_GO = HERE / "fixtures" / "goproj"
+GOLDEN_GO = HERE / "golden" / "go.txt"
 
 
 def _git(cwd: Path, *args: str) -> None:
@@ -32,7 +35,7 @@ def _git(cwd: Path, *args: str) -> None:
                    capture_output=True, text=True)
 
 
-def capture(checker_dir: Path, bare: bool = False) -> str:
+def capture(checker_dir: Path, bare: bool = False, fixture: Path | None = None) -> str:
     """픽스처+검사기를 임시 레포에 세우고 전체 검사 출력을 받는다.
 
     bare=True 면 프로파일을 지운다 — 프로젝트를 모르는 상태에서 게이트가 어떻게 처신하는지가
@@ -40,7 +43,7 @@ def capture(checker_dir: Path, bare: bool = False) -> str:
     """
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "proj"
-        shutil.copytree(FIXTURE, work)
+        shutil.copytree(fixture or FIXTURE, work)
         if bare:
             (work / "harness_profile.py").unlink(missing_ok=True)
 
@@ -75,10 +78,14 @@ def main(argv: list[str]) -> int:
         print("픽스처가 없다 — 먼저 tests/build_fixture.py 를 돌려라", file=sys.stderr)
         return 2
 
-    bare = "--bare" in argv
-    golden = GOLDEN_BARE if bare else GOLDEN
-    actual = capture(checker_dir, bare=bare)
-    label = "프로파일 없음" if bare else "전 게이트"
+    bare, go = "--bare" in argv, "--go" in argv
+    if go:
+        golden, fixture, label = GOLDEN_GO, FIXTURE_GO, "Go 프로젝트"
+    elif bare:
+        golden, fixture, label = GOLDEN_BARE, FIXTURE, "프로파일 없음"
+    else:
+        golden, fixture, label = GOLDEN, FIXTURE, "전 게이트"
+    actual = capture(checker_dir, bare=bare, fixture=fixture)
 
     if "--update" in argv:
         golden.parent.mkdir(parents=True, exist_ok=True)

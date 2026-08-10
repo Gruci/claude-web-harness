@@ -78,6 +78,27 @@ BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = (
 LOCAL_GATES: tuple[str, ...] = tuple(getattr(_MOD, "LOCAL_GATES", ())) if _MOD else ()
 HARNESS_MAP: str = getattr(_MOD, "HARNESS_MAP", "HARNESS.md") if _MOD else "HARNESS.md"
 ROOT_FILES: tuple[str, ...] = tuple(getattr(_MOD, "ROOT_FILES", ())) if _MOD else ()
+
+# ── 언어 ───────────────────────────────────────────────────────────────────────
+#
+# 게이트가 볼 파일 확장자와, 구문 분석·언어 관용구에 의존하는 검사의 가용 여부.
+# SYNTAX 가 "python" 이 아니면 그 계열 검사 9종은 [OK] 가 아니라 [SKIP] 이 된다 —
+# 파이썬 정규식이 다른 언어에서 안 걸리는 것을 "위반 없음"으로 보고하면 그게 무음 통과다.
+SOURCE_EXT: tuple[str, ...] = tuple(getattr(_MOD, "SOURCE_EXT", ("*.py",))) if _MOD else ("*.py",)
+UI_EXT: tuple[str, ...] = (
+    tuple(getattr(_MOD, "UI_EXT", ("*.tsx", "*.ts"))) if _MOD else ("*.tsx", "*.ts")
+)
+SYNTAX: str | None = getattr(_MOD, "SYNTAX", "python") if _MOD else "python"
+
+
+def syntax_ready() -> bool:
+    """파이썬 구문 분석·관용구에 의존하는 검사를 돌릴 수 있는가."""
+    return SYNTAX == "python"
+
+
+def need_syntax() -> str:
+    where = SYNTAX or "미선언"
+    return f"서버 언어가 {where} 라 파이썬 구문·관용구 검사를 못 함"
 LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = (
     tuple(getattr(_MOD, "LEGACY_PATHS", ())) if _MOD else ()
 )

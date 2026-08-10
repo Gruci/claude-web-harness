@@ -19,7 +19,7 @@ exit=1
 [FAIL] UI 라벨 금칙어 — 1건
    - frontend/src/Label.tsx:1: UI 금칙어 '순신고가' — export const title = "순신고가";
 
-[FAIL] py Any 타입힌트 — 1건
+[FAIL] Any 타입힌트 — 1건
    - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
 
 [FAIL] 공개 함수 타입힌트 — 9건
