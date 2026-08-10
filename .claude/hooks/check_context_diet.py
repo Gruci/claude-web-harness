@@ -24,6 +24,15 @@ LIMIT_TOKENS = 16_000
 CHUNK_LIMIT_LINES = 500
 EXEMPT_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico", ".pdf"}
 
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+# 차단할 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 차단은 계속돼야 한다.
+try:
+    from kernel.trace import record
+except Exception:
+    def record(*_args: object, **_kwargs: object) -> None: ...
+
 
 def _estimate_tokens(path: Path) -> int:
     """ASCII 4자당 1토큰, 비ASCII(한글 등) 1자당 1토큰 — ±20% 근사면 차단 판정에 충분."""
@@ -58,6 +67,9 @@ def main() -> None:
     if isinstance(limit_lines, (int, float)) and limit_lines <= CHUNK_LIMIT_LINES:
         sys.exit(0)
 
+    record("check_context_diet", "context_diet",
+           sid=str(payload.get("session_id") or ""), file=str(path),
+           msg=f"통읽기 차단 — 약 {estimated}토큰 (상한 {LIMIT_TOKENS})")
     print(
         f"[CONTEXT GUARD] {path.name} 약 {estimated:,}토큰 — 통읽기 차단 (상한 {LIMIT_TOKENS:,}).\n"
         f"  · offset/limit({CHUNK_LIMIT_LINES}줄 이하)으로 필요한 부분만 나눠 읽어라.\n"

@@ -15,6 +15,7 @@
 """
 import json
 import sys
+from pathlib import Path
 
 try:
     sys.stderr.reconfigure(encoding="utf-8")
@@ -22,6 +23,15 @@ except Exception:
     pass
 
 MAX_RETURN_CHARS = 20_000
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+# 차단할 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 차단은 계속돼야 한다.
+try:
+    from kernel.trace import record
+except Exception:
+    def record(*_args: object, **_kwargs: object) -> None: ...
 
 
 def main() -> None:
@@ -33,8 +43,12 @@ def main() -> None:
     if payload.get("stop_hook_active"):
         sys.exit(0)
 
+    sid = str(payload.get("session_id") or "")
     last_message = payload.get("last_assistant_message")
     if not isinstance(last_message, str) or not last_message:
+        # 차단은 아니지만 게이트가 조용히 안 도는 상태다 — §15 가 경계하는 바로 그 모양이라 남긴다
+        record("check_agent_return", "gate_error", sid=sid,
+               msg="페이로드에 last_assistant_message 없음 — 반환 검사가 안 돌고 있다")
         print("[RETURN DIET] 페이로드에 last_assistant_message 없음 — 이번 반환은 미검사. "
               "이 줄이 뜨면 payload 실물을 확인해 게이트를 다시 붙여라.", file=sys.stderr)
         sys.exit(0)
@@ -43,6 +57,8 @@ def main() -> None:
     if return_length <= MAX_RETURN_CHARS:
         sys.exit(0)
 
+    record("check_agent_return", "return_diet", sid=sid,
+           msg=f"반환 {return_length}자 — 상한 {MAX_RETURN_CHARS}자 초과")
     print(
         f"[RETURN DIET] 최종 반환이 {return_length:,}자 — 상한 {MAX_RETURN_CHARS:,}자 초과. "
         f"이 반환은 통째로 메인 루프 컨텍스트에 얹혀 남은 세션 내내 재과금된다.\n"

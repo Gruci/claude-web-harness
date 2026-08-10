@@ -19,8 +19,17 @@ try:
 except Exception:
     pass
 
-EDITING_MD = Path(__file__).resolve().parents[2] / "EDITING.md"
+ROOT = Path(__file__).resolve().parents[2]
+EDITING_MD = ROOT / "EDITING.md"
 HEADER_PAIRS = (("세션 ID", "편집 파일"), ("과업", "스코프"))
+
+sys.path.insert(0, str(ROOT))
+
+# 차단할 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 차단은 계속돼야 한다.
+try:
+    from kernel.trace import record
+except Exception:
+    def record(*_args: object, **_kwargs: object) -> None: ...
 
 
 def _my_sid8() -> str | None:
@@ -74,6 +83,8 @@ def main() -> None:
     blocking = rows if sid8 is None else [r for r in rows if f"#sid:{sid8}" in r]
 
     if blocking:
+        for row in blocking:
+            record("check_editing_lock", "editing_lock", sid=sid8 or "", msg=row)
         # Stop 훅 차단 사유는 stderr로 내보내야 Claude에게 전달된다(stdout은 무시된다).
         reason = "이 세션의" if sid8 else "(세션 식별 불가 — 전 행 검사)"
         print(f"[EDITING LOCK] {reason} 과업 보드 행 {len(blocking)}건이 아직 해제되지 않았습니다.",

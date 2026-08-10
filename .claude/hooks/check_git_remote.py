@@ -11,6 +11,7 @@
 
 **private 로만 만든다.** 공개 레포는 되돌리기 어려운 발행이라 사람이 정할 일이다.
 """
+import json
 import re
 import subprocess
 import sys
@@ -23,9 +24,24 @@ except Exception:
     pass
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+# 차단할 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 차단은 계속돼야 한다.
+try:
+    from kernel.trace import record
+except Exception:
+    def record(*_args: object, **_kwargs: object) -> None: ...
 
 # GitHub 레포 이름에 쓸 수 있는 문자만 남긴다
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _sid() -> str:
+    """stdin 페이로드의 session_id. 세션 구분이 없으면 이 차단은 레포 생애 한 번만 기록된다."""
+    try:
+        return str(json.load(sys.stdin).get("session_id") or "")
+    except Exception:
+        return ""
 
 
 def _run(*args: str, timeout: int = 10) -> tuple[int, str]:
@@ -56,6 +72,7 @@ def main() -> None:
     if code == 0:
         sys.exit(0)
 
+    record("check_git_remote", "git_remote", sid=_sid(), msg="origin 미설정으로 종료 차단")
     # Stop 훅 차단 사유는 stderr 로 내보내야 모델에게 전달된다(stdout 은 무시된다).
     print("[GIT REMOTE] GitHub 원격(origin)이 없다 — 코드가 이 머신에만 있다. "
           "원격이 잡히기 전까지 세션 종료 불가.", file=sys.stderr)

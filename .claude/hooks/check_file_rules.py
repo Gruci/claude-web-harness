@@ -23,15 +23,24 @@ try:
 except Exception:
     LEGACY_PATHS = ()
 
+# 차단할 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 차단은 계속돼야 한다.
+try:
+    from kernel.trace import record, record_runner_output
+except Exception:
+    def record(*_args: object, **_kwargs: object) -> None: ...
+    def record_runner_output(*_args: object, **_kwargs: object) -> None: ...
+
 
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
     except Exception as e:
         # fail-closed: 페이로드를 못 읽으면 검사 대상도 모른다 — 조용히 통과시키지 않는다
+        record("check_file_rules", "gate_error", msg=f"페이로드 파싱 실패({e.__class__.__name__})")
         print(f"[WRITE-TIME GATE] 훅 페이로드 파싱 실패({e.__class__.__name__}) — 검사 불능. 원인 확인 전 통과 없음.", file=sys.stderr)
         sys.exit(2)
 
+    sid = str(payload.get("session_id") or "")
     file_path = (payload.get("tool_input") or {}).get("file_path") or ""
     if not file_path:
         sys.exit(0)
@@ -42,6 +51,8 @@ def main() -> None:
     rel = str(p).replace("\\", "/")
     for fragment, suffix in LEGACY_PATHS:
         if fragment in rel and (suffix is None or p.suffix == suffix):
+            record("check_file_rules", "legacy_path", sid=sid, file=rel,
+                   msg=f"레거시 경로 편집 시도 — {fragment}")
             print(
                 f"[WRITE-TIME GATE] 레거시 경로 편집 금지({fragment}) — 방금 변경을 되돌리고 "
                 f"현행 경로로 구현하라. 이식·롤백 참고는 Read와 git 이력만.",
@@ -66,9 +77,11 @@ def main() -> None:
             timeout=30,
         )
     except subprocess.TimeoutExpired:
+        record("check_file_rules", "gate_error", sid=sid, file=rel, msg="게이트 30초 타임아웃")
         print("[WRITE-TIME GATE] 게이트가 30초 내 응답 없음 — 검사 불능, 원인을 확인하라.", file=sys.stderr)
         sys.exit(2)
     if result.returncode != 0:
+        record_runner_output("check_file_rules", sid, result.stdout)
         # exit 2 + stderr → Claude 에게 즉시 피드백 (작성한 그 턴 안에 수정)
         print(f"[WRITE-TIME GATE] 방금 저장한 파일이 코딩규칙 위반 — 지금 즉시 고쳐라 (Stop 훅에서도 차단됨):", file=sys.stderr)
         print(result.stdout, file=sys.stderr)

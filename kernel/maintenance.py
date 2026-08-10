@@ -21,7 +21,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-from kernel import profile, runner
+from kernel import profile, retro, runner
 from kernel.context import READ_ENC, ROOT
 
 LEDGER = ROOT / "harness_maintenance.json"
@@ -33,6 +33,9 @@ DEFAULTS: dict[str, dict[str, int]] = {
     "lazy-debt":           {"markers": 12},
     "impeccable critique": {"ui_changes": 20, "days": 45},
     "review-loop":         {"ui_changes": 12},
+    # 임계 25 의 근거: 초반엔 하루에도 여러 번 걸리므로 10 이면 상시 알림이 되고, 100 이면
+    # 관례가 굳은 뒤에야 읽는다. "몇 세션 분량이 모이면 본다"가 25 다.
+    "harness-retro":       {"traces": 25},
 }
 
 WHY: dict[str, str] = {
@@ -41,6 +44,7 @@ WHY: dict[str, str] = {
     "lazy-debt":           "미뤄둔 것들 수확",
     "impeccable critique": "화면 사용성 점검",
     "review-loop":         "실제 사용자 관점에서 지표와 문구 검수",
+    "harness-retro":       "훅이 막은 기록을 읽고 규칙과 게이트를 손볼지 판정",
 }
 
 DEBT_MARKER = "lazy:"
@@ -134,6 +138,13 @@ def _due_for(name: str, entry: dict[str, str]) -> str:
         markers = count_debt_markers()
         limit = _threshold(name, "markers")
         return f"미뤄둔 표시가 {markers}개 쌓였다 (임계 {limit})" if markers >= limit else ""
+
+    # 커밋 수도 일수도 아니라 재고를 재는 항목이라 아래 기준점 경로를 타지 않는다.
+    # 한 번도 안 돌았으면 기록 전량이 대상이다 — 그게 첫 회고의 읽을거리다.
+    if name == "harness-retro":
+        seen = retro.count_since(entry.get("date", ""))
+        limit = _threshold(name, "traces")
+        return f"마지막 회고 후 훅이 {seen}번 막았다 (임계 {limit})" if seen >= limit else ""
 
     if not entry:
         return _never_ran_reason(name)

@@ -82,4 +82,6 @@ AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
     "product-reviewer": ("opus", "high"),
 }
 
-LOCAL_GATES: tuple[str, ...] = ()
+# 이 레포에서만 참인 규칙. 판정은 harness_gates/<이름>.py 의 run(py, ui) 이 한다.
+# edit_surface — 면제·제외 목록이 harness_surface.txt 동결본보다 늘면 막는다.
+LOCAL_GATES: tuple[str, ...] = ("edit_surface",)

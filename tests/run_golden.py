@@ -30,6 +30,27 @@ FIXTURE_GO = HERE / "fixtures" / "goproj"
 GOLDEN_GO = HERE / "golden" / "go.txt"
 
 
+def _ensure_fixtures() -> None:
+    """픽스처 프로파일이 없으면 정본에서 다시 짓는다.
+
+    픽스처 `.gitignore` 가 `harness_profile.py` 를 빼고 그 파일은 바깥 레포에도 적용된다 —
+    즉 픽스처 프로파일은 한 번도 커밋된 적이 없고 clone 직후엔 존재하지 않는다. 없으면
+    전 게이트 대조가 프로파일 없는 상태로 돌아 `--bare` 와 같은 출력을 낸다. 정답지와 다르니
+    실패는 하지만, 사람이 보는 것은 "게이트 수십 건이 사라졌다"는 diff 라 원인을 게이트에서
+    찾게 된다. **평가기가 조용히 반쪽이 되는 경로다.**
+
+    내용의 정본은 `tests/fixture_files.py` 와 `tests/fixture_go.py` 이므로 다시 지으면 된다.
+    """
+    if all((fixture / "harness_profile.py").exists() for fixture in (FIXTURE, FIXTURE_GO)):
+        return
+    sys.path.insert(0, str(HERE))
+    import build_fixture                 # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    print("[픽스처] 프로파일이 없어 정본에서 다시 짓는다 — "
+          "없으면 게이트 대조가 프로파일 없는 상태로 돌아 반쪽이 된다")
+    build_fixture.main()
+
+
 def _git(cwd: Path, *args: str) -> None:
     subprocess.run(("git", *args), cwd=cwd, check=True,
                    capture_output=True, text=True)
@@ -77,6 +98,7 @@ def main(argv: list[str]) -> int:
     if not FIXTURE.exists():
         print("픽스처가 없다 — 먼저 tests/build_fixture.py 를 돌려라", file=sys.stderr)
         return 2
+    _ensure_fixtures()
 
     bare, go = "--bare" in argv, "--go" in argv
     if go:

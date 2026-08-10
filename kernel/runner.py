@@ -51,14 +51,20 @@ def _print_style_reports(reports: list[str]) -> None:
 
 
 def _print_sections(sections: list[Section]) -> int:
+    """[FAIL] 머리에 slug 를 함께 찍는다.
+
+    slug 는 이 하네스에서 게이트의 정체성이다 — 동결 키도 로컬 섹션 이름도 slug 다. 그런데
+    화면에만 없어서, `[FAIL]` 을 보고도 `harness_baseline.txt` 에 무엇을 적어야 하는지 알 수
+    없었다. 관찰 기록(`kernel/trace.py`)이 파싱하는 형식 계약도 여기가 정본이다.
+    """
     total = 0
-    for _slug, title, violations, skipped in sections:
+    for slug, title, violations, skipped in sections:
         if skipped:
             grade, reason = skipped
             print(f"[{grade:<4}] {title} — {reason}")
         elif violations:
             total += len(violations)
-            print(f"\n[FAIL] {title} — {len(violations)}건")
+            print(f"\n[FAIL] {title} ({slug}) — {len(violations)}건")
             for v in violations:
                 print(f"   - {v}")
         else:
