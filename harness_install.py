@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import importlib.util
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -58,6 +59,52 @@ PRESET_ORDER = ("web_fastapi_react", "api_fastapi", "batch_python", DEFAULT_PRES
 def profile_modules() -> list[str]:
     """`--preset` 으로 지정 가능한 전부. 남의 프로젝트 프로파일도 포함된다."""
     return sorted(p.stem for p in PRESET_DIR.glob("*.py") if p.stem != "__init__")
+
+
+def check_install_location() -> str:
+    """하네스가 세션 루트에 있는가. 어긋나면 그 사유를 돌려준다(정상이면 빈 문자열).
+
+    훅 command 는 `.claude/hooks/...` 상대경로다. 세션이 시작되는 곳과 하네스가 있는 곳이
+    다르면 훅이 통째로 안 걸리는데, **그 상태는 화면에 아무것도 안 뜬다.** [SKIP] 조차
+    없다 — 검사기가 아예 안 불리기 때문이다. 하네스가 죽는 방식 중 제일 조용한 경로다.
+
+    판정은 git 최상위와 대조한다. 레포 루트가 곧 세션 루트라는 보장은 없지만, 하네스가
+    레포 안쪽 하위 폴더에 들어앉은 경우는 확실히 잘못이고 그게 실제로 나온 사고다.
+    """
+    done = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=ROOT,
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if done.returncode != 0:
+        return ""                       # git 밖이면 다른 검사가 이미 잡는다
+    top = Path(done.stdout.strip()).resolve()
+    if top == ROOT:
+        return ""
+    try:
+        nested = ROOT.relative_to(top).as_posix()
+    except ValueError:
+        return ""                       # 레포 밖 — 판단 근거 없음
+    return nested
+
+
+def report_install_location() -> bool:
+    """설치 위치가 잘못됐으면 고치는 법을 출력한다. 반환은 '계속 진행해도 되는가'."""
+    nested = check_install_location()
+    if not nested:
+        return True
+    print("[설치 위치] 하네스가 레포 루트가 아니라 하위 폴더에 있다.\n")
+    print(f"   레포 루트 : {ROOT.parents[len(Path(nested).parts) - 1]}")
+    print(f"   하네스    : {ROOT}   (= {nested}/)")
+    print("\n   이 상태로는 훅이 하나도 안 걸린다. `.claude/settings.json` 의 훅 명령이")
+    print("   `.claude/hooks/...` 상대경로라, 세션이 시작되는 레포 루트에 `.claude/` 가")
+    print("   없으면 전부 실패한다. 그리고 그 실패는 화면에 아무것도 안 남긴다.")
+    print("\n   고치는 법 — 하네스 내용물을 레포 루트로 올린다:")
+    print(f"       cd {ROOT.parent}")
+    print(f"       git mv {nested}/* {nested}/.[!.]* .  2>/dev/null || "
+          f"(mv {nested}/* {nested}/.[!.]* . )")
+    print(f"       rmdir {nested}")
+    print("       python -X utf8 harness_install.py")
+    print("\n   레포를 새로 시작하는 경우라면 clone 자체를 프로젝트 폴더로 하는 게 낫다:")
+    print("       git clone <url> my-project && cd my-project && rm -rf .git && git init")
+    return False
 
 
 def presets() -> list[str]:
@@ -196,6 +243,10 @@ def main(argv: list[str]) -> int:
     if "--list" in args:
         print_presets()
         return 0
+
+    # 무엇보다 먼저. 위치가 틀리면 나머지를 다 해도 훅이 하나도 안 걸린다.
+    if not report_install_location():
+        return 2
 
     preset = DEFAULT_PRESET
     if "--preset" in argv:
