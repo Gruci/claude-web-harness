@@ -8,10 +8,10 @@ exit=1
 
 [FAIL] 중첩 def(클로저) — 1건
    - utils/closure.py: 중첩 def outer > inner
-[SKIP] 읽기 레이어의 쓰기 SQL·commit — 프로파일에 read 레이어 미선언
-[SKIP] 축약 이름 단독 대입 — 프로파일에 금지 축약 이름 없음
-[SKIP] 축약 접두 식별자 — 프로파일에 금지 축약 접두 없음
-[SKIP] UI 라벨 금칙어 — 프로파일에 UI 금칙어 없음
+[SKIP] 읽기 레이어의 쓰기 SQL·commit — 설정에 read 폴더를 안 적었음
+[SKIP] 축약 이름 단독 대입 — 설정에 금지할 축약어를 안 적었음
+[SKIP] 축약 접두 식별자 — 설정에 금지할 축약 접두어를 안 적었음
+[SKIP] UI 라벨 금칙어 — 설정에 화면 금칙어를 안 적었음
 
 [FAIL] py Any 타입힌트 — 1건
    - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
@@ -30,21 +30,21 @@ exit=1
 
 [FAIL] 시크릿 토큰 하드코딩 — 1건
    - batches/leak.py:3: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, 이미 커밋됐다면 키를 회전하라
-[SKIP] TS any 타입 — 프론트 소스 없음
-[SKIP] 커넥션 블록 내 가공 — 프로파일에 db_accessor 심볼 미선언
-[SKIP] 설정 밖 환경변수 조회 — 프로파일에 settings 파일 미선언
-[SKIP] await 없는 async 핸들러 — 프로파일에 web 레이어 미선언
-[SKIP] 커넥션 접근자 import 단일 경로 — 프로파일에 db_accessor_module 심볼 미선언
-[SKIP] 전역 SSL 패치 호출 위치 — 프로파일에 ssl_bypass 심볼 미선언
-[SKIP] 라우트 에러 응답 형식 — 프로파일에 error_response 심볼 미선언
-[SKIP] 공용 래퍼 없는 fetch — 프론트 소스 없음
-[SKIP] 프론트 색 리터럴 — 프론트 소스 없음
-[SKIP] 폰을 깨뜨리는 고정 폭 — 프론트 소스 없음
-[SKIP] 브라우저 API 직접 호출 — 프로파일에 브라우저 API 래퍼 미선언
-[SKIP] 앱 코드 배치 — 프로파일에 레이어가 하나도 미선언
-[SKIP] 수집·계산 모듈의 행동 테스트 짝 — 프로파일에 행동 테스트 대상 루트 없음
-[SKIP] DDL 저장 타입 잘림 — 프로파일에 schema 레이어 미선언
-[SKIP] API 응답 배열 필드 옵셔널 — 프론트 소스 없음
+[SKIP] TS any 타입 — 화면 소스 없음
+[SKIP] 커넥션 블록 내 가공 — 설정에 db_accessor 이름을 안 적었음
+[SKIP] 설정 밖 환경변수 조회 — 설정에 환경변수 모듈을 안 적었음
+[SKIP] await 없는 async 핸들러 — 설정에 web 폴더를 안 적었음
+[SKIP] 커넥션 접근자 import 단일 경로 — 설정에 db_accessor_module 이름을 안 적었음
+[SKIP] 전역 SSL 패치 호출 위치 — 설정에 ssl_bypass 이름을 안 적었음
+[SKIP] 라우트 에러 응답 형식 — 설정에 error_response 이름을 안 적었음
+[SKIP] 공용 래퍼 없는 fetch — 화면 소스 없음
+[SKIP] 프론트 색 리터럴 — 화면 소스 없음
+[SKIP] 폰을 깨뜨리는 고정 폭 — 화면 소스 없음
+[SKIP] 브라우저 API 직접 호출 — 설정에 브라우저 API 래퍼를 안 적었음
+[SKIP] 앱 코드 배치 — 설정에 폴더를 하나도 안 적었음
+[SKIP] 수집·계산 모듈의 행동 테스트 짝 — 설정에 테스트 대상 폴더를 안 적었음
+[SKIP] DDL 저장 타입 잘림 — 설정에 schema 폴더를 안 적었음
+[SKIP] API 응답 배열 필드 옵셔널 — 화면 소스 없음
 
 [FAIL] MD 작성 규칙 — 4건
    - DESIGN_GUIDE.md:5: ⑬a 코드펜스 트리 덤프 — 파일 목록의 정본은 Glob
@@ -52,11 +52,11 @@ exit=1
    - README.md:9: ⑬c 괄호 3중 중첩 — 문장을 다시 써라
    - notes/GUIDE.md:1: ⑬d 머리 역할 계약 누락 — `> 담는 것: … 담지 않는 것: … 읽는 시점: …`
 [SKIP] MD 경로 참조 실존 — greenfield — 리포트로만
-[SKIP] 고아 MD(허브 도달 불가) — 프로파일에 허브 목록 없음
+[SKIP] 고아 MD(허브 도달 불가) — 설정에 문서 시작점을 안 적었음
 
 [FAIL] 하네스 지도 대조 — 1건
    - HARNESS.md: 스킬 'runbook' 이 지도에 없음 — 같은 턴에 등재하라
-[SKIP] 에이전트 모델 정책 — 프로파일에 에이전트 모델 정책 없음
-[SKIP] 사고 절 승격 상태 — 프로파일에 사고 기록 문서 미선언
+[SKIP] 에이전트 모델 정책 — 설정에 담당 AI 모델 표를 안 적었음
+[SKIP] 사고 절 승격 상태 — 설정에 사고 기록 문서를 안 적었음
 
 총 19건 위반.

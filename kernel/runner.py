@@ -35,7 +35,7 @@ LOCAL_PACKAGE = "harness_gates"
 BASELINE_FILE = ROOT / "harness_baseline.txt"
 
 NO_PY = "검사할 소스 없음"
-NO_UI = "프론트 소스 없음"
+NO_UI = "화면 소스 없음"
 
 
 def _print_style_reports(reports: list[str]) -> None:
@@ -111,11 +111,11 @@ def _entry(slug: str, title: str, violations: list[str], ok: object, need: str) 
 
 
 def _need_layer(name: str) -> str:
-    return f"프로파일에 {name} 레이어 미선언"
+    return f"설정에 {name} 폴더를 안 적었음"
 
 
 def _need_symbol(name: str) -> str:
-    return f"프로파일에 {name} 심볼 미선언"
+    return f"설정에 {name} 이름을 안 적었음"
 
 
 def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
@@ -130,11 +130,11 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
         _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", core.check_reads_writes(files),
                reads, _need_layer("read")),
         _entry("abbrev_names", "축약 이름 단독 대입", core.check_abbrev_names(files),
-               files and vocab["abbrev_names"], "프로파일에 금지 축약 이름 없음"),
+               files and vocab["abbrev_names"], "설정에 금지할 축약어를 안 적었음"),
         _entry("abbrev_prefixes", "축약 접두 식별자", core.check_abbrev_prefixes(both),
-               both and vocab["abbrev_prefixes"], "프로파일에 금지 축약 접두 없음"),
+               both and vocab["abbrev_prefixes"], "설정에 금지할 축약 접두어를 안 적었음"),
         _entry("ui_jargon", "UI 라벨 금칙어", core.check_ui_jargon(ui_files),
-               ui_files and vocab["ui_denylist"], "프로파일에 UI 금칙어 없음"),
+               ui_files and vocab["ui_denylist"], "설정에 화면 금칙어를 안 적었음"),
         _entry("py_any", "py Any 타입힌트", core.check_py_any(files), files, NO_PY),
         _entry("type_hints", "공개 함수 타입힌트", core.check_type_hints(files), files, NO_PY),
         _entry("secrets", "시크릿 토큰 하드코딩", core.check_secrets(both), both, NO_PY),
@@ -142,7 +142,7 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
         _entry("conn_processing", "커넥션 블록 내 가공", layers.check_connection_processing(files),
                _under(files, "db") and profile.symbol("db_accessor"), _need_symbol("db_accessor")),
         _entry("env_access", "설정 밖 환경변수 조회", layers.check_env_access(files),
-               files and settings, "프로파일에 settings 파일 미선언"),
+               files and settings, "설정에 환경변수 모듈을 안 적었음"),
         _entry("web_async", "await 없는 async 핸들러", layers.check_web_async_no_await(files),
                web, _need_layer("web")),
         _entry("accessor_import", "커넥션 접근자 import 단일 경로",
@@ -163,13 +163,13 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
         _entry("browser_api", "브라우저 API 직접 호출",
                layers.check_frontend_browser_api(ui_files),
                ui_files and profile.ALLOWLIST["ui_platform"],
-               "프로파일에 브라우저 API 래퍼 미선언"),
+               "설정에 브라우저 API 래퍼를 안 적었음"),
         _entry("file_placement", "앱 코드 배치",
                placement.check_file_placement(files, ui_files),
-               placement.layer_prefixes(), "프로파일에 레이어가 하나도 미선언"),
+               placement.layer_prefixes(), "설정에 폴더를 하나도 안 적었음"),
         _entry("test_pairing", "수집·계산 모듈의 행동 테스트 짝",
                tests_pairing.check_module_test_pairing(files),
-               profile.BEHAVIOR_TESTED_ROOTS, "프로파일에 행동 테스트 대상 루트 없음"),
+               profile.BEHAVIOR_TESTED_ROOTS, "설정에 테스트 대상 폴더를 안 적었음"),
         _entry("ddl_types", "DDL 저장 타입 잘림", schema.check_ddl_lossy_types(files),
                _under(files, "schema"), _need_layer("schema")),
         _entry("api_array", "API 응답 배열 필드 옵셔널",
@@ -193,15 +193,15 @@ def _doc_sections() -> list[Section]:
     sections: list[Section] = [
         _entry("md_path_refs", "MD 경로 참조 실존", refs, not greenfield, "greenfield — 리포트로만"),
         _entry("md_orphans", "고아 MD(허브 도달 불가)", md_graph.check_md_orphans(),
-               profile.HUBS, "프로파일에 허브 목록 없음"),
+               profile.HUBS, "설정에 문서 시작점을 안 적었음"),
         _entry("md_harness_map", "하네스 지도 대조", md_graph.check_harness_map(),
                (ROOT / ".claude").is_dir() and (map_exists or not greenfield),
                f"greenfield — {profile.HARNESS_MAP} 아직 없음"),
         _entry("agent_model", "에이전트 모델 정책", harness_self.check_agent_model_policy(),
-               profile.AGENT_MODEL_POLICY, "프로파일에 에이전트 모델 정책 없음"),
+               profile.AGENT_MODEL_POLICY, "설정에 담당 AI 모델 표를 안 적었음"),
         _entry("lessons_promotion", "사고 절 승격 상태", harness_self.check_lessons_promotion(),
                lessons and (ROOT / lessons).exists(),
-               f"선언된 {lessons} 가 아직 없음" if lessons else "프로파일에 사고 기록 문서 미선언"),
+               f"선언된 {lessons} 가 아직 없음" if lessons else "설정에 사고 기록 문서를 안 적었음"),
     ]
     for pair in profile.DOC_SYNC:
         title = f"문서↔코드 대조({pair['doc']}↔{pair['code']})"
