@@ -35,7 +35,7 @@
           },
           {
             "type": "command",
-            "command": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 || echo '[GIT CHECK] git 저장소가 아님 — 게이트는 git ls-files 로 대상을 모은다. 저장소가 아니면 검사 대상이 0개라 전 게이트가 무력화되고 EDITING.md 직렬화도 안 돈다. 코딩 전에 git init + .gitignore 가 최우선이다.'; git remote get-url origin >/dev/null 2>&1 || echo '[GITHUB CHECK] GitHub 원격(origin) 미설정 — 코드가 이 컴퓨터에만 있는 상태다. 사용자에게 레포 URL을 받아 remote 연결 + 최초 푸시부터 하라. Stop 게이트(check_git_remote)가 원격 없이는 세션 종료를 차단한다.'",
+            "command": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 || echo '[GIT CHECK] git 저장소가 아님 — 게이트는 git ls-files 로 대상을 모은다. 저장소가 아니면 검사 대상이 0개라 전 게이트가 무력화되고 EDITING.md 직렬화도 안 돈다. 코딩 전에 git init + .gitignore 가 최우선이다.'; git remote get-url origin >/dev/null 2>&1 || echo '[GITHUB CHECK] GitHub 원격(origin) 미설정 — 코드가 이 컴퓨터에만 있는 상태다. gh 가 인증돼 있으면 묻지 말고 `gh repo create <폴더명> --private --source . --push` 로 만들어라(--private 는 바꾸지 않는다). 인증이 없을 때만 사용자에게 물어라. Stop 게이트(check_git_remote)가 원격 없이는 세션 종료를 차단한다.'",
             "timeout": 10,
             "statusMessage": "Checking git repo"
           },

@@ -38,13 +38,17 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | ⑪ | SubagentStop | `check_agent_return.py` | 반환이 임계 초과 | **차단** |
 | ⑫ | Stop | `check_editing_lock.py` | `EDITING.md` 에 자기 행 잔존 | **차단** |
 | ⑬ | Stop | `check_coding_rules.py` | 전 게이트 위반 잔존 | **차단** |
-| ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** |
+| ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** + 만들 명령 제시 |
 
 ⑨ 는 페이로드 파싱에 실패해도 차단한다(fail-closed) — 무엇을 검사할지 모르는 상태를 통과로
 보고하지 않는다. ⑪ 은 반대로 fail-open 이다. 반환을 못 읽었다고 에이전트를 막는 건 더 위험하다.
 
 ⑤⑥ 만 `startup` matcher 로 분리돼 있다. `/clear` 와 compact 마다 `git pull` 과 정비 판정이
 다시 도는 것을 막기 위해서다.
+
+⑭ 는 막기만 하지 않고 **무엇을 하면 되는지 완성된 명령으로 준다.** `gh` 가 인증돼 있으면
+계정과 폴더 이름을 이미 알기 때문에 사용자에게 물을 게 없다. 인증이 없을 때만 질문이 남는다.
+레포는 항상 `--private` 로 만든다 — 공개 발행은 되돌리기 어려워 사람이 정할 일이다.
 
 ## 게이트
 
