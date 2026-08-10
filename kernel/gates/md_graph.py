@@ -253,7 +253,11 @@ def _harness_actuals() -> dict[str, set[str]]:
             for entry in entries:
                 for hook in entry.get("hooks") or []:
                     for token in _HOOK_CMD.findall(hook.get("command") or ""):
-                        actual["훅"].add(Path(token).name)
+                        # 실물이 `.claude/` 아래 있는 토큰만 훅으로 본다. 훅 명령문에는
+                        # 안내 문구가 섞여 있어(`harness_install.py 를 돌려라`) 파일명처럼
+                        # 생긴 문자열이 다 잡히면 지도에 없는 유령 훅이 계속 생긴다.
+                        if (ROOT / token).is_file() and token.startswith(".claude/"):
+                            actual["훅"].add(Path(token).name)
     agents = ROOT / ".claude" / "agents"
     if agents.is_dir():
         actual["에이전트"] = {p.stem for p in agents.glob("*.md")}

@@ -55,9 +55,25 @@ tests/           픽스처 + 골든 출력
 | P1 | `tests/fixtures/miniproj/` + 골든 출력 확보 | 완료 — 35개 섹션 중 27개 발화, 3회 연속 동일 |
 | P2 | `kernel/gates/` 패키지 분리 + `[SKIP]` 등급 | 완료 — 이동 단계는 바이트 동일, `[SKIP]` 단계는 3줄만 변경 |
 | P3 | 프로젝트 전용 게이트 9개 삭제 + 하드코딩 138개를 프로파일로 | 완료 — 커널 잔재 0, 게이트 25개 전량 발화 |
-| P4 | `--adopt` 자동 baseline + `/harness-init` 스킬 | 빈 디렉토리에서 한 번에 가동 |
-| P5 | 훅 7종 이관 + `CLAUDE.md`(골격) ↔ `PROJECT.md`(도메인) 분리 | 새 폴더에서 세션 시작이 정상 동작 |
-| P6 | PreToolUse(Bash) 훅 · 지도 대조 양방향 · 문서 5쪽 재작성 | 각 항목 개별 검증 |
+| P4 | 통합 baseline + `harness_install.py` + `/harness-init` 스킬 | 완료 — 빈 디렉토리에서 clone→install→가동 리허설 통과 |
+| P5 | 훅 8종·에이전트 6·스킬 10 이관 + `CLAUDE.md`(골격) ↔ `PROJECT.md`(도메인) 분리 | 완료 — 하네스가 자기 레포에서 자기 게이트 아래 산다 |
+| P6 | PreToolUse(Bash) 훅 · 지도 대조 양방향 · 설명서 5쪽 재작성 | 미착수 |
+
+## 병합 (2026-08-10)
+
+`claude-web-harness` v2.3.0 의 껍데기를 이 커널 위에 얹었다. 커널이 배포본이 됐다.
+
+| 가져온 것 | 어디로 |
+|-----------|--------|
+| 게이트 7종 (타입힌트·시크릿·반응형·브라우저 API·배치·모델 정책·승격 상태) | `kernel/gates/` — 전부 프로파일 경유로 다시 씀 |
+| 훅 8종 | `.claude/hooks/` — 검사기 호출을 `kernel.runner` 로 재배선 |
+| 에이전트 6 · 스킬 10 | `.claude/` 그대로 |
+| 설치 래칫 (`--dry-run`·`--prune`) | `harness_install.py` — 흩어진 baseline 4종을 (slug, 파일) 하나로 통합 |
+| 문서 골격 | `CLAUDE.md`·`HARNESS.md`·`dev/`·`design/` |
+| 스택 관례 | `profiles/web_fastapi_react.py` 프리셋으로 — 커널 본체가 아니라 데이터로 |
+
+병합 중 커널에서 발견한 무음 통과 3개(`api_array`·`doc_sync`·`lessons`)와 Windows 버그
+2개(BOM 파싱 실패·하네스 자기 발자국이 게이트 대상)를 같이 고쳤다. 상세는 커밋 메시지.
 
 **P3 에서 방향을 바꿨다.** 당초 계획은 프로젝트 전용 게이트를 `kernel/local/` 에 두고 프로파일로 켜고 끄는 것이었으나, 그러면 커널이 남의 프로젝트 규칙을 계속 이고 간다. KRX·KOFIA·로스터·프롬프트 버전은 **삭제**했다. 새 프로젝트는 자기 레포의 `harness_gates/` 에 자기 규칙을 심는다.
 
@@ -74,10 +90,9 @@ P2·P3 의 **골든 diff 0** 이 안전망이다. 리팩터 중 게이트가 조
 ## 알려진 부채
 
 - 독립 레포로 가면 "fund_monitor 에서 돌려 출력 비교"라는 공짜 회귀 기준이 끊긴다. P1 의 픽스처·골든이 그 대체이고, 최종 확인은 레포에서 1회 수동으로 한다.
-- 커널 게이트 25개는 전량 골든이 덮는다(각 1건씩 발화). 죽은 게이트가 없다.
-- **fund_monitor 는 게이트 9개를 잃은 상태다.** 커널에서 삭제했고 아직 그 레포에 심지 않았다. 원본은 `src/static_check_{krx,llm,region,dup,complete_date,batches,prompt}.py` 이고, `harness_gates/<이름>.py` 로 옮기며 `run(py, ui)` 계약에 맞춰야 한다. `profiles/fund_monitor.py` 의 `LOCAL_GATES` 가 그 목록이다.
-- `ui_hex` 예외 66개는 아직 프로파일에 안 옮겼다. 목록이 길어 레포 쪽 `hex_allowlist.txt` 로 뺄지 프로파일에 넣을지 이관 시점에 정한다.
-- 훅 7종은 아직 `src/.claude/hooks/` 에만 있다. P5 에서 커널로 옮긴다.
-- ⑯ 은 무음이 아니라 **틀리게 발화**한다 — `market_briefing/prompts/` 를 하드코딩해 그 파일이 없는 프로젝트에서 "대상 프롬프트 파일 없음"으로 실패한다. 새 프로젝트를 처음부터 막는 두 번째 게이트다(④E 와 함께).
-- `src/` 는 리팩터 전 동결 스냅샷이다. P3 이 끝나면 지운다.
-- baseline·allowlist 실물 4종이 아직 없다. `src/README.md` 의 복사 명령을 레포 루트에서 한 번 돌려야 채워진다.
+- 커널 게이트 30개는 전량 골든이 덮는다(각 1건씩 발화). 죽은 게이트가 없다.
+- **fund_monitor 는 게이트 9개를 잃은 상태다.** 커널에서 삭제했고 아직 그 레포에 심지 않았다. 원본은 커밋 `ee9805c` 의 `src/static_check_{krx,llm,region,dup,complete_date,batches,prompt}.py` 이고, `harness_gates/<이름>.py` 로 옮기며 `run(py, ui)` 계약에 맞춰야 한다. `profiles/fund_monitor.py` 의 `LOCAL_GATES` 가 그 목록이다.
+- `ui_hex` 예외 66개는 아직 프로파일에 안 옮겼다. 목록이 길어 레포 쪽 별도 파일로 뺄지 프로파일에 넣을지 이관 시점에 정한다.
+- `docs/site/` 5쪽은 병합 전 검사기를 설명한다. P6 에서 다시 쓰거나 지운다. 그때까지 근거로 삼지 않는다.
+- 지도 대조는 여전히 단방향이다 — 지도에만 남은 유령 항목은 안 잡힌다. P6.
+- 벤더 사본 `impeccable` 이 `.claude/skills/` 의 대부분(2.4MB)을 차지한다. 웹 UI 를 안 만드는 프로젝트엔 순수 무게다. 프리셋별로 뺄지는 정하지 않았다.

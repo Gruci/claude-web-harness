@@ -1,0 +1,80 @@
+"""harness_profile.py — 이 레포(하네스 자신)의 프로파일.
+
+하네스가 자기 규칙을 안 지키면 그 규칙을 믿을 이유가 없다. 그래서 하네스 레포도 자기
+게이트 아래에서 산다. 다만 여기엔 **앱 코드가 없다** — 커널·프리셋·훅은 전부 하네스
+자신의 발자국이라 `kernel/context.app_code()` 가 코드 게이트 대상에서 뺀다.
+그래서 실질적으로 도는 것은 MD 게이트와 하네스 자기서술 게이트다.
+
+STAGE 가 greenfield 인 이유: 이 레포가 싣고 다니는 문서(`DEVGUIDE.md`·`dev/`)는 **앞으로
+만들 프로젝트**의 구조를 설명한다. 그 경로들은 여기 실존하지 않는 게 정상이고, 그래서
+경로 참조 게이트를 강제로 두면 배포용 문서를 한 줄도 못 쓴다. 리포트로는 계속 나온다.
+
+새 프로젝트에 이 하네스를 깔면 이 파일은 `profiles/` 의 프리셋으로 덮어쓰인다 —
+`harness_install.py` 가 한다.
+"""
+
+from __future__ import annotations
+
+STAGE = "greenfield"
+
+# 앱 코드가 없다. tests/ 만 실물이고 나머지는 하네스 자신이다.
+LAYERS: dict[str, str | None] = {
+    "read": None, "write": None, "db": None, "web": None, "routes": None,
+    "ui": None, "ui_admin": None, "ui_tokens": None,
+    "tests": "tests", "schema": None, "shared": None, "batch": None,
+}
+
+FILES: dict[str, str | None] = {"settings": None, "ssl_util": None}
+SYMBOLS: dict[str, str | None] = {
+    "db_accessor": None, "db_accessor_module": None,
+    "ssl_bypass": None, "error_response": None,
+}
+
+# 픽스처는 일부러 위반을 심어둔 가짜 프로젝트다 — 검사 대상이 아니라 검사의 재료다.
+SCOPE: dict[str, tuple[str, ...]] = {
+    "exclude_all":     ("tests/fixtures/",),
+    "exclude_scratch": (),
+}
+
+HUBS: tuple[str, ...] = ("CLAUDE.md", "README.md", "HARNESS.md", "DEVGUIDE.md",
+                         "DESIGN_GUIDE.md", "AGENTS.md")
+HUB_DOMAIN_MD_IMPLICIT = True
+HARNESS_MAP = "HARNESS.md"
+
+MD: dict[str, tuple[str, ...]] = {
+    "doc_exclude":   (".claude/", ".agents/", ".codex/", "tests/fixtures/", "PLAN.md"),
+    "ref_exclude":   (),
+    # `.claude/` 는 벤더 사본(impeccable 참고 문서 30여 개)과 frontmatter 형식의 정의
+    # 파일이라 역할 계약 규약의 대상이 아니다. 레포 대문(README)도 마찬가지다.
+    "style_exclude": (".claude/", ".agents/", ".codex/", "tests/fixtures/",
+                      "EDITING.md", "README.md", "README.en.md"),
+    "date_exempt":   ("dev/LESSONS.md",),
+}
+
+VOCAB: dict[str, tuple[str, ...]] = {
+    "ui_denylist": (), "abbrev_prefixes": (), "abbrev_names": (),
+}
+
+ALLOWLIST: dict[str, tuple[str, ...]] = {
+    "py_any": (), "ui_hex": (), "ui_fetch": (), "ui_fetch_wrappers": (),
+    "env_access": (), "ui_platform": (),
+}
+
+LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = ()
+ROOT_FILES: tuple[str, ...] = ()
+
+DOC_SYNC: list[dict[str, object]] = []
+BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = ()
+
+LESSONS_DOC: str | None = "dev/LESSONS.md"
+
+# 이 레포가 싣고 나가는 에이전트들. 프리셋 web_fastapi_react 와 같은 표를 쓴다.
+AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
+    "executor":         ("fable", "high"),
+    "backend":          ("opus", "high"),
+    "frontend":         ("opus", "high"),
+    "qa":               ("sonnet", "medium"),
+    "product-reviewer": ("opus", "high"),
+}
+
+LOCAL_GATES: tuple[str, ...] = ()

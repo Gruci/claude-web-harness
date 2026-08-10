@@ -56,7 +56,7 @@ HARNESS_MAP = "HARNESS.md"
 MD: dict[str, tuple[str, ...]] = {
     "doc_exclude":   (".claude/", "docs/"),
     "ref_exclude":   ("docs/",),
-    "style_exclude": ("EDITING.md", "README.md", "README.en.md"),
+    "style_exclude": (".claude/", "EDITING.md", "README.md", "README.en.md"),
     "date_exempt":   ("dev/LESSONS.md",),
 }
 

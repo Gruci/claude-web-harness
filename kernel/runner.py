@@ -241,15 +241,27 @@ def _build_sections(
     return sections
 
 
+def _in_scope(f: Path) -> bool:
+    """프로파일이 통째로 뺀 경로인가. 벤더 사본·참고 자료·픽스처가 여기 해당한다."""
+    exclude = profile.SCOPE["exclude_all"]
+    return not (exclude and _rel(f).startswith(exclude))
+
+
+def source_files() -> tuple[list[Path], list[Path]]:
+    """전 게이트가 볼 (py, ui) 목록. 하네스 자기 발자국과 스코프 제외를 뺀 것이다."""
+    ui = profile.layer("ui")
+    files = [f for f in app_code("*.py") if _in_scope(f)]
+    ui_files = [f for f in app_code("*.tsx", "*.ts", under=ui) if _in_scope(f)] if ui else []
+    return files, ui_files
+
+
 def collect_all_violations() -> list[tuple[str, str]]:
     """동결 대상 — 현재 전 게이트 위반의 (slug, 파일) 쌍. 설치 스크립트가 쓴다.
 
     baseline 을 적용하지 않은 날것이다. 파일에 귀속되지 않는 전역 위반은 얼릴 키가 없어
     빠지고, 그래서 설치 후에도 남는다 — 사람이 직접 봐야 하는 것들이다.
     """
-    ui = profile.layer("ui")
-    files = app_code("*.py")
-    ui_files = app_code("*.tsx", "*.ts", under=ui) if ui else []
+    files, ui_files = source_files()
     sections = _build_sections(files, ui_files, True, tracked_md_files())
     pairs = {(slug, path) for slug, _title, violations, _skip in sections
              for v in violations if (path := violation_path(v))}
@@ -257,7 +269,7 @@ def collect_all_violations() -> list[tuple[str, str]]:
 
 
 def tracked_md_files() -> list[Path]:
-    return [f for f in tracked("*.md") if md_style.style_target(_rel(f))]
+    return [f for f in tracked("*.md") if _in_scope(f) and md_style.style_target(_rel(f))]
 
 
 def _single_file_lists(raw_path: str) -> tuple[list[Path], list[Path], bool, list[Path]]:
@@ -298,9 +310,7 @@ def main(argv: list[str]) -> int:
         if not files and not ui_files and not include_md and not md_files:
             return 0
     else:
-        ui = profile.layer("ui")
-        files = app_code("*.py")
-        ui_files = app_code("*.tsx", "*.ts", under=ui) if ui else []
+        files, ui_files = source_files()
         include_md, md_files = True, tracked_md_files()
     sections = _apply_baseline(_build_sections(files, ui_files, include_md, md_files))
     total = _print_sections(sections)

@@ -74,6 +74,9 @@ BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = (
 LOCAL_GATES: tuple[str, ...] = tuple(getattr(_MOD, "LOCAL_GATES", ())) if _MOD else ()
 HARNESS_MAP: str = getattr(_MOD, "HARNESS_MAP", "HARNESS.md") if _MOD else "HARNESS.md"
 ROOT_FILES: tuple[str, ...] = tuple(getattr(_MOD, "ROOT_FILES", ())) if _MOD else ()
+LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = (
+    tuple(getattr(_MOD, "LEGACY_PATHS", ())) if _MOD else ()
+)
 LESSONS_DOC: str | None = getattr(_MOD, "LESSONS_DOC", None) if _MOD else None
 AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = (
     dict(getattr(_MOD, "AGENT_MODEL_POLICY", {})) if _MOD else {}
