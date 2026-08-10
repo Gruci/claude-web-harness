@@ -22,6 +22,20 @@ exit=1
 [FAIL] py Any 타입힌트 — 1건
    - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
 
+[FAIL] 공개 함수 타입힌트 — 9건
+   - db/conn_loop.py:4: agg() 타입힌트 누락 — 반환
+   - db/reads/bad_write.py:4: wipe() 타입힌트 누락 — conn, 반환
+   - db/reads/core_import.py:5: rows() 타입힌트 누락 — 반환
+   - kofia/collect.py:4: collect() 타입힌트 누락 — 반환
+   - utils/closure.py:4: outer() 타입힌트 누락 — 반환
+   - utils/closure.py:5: inner() 타입힌트 누락 — 반환
+   - utils/ssl_utils.py:4: bypass_ssl_verification() 타입힌트 누락 — 반환
+   - web/handlers.py:4: ping() 타입힌트 누락 — 반환
+   - web/routes/errors.py:4: fail() 타입힌트 누락 — 반환
+
+[FAIL] 시크릿 토큰 하드코딩 — 1건
+   - batches/leak.py:3: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, 이미 커밋됐다면 키를 회전하라
+
 [FAIL] TS any 타입 — 1건
    - frontend/src/anyts.ts:1: TS any → 구체 타입 (불가피하면 `// any-ok: 사유`)
 
@@ -46,8 +60,18 @@ exit=1
 [FAIL] 공용 래퍼 없는 fetch — 1건
    - frontend/src/RawFetch.tsx:2: 공용 래퍼를 거치지 않는 fetch() — return fetch("/api/board");
 
-[FAIL] 프론트 hex 리터럴 — 1건
+[FAIL] 프론트 색 리터럴 — 1건
    - frontend/src/Hex.tsx:1: hex 리터럴 #ff0000 — 토큰 정본 또는 CSS 변수 로
+
+[FAIL] 폰을 깨뜨리는 고정 폭 — 1건
+   - frontend/src/Fixed.tsx:1: 고정 px 폭 — max-width·%·minmax·clamp 로 (불가피하면 `// px-ok: 사유`)
+
+[FAIL] 브라우저 API 직접 호출 — 1건
+   - frontend/src/Storage.tsx:1: 브라우저 API 직접 호출 — frontend/src/platform.ts 래퍼 경유 (불가피하면 `// web-ok: 사유`)
+
+[FAIL] 앱 코드 배치 — 2건
+   - kofia/: 도메인 패키지에 __init__.py 없음 — 생성하라
+   - kofia/: 도메인 정본 MD 없음 — kofia/KOFIA.md 를 만들고 허브에서 링크하라 (고아 MD 게이트가 도달성을 본다)
 
 [FAIL] 수집·계산 모듈의 행동 테스트 짝 — 1건
    - kofia/collect.py: 대응 행동 테스트 없음 — tests/test_collect.py 작성 또는 사유와 함께 test_pairing_baseline.txt 등재
@@ -73,6 +97,13 @@ exit=1
 [FAIL] 하네스 지도 대조 — 1건
    - HARNESS.md: 스킬 'runbook' 이 지도에 없음 — 같은 턴에 등재하라
 
+[FAIL] 에이전트 모델 정책 — 2건
+   - .claude/agents/auditor.md: model 'sonnet' ≠ 정책 'opus' — 라우팅을 바꾼 거면 프로파일을 같은 커밋에 고쳐라
+   - .claude/agents/auditor.md: effort 'medium' ≠ 정책 'high' — 판단 상향·하향이면 정책을 같은 커밋에 고쳐라
+
+[FAIL] 사고 절 승격 상태 — 1건
+   - dev/LESSONS.md:5: §1 에 `> 강제:` 선언이 없다 — 게이트를 적거나 `산문 전용 — 사유` 로 적어라
+
 [FAIL] 문서↔코드 대조(DEVGUIDE.md↔batch_runner.py) — 1건
    - DEVGUIDE.md:9: BATCH_HOUR=5 인데 문서 값 [0, 3] 불일치
 
@@ -80,4 +111,4 @@ exit=1
    - settings.py 가 읽는 'ALPHA_KEY' 가 DEVGUIDE.md 목록에 없음
    - DEVGUIDE.md 의 'BETA_KEY' 를 settings.py 가 읽지 않음(타 모듈 로드 가능 — 확인)
 
-총 29건 위반.
+총 46건 위반.

@@ -21,11 +21,19 @@ import re
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import _rel
+from kernel.context import READ_ENC, _rel
 
-_FETCH_RE = re.compile(r"\bfetch\s*\(")
+_FETCH_RE = re.compile(r"\bfetch\s*\(|\baxios\b")
 _HEX_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+_RGB_HSL_RE = re.compile(r"\brgba?\s*\(|\bhsla?\s*\(")   # hex 게이트 우회 경로를 같이 막는다
 _ENV_RE = re.compile(r"\bos\.(getenv|environ)\b")
+
+# max-width·min-width 는 반응형의 상한·하한이라 정상이다. 뒤돌아보기로 그것만 제외한다.
+_FIXED_WIDTH_RE = re.compile(r"(?<![-\w])width\s*:\s*['\"]?\d{3,}px")
+_VIEWPORT_VW_RE = re.compile(r"\b100vw\b")
+_BROWSER_API_RE = re.compile(r"\b(localStorage|sessionStorage|document\.|window\.)")
+
+_JS_COMMENT = ("//", "*", "/*", "{/*")
 
 
 def _under(rel: str, layer_name: str) -> bool:
@@ -35,7 +43,7 @@ def _under(rel: str, layer_name: str) -> bool:
 
 def _parse(f: Path) -> ast.AST | None:
     try:
-        return ast.parse(f.read_text(encoding="utf-8"))
+        return ast.parse(f.read_text(encoding=READ_ENC))
     except SyntaxError:
         return None
 
@@ -102,7 +110,7 @@ def check_env_access(py_files: list[Path]) -> list[str]:
         rel = _rel(f)
         if rel == settings or rel.startswith(exempt) or rel in allow:
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith("#"):
                 continue
@@ -178,7 +186,7 @@ def check_accessor_import_path(py_files: list[Path]) -> list[str]:
         rel = _rel(f)
         if not (_under(rel, "read") or _under(rel, "write")):
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith("#") or not import_re.search(line):
                 continue
@@ -204,7 +212,7 @@ def check_ssl_bypass_location(py_files: list[Path]) -> list[str]:
         rel = _rel(f)
         if rel.startswith(allowed) or rel == home:
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith("#"):
                 continue
@@ -260,7 +268,7 @@ def check_frontend_raw_fetch(ui_files: list[Path]) -> list[str]:
         rel = _rel(f)
         if _is_admin_ui(rel) or rel in allow:
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith(("//", "*", "/*")):
                 continue
@@ -279,10 +287,59 @@ def check_frontend_hex(ui_files: list[Path]) -> list[str]:
         rel = _rel(f)
         if _is_admin_ui(rel) or rel in allow or (tokens and rel == tokens):
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith(("//", "*", "/*")):
                 continue
             for m in _HEX_RE.finditer(line):
                 bad.append(f"{rel}:{i}: hex 리터럴 {m.group(0)} — {where} 로")
+            if _RGB_HSL_RE.search(line):
+                bad.append(f"{rel}:{i}: rgb()·hsl() 색 리터럴 — {where} 로")
+    return bad
+
+
+def check_frontend_responsive(ui_files: list[Path]) -> list[str]:
+    """폰을 깨뜨리는 두 원인. 만든 뒤 고치면 재작업이고 저장 시점에 막으면 그냥 작성이다.
+
+    고정 px 폭은 좁은 화면에서 가로 스크롤을 만들고, `100vw` 는 스크롤바 폭만큼 넘쳐서
+    세로 스크롤이 있는 페이지면 반드시 가로로도 넘친다.
+    """
+    bad: list[str] = []
+    for f in ui_files:
+        rel = _rel(f)
+        if _is_admin_ui(rel):
+            continue
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
+            stripped = line.strip()
+            if "px-ok" in line or stripped.startswith(_JS_COMMENT):
+                continue
+            if _FIXED_WIDTH_RE.search(line):
+                bad.append(f"{rel}:{i}: 고정 px 폭 — max-width·%·minmax·clamp 로 "
+                           f"(불가피하면 `// px-ok: 사유`)")
+            if _VIEWPORT_VW_RE.search(line):
+                bad.append(f"{rel}:{i}: 100vw 는 스크롤바 폭만큼 가로 오버플로 — 100% 로")
+    return bad
+
+
+def check_frontend_browser_api(ui_files: list[Path]) -> list[str]:
+    """브라우저 API 직접 호출. 래퍼 정본이 선언돼 있을 때만 판정한다.
+
+    래퍼 하나를 거치게 해두면 나중에 앱으로 옮길 때 교체 대상이 그 파일 하나로 끝난다.
+    선언이 없으면 "어디로 가라"고 말할 수 없으므로 이 게이트는 [SKIP] 이다.
+    """
+    allow = tuple(profile.ALLOWLIST["ui_platform"])
+    if not allow:
+        return []
+    bad: list[str] = []
+    for f in ui_files:
+        rel = _rel(f)
+        if _is_admin_ui(rel) or rel in allow:
+            continue
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
+            stripped = line.strip()
+            if "web-ok" in line or stripped.startswith(_JS_COMMENT):
+                continue
+            if _BROWSER_API_RE.search(line):
+                bad.append(f"{rel}:{i}: 브라우저 API 직접 호출 — {allow[0]} 래퍼 경유 "
+                           f"(불가피하면 `// web-ok: 사유`)")
     return bad

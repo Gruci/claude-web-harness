@@ -9,6 +9,8 @@
   축약 이름·접두   내부 코드가 이름으로 새는 것
   UI 라벨 금칙어   사용자에게 노출되는 조어
   Any / any        타입으로 게이트 때우기
+  타입힌트 누락    공개 함수의 경계면이 문서화되지 않는 것
+  시크릿 토큰      실키 하드코딩 — 커밋되면 회전까지가 수습이다
   헤더 경로 주석   파일 이사 후 남은 잘못된 경로 주석
 """
 
@@ -19,7 +21,7 @@ import re
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import ROOT, _rel
+from kernel.context import READ_ENC, ROOT, _rel
 
 MAX_LINES = 400
 
@@ -30,6 +32,12 @@ WRITE_SQL = re.compile(
 COMMIT = re.compile(r"\.commit\s*\(")
 ANY_HINT = re.compile(r"[:\[,]\s*Any\b|->\s*Any\b")
 TS_ANY = re.compile(r":\s*any\b|\bas\s+any\b|<\s*any\b")
+
+# 공급자별 실키 형태. 문자열이 이 모양이면 그건 예시가 아니라 진짜다.
+SECRET_TOKEN = re.compile(
+    r"\b(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}"
+    r"|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9\-]{10,}|AIza[0-9A-Za-z_\-]{30,})"
+)
 
 # 줄 끝 주석(`code;  // 설명`) — 화면 밖이라 UI 금칙어 검사에서 제외한다. `://`(URL)는 주석이 아니다.
 TRAILING_COMMENT = re.compile(r"(?<!:)//.*$")
@@ -59,7 +67,7 @@ def _is_scratch(rel: str) -> bool:
 def check_line_limit(files: list[Path]) -> list[str]:
     bad: list[str] = []
     for f in files:
-        n = len(f.read_text(encoding="utf-8").splitlines())
+        n = len(f.read_text(encoding=READ_ENC).splitlines())
         if n > MAX_LINES:
             # as_posix() — 형제 검사 전부가 POSIX 표기다. Windows 역슬래시가 섞이면
             # 위반 경로를 키로 쓰는 소비처(allowlist·baseline 대조)가 조용히 빗나간다.
@@ -74,7 +82,7 @@ def check_header_path_comment(files: list[Path]) -> list[str]:
         rel = _rel(f)
         if _is_scratch(rel):
             continue
-        first = f.read_text(encoding="utf-8").split("\n", 1)[0]
+        first = f.read_text(encoding=READ_ENC).split("\n", 1)[0]
         m = _HEADER_PATH.match(first)
         if m and "/" in m.group(1) and m.group(1) != rel:
             bad.append(f"{rel}: 헤더 주석 '{m.group(1)}' ≠ 실경로 — 주석을 실경로로 갱신")
@@ -100,7 +108,7 @@ def check_closures(files: list[Path]) -> list[str]:
         if _is_scratch(rel):
             continue
         try:
-            tree = ast.parse(f.read_text(encoding="utf-8"))
+            tree = ast.parse(f.read_text(encoding=READ_ENC))
         except SyntaxError as exc:
             bad.append(f"{rel}: 파싱 실패 {exc}")
             continue
@@ -119,7 +127,7 @@ def check_reads_writes(files: list[Path]) -> list[str]:
         rel = _rel(f)
         if not rel.startswith(read_layer):
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith("#"):
                 continue
@@ -138,7 +146,7 @@ def check_abbrev_names(files: list[Path]) -> list[str]:
     bad: list[str] = []
     for f in files:
         rel = _rel(f)
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             m = pattern.match(line)
             if m:
                 bad.append(f"{rel}:{i}: 축약어 변수 {m.group(1)} — {line.strip()[:60]}")
@@ -155,7 +163,7 @@ def check_abbrev_prefixes(files: list[Path]) -> list[str]:
         rel = _rel(f)
         if _is_scratch(rel):
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             if stripped.startswith("#"):
                 continue
@@ -173,7 +181,7 @@ def check_ui_jargon(files: list[Path]) -> list[str]:
     bad: list[str] = []
     for f in files:
         rel = _rel(f)
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
             # 주석(금칙어 메타 언급) 제외 — `{/* … */}` JSX 주석도 화면에 안 나온다.
             if stripped.startswith(("//", "*", "/*", "{/*")):
@@ -197,11 +205,58 @@ def check_py_any(files: list[Path]) -> list[str]:
         rel = _rel(f)
         if rel.startswith(exempt) or rel in allow:
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             if "any-ok" in line or line.lstrip().startswith("#"):
                 continue
             if ANY_HINT.search(line):
                 bad.append(f"{rel}:{i}: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)")
+    return bad
+
+
+def check_type_hints(files: list[Path]) -> list[str]:
+    """공개 함수의 파라미터·반환 타입힌트. 경계면을 읽는 사람이 본문을 안 읽어도 되게 한다.
+
+    `_` 로 시작하는 내부 함수는 제외한다 — 규칙의 목적이 모듈 경계면이기 때문이다.
+    테스트와 커널 자신도 제외한다.
+    """
+    tests = profile.layer("tests")
+    exempt = profile.scratch() + ("kernel/", "profiles/") + ((tests,) if tests else ())
+    bad: list[str] = []
+    for f in files:
+        rel = _rel(f)
+        if rel.startswith(exempt):
+            continue
+        try:
+            tree = ast.parse(f.read_text(encoding=READ_ENC))
+        except SyntaxError:
+            continue                     # 파싱 실패는 중첩 def 게이트가 이미 보고한다
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if node.name.startswith("_"):
+                continue
+            args = node.args.posonlyargs + node.args.args + node.args.kwonlyargs
+            missing = [a.arg for a in args
+                       if a.arg not in ("self", "cls") and a.annotation is None]
+            if node.returns is None:
+                missing.append("반환")
+            if missing:
+                bad.append(f"{rel}:{node.lineno}: {node.name}() 타입힌트 누락 — "
+                           f"{', '.join(missing)}")
+    return bad
+
+
+def check_secrets(files: list[Path]) -> list[str]:
+    """실키 하드코딩. 커밋되면 지우는 것으로 끝나지 않고 키 회전까지가 수습이다."""
+    bad: list[str] = []
+    for f in files:
+        rel = _rel(f)
+        if rel.startswith(("kernel/", "profiles/")):
+            continue                     # 게이트 자신의 패턴 정의가 자기검출된다
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
+            if SECRET_TOKEN.search(line):
+                bad.append(f"{rel}:{i}: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, "
+                           f"이미 커밋됐다면 키를 회전하라")
     return bad
 
 
@@ -210,7 +265,7 @@ def check_ts_any(files: list[Path]) -> list[str]:
     bad: list[str] = []
     for f in files:
         rel = _rel(f)
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             if "any-ok" in line or line.lstrip().startswith(("//", "*", "/*")):
                 continue
             if TS_ANY.search(line):

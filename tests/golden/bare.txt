@@ -15,6 +15,21 @@ exit=1
 
 [FAIL] py Any 타입힌트 — 1건
    - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
+
+[FAIL] 공개 함수 타입힌트 — 10건
+   - db/conn_loop.py:4: agg() 타입힌트 누락 — 반환
+   - db/reads/bad_write.py:4: wipe() 타입힌트 누락 — conn, 반환
+   - db/reads/core_import.py:5: rows() 타입힌트 누락 — 반환
+   - kofia/collect.py:4: collect() 타입힌트 누락 — 반환
+   - tests/unit/test_placeholder.py:4: test_placeholder() 타입힌트 누락 — 반환
+   - utils/closure.py:4: outer() 타입힌트 누락 — 반환
+   - utils/closure.py:5: inner() 타입힌트 누락 — 반환
+   - utils/ssl_utils.py:4: bypass_ssl_verification() 타입힌트 누락 — 반환
+   - web/handlers.py:4: ping() 타입힌트 누락 — 반환
+   - web/routes/errors.py:4: fail() 타입힌트 누락 — 반환
+
+[FAIL] 시크릿 토큰 하드코딩 — 1건
+   - batches/leak.py:3: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, 이미 커밋됐다면 키를 회전하라
 [SKIP] TS any 타입 — 프론트 소스 없음
 [SKIP] 커넥션 블록 내 가공 — 프로파일에 db_accessor 심볼 미선언
 [SKIP] 설정 밖 환경변수 조회 — 프로파일에 settings 파일 미선언
@@ -23,7 +38,10 @@ exit=1
 [SKIP] 전역 SSL 패치 호출 위치 — 프로파일에 ssl_bypass 심볼 미선언
 [SKIP] 라우트 에러 응답 형식 — 프로파일에 error_response 심볼 미선언
 [SKIP] 공용 래퍼 없는 fetch — 프론트 소스 없음
-[SKIP] 프론트 hex 리터럴 — 프론트 소스 없음
+[SKIP] 프론트 색 리터럴 — 프론트 소스 없음
+[SKIP] 폰을 깨뜨리는 고정 폭 — 프론트 소스 없음
+[SKIP] 브라우저 API 직접 호출 — 프로파일에 브라우저 API 래퍼 미선언
+[SKIP] 앱 코드 배치 — 프로파일에 레이어가 하나도 미선언
 [SKIP] 수집·계산 모듈의 행동 테스트 짝 — 프로파일에 행동 테스트 대상 루트 없음
 [SKIP] DDL 저장 타입 잘림 — 프로파일에 schema 레이어 미선언
 [SKIP] API 응답 배열 필드 옵셔널 — 프론트 소스 없음
@@ -38,5 +56,7 @@ exit=1
 
 [FAIL] 하네스 지도 대조 — 1건
    - HARNESS.md: 스킬 'runbook' 이 지도에 없음 — 같은 턴에 등재하라
+[SKIP] 에이전트 모델 정책 — 프로파일에 에이전트 모델 정책 없음
+[SKIP] 사고 절 승격 상태 — 프로파일에 사고 기록 문서 미선언
 
-총 8건 위반.
+총 19건 위반.

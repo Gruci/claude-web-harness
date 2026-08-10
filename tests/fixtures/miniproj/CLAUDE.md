@@ -8,3 +8,4 @@
 | 디자인 | `DESIGN_GUIDE.md` |
 | 하네스 | `HARNESS.md` |
 | 코덱스 | `AGENTS.md` |
+| 사고 기록 | `dev/LESSONS.md` |

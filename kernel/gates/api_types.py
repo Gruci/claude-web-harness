@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from kernel.context import ROOT
+from kernel.context import READ_ENC, ROOT
 
 BASELINE = ROOT / "api_array_baseline.txt"
 # `field: T[];` — 옵셔널(`field?:`)은 `\w+\s*:` 에 걸리지 않아 자연히 빠진다.
@@ -45,17 +45,26 @@ def collect_required_array_fields(ui_files: list[Path]) -> set[str]:
     found: set[str] = set()
     for f in _api_type_files(ui_files):
         rel = _rel(f)
-        for m in _ARRAY_FIELD.finditer(f.read_text(encoding="utf-8")):
+        for m in _ARRAY_FIELD.finditer(f.read_text(encoding=READ_ENC)):
             found.add(f"{rel}:{m.group(1)}")
     return found
+
+
+def baseline_ready() -> bool:
+    """동결 파일 존재 여부. 없으면 이 게이트는 판정할 수 없다 — 러너가 [SKIP] 으로 찍는다.
+
+    예전엔 여기서 조용히 빈 목록을 돌려줬다. 그러면 대상이 있는데도 [OK] 로 찍혀,
+    커널이 없애려던 무음 통과가 커널 안에 그대로 있었다. `harness_install.py` 가 만든다.
+    """
+    return BASELINE.exists()
 
 
 def check_api_array_optional(ui_files: list[Path]) -> list[str]:
     """API 응답 타입에 **필수 배열 필드**가 새로 늘면 위반.
     옵셔널(`field?: T[]`)로 선언하면 tsc 가 소비처에서 폴백을 강제한다."""
-    if not BASELINE.exists():
+    if not baseline_ready():
         return []
-    frozen = {line.strip() for line in BASELINE.read_text(encoding="utf-8").splitlines()
+    frozen = {line.strip() for line in BASELINE.read_text(encoding=READ_ENC).splitlines()
               if line.strip() and not line.startswith("#")}
     return [
         f"{item}: API 응답 타입의 배열 필드는 옵셔널(`?`)로 — 백엔드 배포가 늦으면 undefined 로"

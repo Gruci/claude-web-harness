@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import ROOT, _rel
+from kernel.context import READ_ENC, ROOT, _rel
 
 BASELINE_FILE = ROOT / "test_pairing_baseline.txt"
 
@@ -22,7 +22,7 @@ BASELINE_FILE = ROOT / "test_pairing_baseline.txt"
 def _load_baseline() -> set[str]:
     if not BASELINE_FILE.exists():
         return set()
-    lines = BASELINE_FILE.read_text(encoding="utf-8").splitlines()
+    lines = BASELINE_FILE.read_text(encoding=READ_ENC).splitlines()
     return {ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("#")}
 
 

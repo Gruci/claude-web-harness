@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import ROOT, _ls_files, _rel
+from kernel.context import READ_ENC, ROOT, _ls_files, _rel
 
 MD_REF_ALLOWLIST_FILE = "md_ref_allowlist.txt"
 
@@ -47,7 +47,7 @@ def _load_ref_allowlist() -> set[str]:
     if not f.exists():
         return set()
     allow: set[str] = set()
-    for line in f.read_text(encoding="utf-8").splitlines():
+    for line in f.read_text(encoding=READ_ENC).splitlines():
         token = line.split("#", 1)[0].strip()
         if token:
             allow.add(token)
@@ -89,7 +89,7 @@ def check_md_path_refs() -> list[str]:
     bad: list[str] = []
     for md in _doc_md_files():
         rel_md = _rel(md)
-        for i, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(md.read_text(encoding=READ_ENC).splitlines(), 1):
             for backtick in _BACKTICK.findall(line):
                 for m in _PATH_TOKEN.finditer(backtick):
                     token = m.group(0)
@@ -107,7 +107,7 @@ def check_md_path_refs() -> list[str]:
 
 def _top_level_ints(code: Path) -> dict[str, int]:
     consts: dict[str, int] = {}
-    tree = ast.parse(code.read_text(encoding="utf-8"))
+    tree = ast.parse(code.read_text(encoding=READ_ENC))
     for node in tree.body:
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) \
                 and isinstance(node.value.value, int):
@@ -119,7 +119,7 @@ def _top_level_ints(code: Path) -> dict[str, int]:
 
 def _getenv_keys(code: Path) -> set[str]:
     keys: set[str] = set()
-    tree = ast.parse(code.read_text(encoding="utf-8"))
+    tree = ast.parse(code.read_text(encoding=READ_ENC))
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
                 and node.func.attr == "getenv" and node.args \
@@ -139,7 +139,7 @@ def _sync_int_consts(doc: Path, code: Path, marker: str) -> list[str]:
     consts = _top_level_ints(code)
     rel_doc = _rel(doc)
     bad: list[str] = []
-    for i, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
+    for i, line in enumerate(doc.read_text(encoding=READ_ENC).splitlines(), 1):
         names = [n for n in _CONST_REF.findall(line) if marker in n]
         if not names:
             continue
@@ -157,7 +157,7 @@ def _sync_env_keys(doc: Path, code: Path, section: str, allow: tuple[str, ...]) 
     code_keys = _getenv_keys(code)
     doc_keys: set[str] = set()
     in_block = False
-    for line in doc.read_text(encoding="utf-8").splitlines():
+    for line in doc.read_text(encoding=READ_ENC).splitlines():
         if line.strip() == section:
             in_block = True
             continue
@@ -172,11 +172,20 @@ def _sync_env_keys(doc: Path, code: Path, section: str, allow: tuple[str, ...]) 
     return bad
 
 
+def doc_sync_ready(entry: dict[str, object]) -> bool:
+    """양쪽 실물이 다 있는가. 한쪽이라도 없으면 대조할 것이 없어 [SKIP] 이다.
+
+    예전엔 여기서 조용히 빈 목록을 돌려줘 [OK] 로 찍혔다. 문서와 코드가 둘 다 없는 상태를
+    "대조했고 어긋나지 않았다"로 보고하면 그건 게이트가 아니라 거짓말이다.
+    """
+    return (ROOT / str(entry["doc"])).exists() and (ROOT / str(entry["code"])).exists()
+
+
 def check_doc_sync(entry: dict[str, object]) -> list[str]:
-    """프로파일 DOC_SYNC 한 쌍을 판정한다. 문서나 코드가 없으면 대조할 것이 없다."""
+    """프로파일 DOC_SYNC 한 쌍을 판정한다."""
     doc = ROOT / str(entry["doc"])
     code = ROOT / str(entry["code"])
-    if not doc.exists() or not code.exists():
+    if not doc_sync_ready(entry):
         return []
     kind = entry.get("kind")
     if kind == "int_consts":
@@ -197,7 +206,7 @@ def _is_domain_md(rel: str) -> bool:
 
 
 def _outlinks(md_path: Path, known: set[str]) -> set[str]:
-    text = md_path.read_text(encoding="utf-8")
+    text = md_path.read_text(encoding=READ_ENC)
     tokens: set[str] = set()
     for backtick in _BACKTICK.findall(text):
         tokens.update(t for t in _PATH_TOKEN.findall(backtick) if t.endswith(".md"))
@@ -239,7 +248,7 @@ def _harness_actuals() -> dict[str, set[str]]:
     actual: dict[str, set[str]] = {"훅": set(), "에이전트": set(), "스킬": set()}
     settings = ROOT / ".claude" / "settings.json"
     if settings.exists():
-        raw = json.loads(settings.read_text(encoding="utf-8"))
+        raw = json.loads(settings.read_text(encoding=READ_ENC))
         for entries in (raw.get("hooks") or {}).values():
             for entry in entries:
                 for hook in entry.get("hooks") or []:
@@ -266,6 +275,6 @@ def check_harness_map() -> list[str]:
     doc = ROOT / profile.HARNESS_MAP
     if not doc.exists():
         return [f"{profile.HARNESS_MAP} 없음 — 하네스 지도가 정본이다"]
-    text = doc.read_text(encoding="utf-8")
+    text = doc.read_text(encoding=READ_ENC)
     return [f"{profile.HARNESS_MAP}: {kind} '{name}' 이 지도에 없음 — 같은 턴에 등재하라"
             for kind, names in actuals.items() for name in sorted(names) if name not in text]

@@ -26,7 +26,8 @@ _LAYER_KEYS = (
 _FILE_KEYS = ("settings", "ssl_util")
 _SYMBOL_KEYS = ("db_accessor", "db_accessor_module", "ssl_bypass", "error_response")
 _VOCAB_KEYS = ("ui_denylist", "abbrev_prefixes", "abbrev_names")
-_ALLOWLIST_KEYS = ("py_any", "ui_hex", "ui_fetch", "ui_fetch_wrappers", "env_access")
+_ALLOWLIST_KEYS = ("py_any", "ui_hex", "ui_fetch", "ui_fetch_wrappers", "env_access",
+                   "ui_platform")
 _MD_KEYS = ("doc_exclude", "ref_exclude", "style_exclude", "date_exempt")
 
 
@@ -72,6 +73,11 @@ BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = (
 )
 LOCAL_GATES: tuple[str, ...] = tuple(getattr(_MOD, "LOCAL_GATES", ())) if _MOD else ()
 HARNESS_MAP: str = getattr(_MOD, "HARNESS_MAP", "HARNESS.md") if _MOD else "HARNESS.md"
+ROOT_FILES: tuple[str, ...] = tuple(getattr(_MOD, "ROOT_FILES", ())) if _MOD else ()
+LESSONS_DOC: str | None = getattr(_MOD, "LESSONS_DOC", None) if _MOD else None
+AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = (
+    dict(getattr(_MOD, "AGENT_MODEL_POLICY", {})) if _MOD else {}
+)
 
 
 def layer(name: str) -> str | None:

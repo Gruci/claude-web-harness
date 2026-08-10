@@ -20,7 +20,7 @@ import re
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import ROOT, _rel
+from kernel.context import READ_ENC, ROOT, _rel
 
 BASELINE_FILE = ROOT / "ddl_types_baseline.txt"
 
@@ -35,7 +35,7 @@ SCALED_NUMERIC = re.compile(r'"?([\w가-힣]+)"?\s+NUMERIC\s*\(\s*\d+\s*,\s*[1-9
 def _load_baseline() -> set[str]:
     if not BASELINE_FILE.exists():
         return set()
-    lines = BASELINE_FILE.read_text(encoding="utf-8").splitlines()
+    lines = BASELINE_FILE.read_text(encoding=READ_ENC).splitlines()
     return {ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("#")}
 
 
@@ -50,7 +50,7 @@ def check_ddl_lossy_types(py_files: list[Path]) -> list[str]:
         rel = _rel(f)
         if not rel.startswith(target):
             continue
-        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             if line.lstrip().startswith("#"):
                 continue
             for m in LOSSY_FLOAT.finditer(line):

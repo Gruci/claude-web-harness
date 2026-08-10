@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import ROOT, _rel
+from kernel.context import READ_ENC, ROOT, _rel
 
 BASELINE_FILE = "md_style_baseline.txt"
 
@@ -54,7 +54,7 @@ def _load_baseline() -> set[str]:
     if not path.exists():
         return set()
     entries: set[str] = set()
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    for raw in path.read_text(encoding=READ_ENC).splitlines():
         token = raw.split("#", 1)[0].strip()
         if token:
             entries.add(token)
@@ -147,7 +147,7 @@ def check_md_style(files: list[Path]) -> tuple[list[str], list[str]]:
         rel = _rel(path)
         if not style_target(rel):
             continue
-        lines = path.read_text(encoding="utf-8").splitlines()
+        lines = path.read_text(encoding=READ_ENC).splitlines()
         found: list[str] = []
         _scan_lines(rel, lines, found, soft)
         if not _has_role_contract(lines):

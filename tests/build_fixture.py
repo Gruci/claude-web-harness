@@ -35,6 +35,23 @@ FILES["CLAUDE.md"] = f"""# CLAUDE.md
 | 디자인 | `DESIGN_GUIDE.md` |
 | 하네스 | `HARNESS.md` |
 | 코덱스 | `AGENTS.md` |
+| 사고 기록 | `dev/LESSONS.md` |
+"""
+
+# 승격 상태 — §1 은 `> 강제:` 선언을 일부러 빠뜨린다
+FILES["dev/LESSONS.md"] = f"""# LESSONS
+
+{ROLE.format("사고 경위와 강제 수단", "같은 사고를 또 낼 것 같을 때")}
+
+## §1 읽기 레이어에서 쓰기가 나갔다
+
+캐시를 지우는 SQL 이 조회 경로에 섞여 들어갔다.
+
+## §2 색을 파일마다 직접 적었다
+
+> 강제: 산문 전용 — 토큰 정본이 아직 없어 가리킬 곳이 없다
+
+같은 파랑이 화면마다 달랐다.
 """
 
 # ⑬b 한 줄에 설명 붙은 나열 7개 · ⑬c 괄호 3중 중첩
@@ -298,6 +315,22 @@ FILES["frontend/src/types/api.ts"] = '''export interface Board {
 }
 '''
 
+FILES["frontend/src/Fixed.tsx"] = '''export const panel = { width: "480px" };
+'''
+
+FILES["frontend/src/Storage.tsx"] = '''export const saved = localStorage.getItem("draft");
+'''
+
+# 브라우저 API 래퍼 정본 — 자기 자신은 검사 대상이 아니다(프로파일 ui_platform 등재)
+FILES["frontend/src/platform.ts"] = '''export const read = (key: string) => window.localStorage.getItem(key);
+'''
+
+# 시크릿 — AWS 공개 문서의 예시 키 형태
+FILES["batches/leak.py"] = '''"""픽스처: 실키 형태의 토큰 하드코딩."""
+
+ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
+'''
+
 FILES["tests/unit/test_placeholder.py"] = '''"""픽스처: 짝 검사가 매칭에 실패하는지 확인용 테스트."""
 
 
@@ -331,12 +364,16 @@ VOCAB = {
     "abbrev_prefixes": ("oper_", "rev_"),
     "abbrev_names": ("net",),
 }
-ALLOWLIST = {"py_any": (), "ui_hex": (), "ui_fetch": (), "ui_fetch_wrappers": (), "env_access": ()}
+ALLOWLIST = {"py_any": (), "ui_hex": (), "ui_fetch": (), "ui_fetch_wrappers": (),
+             "env_access": (), "ui_platform": ("frontend/src/platform.ts",)}
+ROOT_FILES = ("settings.py", "batch_runner.py")
+LESSONS_DOC = "dev/LESSONS.md"
+AGENT_MODEL_POLICY = {"auditor": ("opus", "high")}
 MD = {
     "doc_exclude": (".claude/", "docs/"),
     "ref_exclude": ("docs/", "idea/", "memory/"),
     "style_exclude": (),
-    "date_exempt": (),
+    "date_exempt": ("dev/LESSONS.md",),
 }
 DOC_SYNC = [
     {"doc": "DEVGUIDE.md", "code": "batch_runner.py", "kind": "int_consts", "marker": "_HOUR"},

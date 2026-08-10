@@ -12,6 +12,9 @@
 
 [OK] 와 [SKIP] 을 가르는 것이 이 러너의 핵심이다. 이전 하네스는 레이어 이름이 안 맞아 대상이
 0개인데도 [OK] 로 찍어, 지켜주지 않는 게이트를 지켜준다고 믿게 만들었다.
+
+각 섹션은 slug 를 갖는다. slug 는 `harness_baseline.txt` 의 동결 키를 겸한다 — 설치 시점에
+이미 있던 위반을 (slug, 파일) 단위로 얼려서 초록불에서 출발하게 하는 것이 그 목적이다.
 """
 
 from __future__ import annotations
@@ -21,13 +24,15 @@ import sys
 from pathlib import Path
 
 from kernel import profile
-from kernel.context import ROOT, _rel, tracked
-from kernel.gates import api_types, core, layers, md_graph, md_style, schema, tests_pairing
+from kernel.context import READ_ENC, ROOT, _rel, app_code, is_harness_own, tracked
+from kernel.gates import (api_types, core, harness_self, layers, md_graph, md_style,
+                          placement, schema, tests_pairing)
 
-# (제목, 위반 목록, 건너뛴 사유). 사유가 있으면 [SKIP].
-Section = tuple[str, list[str], "str | None"]
+# (slug, 제목, 위반 목록, 건너뛴 사유). 사유가 있으면 [SKIP].
+Section = tuple[str, str, list[str], "str | None"]
 
 LOCAL_PACKAGE = "harness_gates"
+BASELINE_FILE = ROOT / "harness_baseline.txt"
 
 NO_PY = "검사할 소스 없음"
 NO_UI = "프론트 소스 없음"
@@ -40,7 +45,7 @@ def _print_style_reports(reports: list[str]) -> None:
 
 def _print_sections(sections: list[Section]) -> int:
     total = 0
-    for title, violations, skipped in sections:
+    for _slug, title, violations, skipped in sections:
         if skipped:
             print(f"[SKIP] {title} — {skipped}")
         elif violations:
@@ -53,6 +58,46 @@ def _print_sections(sections: list[Section]) -> int:
     return total
 
 
+# ── 동결(baseline) ─────────────────────────────────────────────────────────────
+#
+# 하네스를 기존 레포에 끼운 첫 실행이 수백 건을 뱉으면 사람은 게이트를 통째로 끈다. 그게
+# 하네스가 죽는 실제 경로다. 그래서 설치는 현재 위반을 (slug, 파일)로 얼리고 초록불에서
+# 출발한다. 줄번호로 얼리지 않는 이유는 코드가 한 줄만 밀려도 동결이 풀리기 때문이다.
+
+
+def violation_path(violation: str) -> str | None:
+    """위반 문자열 앞머리의 파일 경로. 파일에 귀속되지 않는 전역 위반이면 None."""
+    head = violation.split(":", 1)[0].strip()
+    if not head or " " in head or ("/" not in head and "." not in head):
+        return None
+    return head
+
+
+def load_baseline() -> set[tuple[str, str]]:
+    if not BASELINE_FILE.exists():
+        return set()
+    frozen: set[tuple[str, str]] = set()
+    for line in BASELINE_FILE.read_text(encoding=READ_ENC).splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        slug, _tab, path = line.partition("\t")
+        if path.strip():
+            frozen.add((slug.strip(), path.strip()))
+    return frozen
+
+
+def _apply_baseline(sections: list[Section]) -> list[Section]:
+    frozen = load_baseline()
+    if not frozen:
+        return sections
+    kept: list[Section] = []
+    for slug, title, violations, skipped in sections:
+        live = [v for v in violations
+                if (slug, violation_path(v) or "") not in frozen]
+        kept.append((slug, title, live, skipped))
+    return kept
+
+
 def _under(files: list[Path], layer_name: str) -> list[Path]:
     prefix = profile.layer(layer_name)
     if not prefix:
@@ -60,9 +105,9 @@ def _under(files: list[Path], layer_name: str) -> list[Path]:
     return [f for f in files if _rel(f).startswith(prefix)]
 
 
-def _entry(title: str, violations: list[str], ok: object, need: str) -> Section:
+def _entry(slug: str, title: str, violations: list[str], ok: object, need: str) -> Section:
     """ok 가 거짓이면 [SKIP]. `위반 0건`과 `대상 0개`를 구분하는 것이 이 함수의 전부다."""
-    return (title, violations, None) if ok else (title, [], need)
+    return (slug, title, violations, None) if ok else (slug, title, [], need)
 
 
 def _need_layer(name: str) -> str:
@@ -80,41 +125,57 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
     settings = profile.FILES.get("settings")
 
     return [
-        _entry("파일 길이 상한", core.check_line_limit(files), files, NO_PY),
-        _entry("중첩 def(클로저)", core.check_closures(files), files, NO_PY),
-        _entry("읽기 레이어의 쓰기 SQL·commit", core.check_reads_writes(files),
+        _entry("line_limit", "파일 길이 상한", core.check_line_limit(files), files, NO_PY),
+        _entry("closures", "중첩 def(클로저)", core.check_closures(files), files, NO_PY),
+        _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", core.check_reads_writes(files),
                reads, _need_layer("read")),
-        _entry("축약 이름 단독 대입", core.check_abbrev_names(files),
+        _entry("abbrev_names", "축약 이름 단독 대입", core.check_abbrev_names(files),
                files and vocab["abbrev_names"], "프로파일에 금지 축약 이름 없음"),
-        _entry("축약 접두 식별자", core.check_abbrev_prefixes(both),
+        _entry("abbrev_prefixes", "축약 접두 식별자", core.check_abbrev_prefixes(both),
                both and vocab["abbrev_prefixes"], "프로파일에 금지 축약 접두 없음"),
-        _entry("UI 라벨 금칙어", core.check_ui_jargon(ui_files),
+        _entry("ui_jargon", "UI 라벨 금칙어", core.check_ui_jargon(ui_files),
                ui_files and vocab["ui_denylist"], "프로파일에 UI 금칙어 없음"),
-        _entry("py Any 타입힌트", core.check_py_any(files), files, NO_PY),
-        _entry("TS any 타입", core.check_ts_any(ui_files), ui_files, NO_UI),
-        _entry("커넥션 블록 내 가공", layers.check_connection_processing(files),
+        _entry("py_any", "py Any 타입힌트", core.check_py_any(files), files, NO_PY),
+        _entry("type_hints", "공개 함수 타입힌트", core.check_type_hints(files), files, NO_PY),
+        _entry("secrets", "시크릿 토큰 하드코딩", core.check_secrets(both), both, NO_PY),
+        _entry("ts_any", "TS any 타입", core.check_ts_any(ui_files), ui_files, NO_UI),
+        _entry("conn_processing", "커넥션 블록 내 가공", layers.check_connection_processing(files),
                _under(files, "db") and profile.symbol("db_accessor"), _need_symbol("db_accessor")),
-        _entry("설정 밖 환경변수 조회", layers.check_env_access(files),
+        _entry("env_access", "설정 밖 환경변수 조회", layers.check_env_access(files),
                files and settings, "프로파일에 settings 파일 미선언"),
-        _entry("await 없는 async 핸들러", layers.check_web_async_no_await(files),
+        _entry("web_async", "await 없는 async 핸들러", layers.check_web_async_no_await(files),
                web, _need_layer("web")),
-        _entry("커넥션 접근자 import 단일 경로", layers.check_accessor_import_path(files),
+        _entry("accessor_import", "커넥션 접근자 import 단일 경로",
+               layers.check_accessor_import_path(files),
                (reads or _under(files, "write")) and profile.symbol("db_accessor_module"),
                _need_symbol("db_accessor_module")),
-        _entry("전역 SSL 패치 호출 위치", layers.check_ssl_bypass_location(files),
+        _entry("ssl_bypass", "전역 SSL 패치 호출 위치", layers.check_ssl_bypass_location(files),
                files and profile.symbol("ssl_bypass"), _need_symbol("ssl_bypass")),
-        _entry("라우트 에러 응답 형식", layers.check_routes_error_response(files),
+        _entry("routes_error", "라우트 에러 응답 형식", layers.check_routes_error_response(files),
                _under(files, "routes") and profile.symbol("error_response"),
                _need_symbol("error_response")),
-        _entry("공용 래퍼 없는 fetch", layers.check_frontend_raw_fetch(ui_files), ui_files, NO_UI),
-        _entry("프론트 hex 리터럴", layers.check_frontend_hex(ui_files), ui_files, NO_UI),
-        _entry("수집·계산 모듈의 행동 테스트 짝",
+        _entry("raw_fetch", "공용 래퍼 없는 fetch", layers.check_frontend_raw_fetch(ui_files),
+               ui_files, NO_UI),
+        _entry("hex_literal", "프론트 색 리터럴", layers.check_frontend_hex(ui_files),
+               ui_files, NO_UI),
+        _entry("responsive", "폰을 깨뜨리는 고정 폭", layers.check_frontend_responsive(ui_files),
+               ui_files, NO_UI),
+        _entry("browser_api", "브라우저 API 직접 호출",
+               layers.check_frontend_browser_api(ui_files),
+               ui_files and profile.ALLOWLIST["ui_platform"],
+               "프로파일에 브라우저 API 래퍼 미선언"),
+        _entry("file_placement", "앱 코드 배치",
+               placement.check_file_placement(files, ui_files),
+               placement.layer_prefixes(), "프로파일에 레이어가 하나도 미선언"),
+        _entry("test_pairing", "수집·계산 모듈의 행동 테스트 짝",
                tests_pairing.check_module_test_pairing(files),
                profile.BEHAVIOR_TESTED_ROOTS, "프로파일에 행동 테스트 대상 루트 없음"),
-        _entry("DDL 저장 타입 잘림", schema.check_ddl_lossy_types(files),
+        _entry("ddl_types", "DDL 저장 타입 잘림", schema.check_ddl_lossy_types(files),
                _under(files, "schema"), _need_layer("schema")),
-        _entry("API 응답 배열 필드 옵셔널", api_types.check_api_array_optional(ui_files),
-               ui_files, NO_UI),
+        _entry("api_array", "API 응답 배열 필드 옵셔널",
+               api_types.check_api_array_optional(ui_files),
+               ui_files and api_types.baseline_ready(),
+               NO_UI if not ui_files else "배열 동결 파일 미생성 — harness_install.py 가 만든다"),
     ]
 
 
@@ -127,18 +188,26 @@ def _doc_sections() -> list[Section]:
     if greenfield:
         _print_style_reports(refs)
     map_exists = (ROOT / profile.HARNESS_MAP).exists()
+    lessons = profile.LESSONS_DOC
 
     sections: list[Section] = [
-        _entry("MD 경로 참조 실존", refs, not greenfield, "greenfield — 리포트로만"),
-        _entry("고아 MD(허브 도달 불가)", md_graph.check_md_orphans(),
+        _entry("md_path_refs", "MD 경로 참조 실존", refs, not greenfield, "greenfield — 리포트로만"),
+        _entry("md_orphans", "고아 MD(허브 도달 불가)", md_graph.check_md_orphans(),
                profile.HUBS, "프로파일에 허브 목록 없음"),
-        _entry("하네스 지도 대조", md_graph.check_harness_map(),
+        _entry("md_harness_map", "하네스 지도 대조", md_graph.check_harness_map(),
                (ROOT / ".claude").is_dir() and (map_exists or not greenfield),
                f"greenfield — {profile.HARNESS_MAP} 아직 없음"),
+        _entry("agent_model", "에이전트 모델 정책", harness_self.check_agent_model_policy(),
+               profile.AGENT_MODEL_POLICY, "프로파일에 에이전트 모델 정책 없음"),
+        _entry("lessons_promotion", "사고 절 승격 상태", harness_self.check_lessons_promotion(),
+               lessons and (ROOT / lessons).exists(),
+               f"선언된 {lessons} 가 아직 없음" if lessons else "프로파일에 사고 기록 문서 미선언"),
     ]
     for pair in profile.DOC_SYNC:
         title = f"문서↔코드 대조({pair['doc']}↔{pair['code']})"
-        sections.append(_entry(title, md_graph.check_doc_sync(pair), True, ""))
+        sections.append(_entry(f"doc_sync:{pair['doc']}", title,
+                               md_graph.check_doc_sync(pair),
+                               md_graph.doc_sync_ready(pair), "대조할 양쪽 실물이 아직 없음"))
     return sections
 
 
@@ -150,11 +219,11 @@ def _local_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
             module = importlib.import_module(f"{LOCAL_PACKAGE}.{name}")
             results = module.run(files, ui_files)
         except Exception as exc:                     # 로드 실패를 조용히 넘기면 게이트가 사라진다
-            sections.append((f"프로젝트 게이트 {name}",
+            sections.append((f"local:{name}", f"프로젝트 게이트 {name}",
                              [f"로드 실패 {exc.__class__.__name__}: {exc}"], None))
             continue
         for title, violations in results:
-            sections.append((title, violations, None))
+            sections.append((f"local:{name}", title, violations, None))
     return sections
 
 
@@ -165,11 +234,26 @@ def _build_sections(
     sections += _local_sections(files, ui_files)
     if md_files:
         hard, soft = md_style.check_md_style(md_files)
-        sections.append(("MD 작성 규칙", hard, None))
+        sections.append(("md_style", "MD 작성 규칙", hard, None))
         _print_style_reports(soft)
     if include_md:
         sections += _doc_sections()
     return sections
+
+
+def collect_all_violations() -> list[tuple[str, str]]:
+    """동결 대상 — 현재 전 게이트 위반의 (slug, 파일) 쌍. 설치 스크립트가 쓴다.
+
+    baseline 을 적용하지 않은 날것이다. 파일에 귀속되지 않는 전역 위반은 얼릴 키가 없어
+    빠지고, 그래서 설치 후에도 남는다 — 사람이 직접 봐야 하는 것들이다.
+    """
+    ui = profile.layer("ui")
+    files = app_code("*.py")
+    ui_files = app_code("*.tsx", "*.ts", under=ui) if ui else []
+    sections = _build_sections(files, ui_files, True, tracked_md_files())
+    pairs = {(slug, path) for slug, _title, violations, _skip in sections
+             for v in violations if (path := violation_path(v))}
+    return sorted(pairs)
 
 
 def tracked_md_files() -> list[Path]:
@@ -185,6 +269,8 @@ def _single_file_lists(raw_path: str) -> tuple[list[Path], list[Path], bool, lis
         return [], [], False, []
     exclude = profile.SCOPE["exclude_all"]
     if not p.exists() or (exclude and rel.startswith(exclude)):
+        return [], [], False, []
+    if p.suffix in (".py", ".ts", ".tsx") and is_harness_own(rel):
         return [], [], False, []
     if p.suffix == ".py":
         return [p], [], False, []
@@ -213,10 +299,11 @@ def main(argv: list[str]) -> int:
             return 0
     else:
         ui = profile.layer("ui")
-        files = tracked("*.py")
-        ui_files = tracked("*.tsx", "*.ts", under=ui) if ui else []
+        files = app_code("*.py")
+        ui_files = app_code("*.tsx", "*.ts", under=ui) if ui else []
         include_md, md_files = True, tracked_md_files()
-    total = _print_sections(_build_sections(files, ui_files, include_md, md_files))
+    sections = _apply_baseline(_build_sections(files, ui_files, include_md, md_files))
+    total = _print_sections(sections)
 
     if total:
         print(f"\n총 {total}건 위반.")
