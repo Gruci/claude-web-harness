@@ -195,21 +195,32 @@ def check_ui_jargon(files: list[Path]) -> list[str]:
 
 
 def check_py_any(files: list[Path]) -> list[str]:
-    """`Any` 타입힌트 때우기 금지 — 타입 게이트 게이밍 방지."""
+    """임의 타입으로 때우기 금지 — 타입 게이트 게이밍 방지.
+
+    무엇이 '임의 타입'인지는 언어마다 다르다(파이썬 `Any`·Go `interface{}`·TS `any`).
+    판정 형태만 여기 있고 패턴은 언어팩이 준다.
+    """
     allow = tuple(profile.ALLOWLIST["py_any"])
     tests = profile.layer("tests")
     # 커널 자신은 늘 제외 — 게이트 설명 문자열이 자기 패턴에 걸린다.
     exempt = profile.scratch() + ("kernel/",) + ((tests,) if tests else ())
+    pattern = profile.pattern("any_type")
+    if not pattern:
+        return []
+    any_re = re.compile(pattern)
+    escape = profile.pattern("any_escape") or "any-ok"
+    comment = profile.pattern("comment") or "#"
     bad: list[str] = []
     for f in files:
         rel = _rel(f)
         if rel.startswith(exempt) or rel in allow:
             continue
         for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
-            if "any-ok" in line or line.lstrip().startswith("#"):
+            if escape in line or line.lstrip().startswith(comment):
                 continue
-            if ANY_HINT.search(line):
-                bad.append(f"{rel}:{i}: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)")
+            if any_re.search(line):
+                bad.append(f"{rel}:{i}: 임의 타입 → 구체 타입 "
+                           f"(불가피하면 `{comment} {escape}: 사유`)")
     return bad
 
 

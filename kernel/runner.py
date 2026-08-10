@@ -23,13 +23,20 @@ import importlib
 import sys
 from pathlib import Path
 
-from kernel import profile
+from kernel import linters, profile
 from kernel.context import READ_ENC, ROOT, _rel, app_code, is_harness_own, tracked
 from kernel.gates import (api_types, core, harness_self, layers, md_graph, md_style,
                           placement, schema, tests_pairing)
 
-# (slug, 제목, 위반 목록, 건너뛴 사유). 사유가 있으면 [SKIP].
-Section = tuple[str, str, list[str], "str | None"]
+# (slug, 제목, 위반 목록, 건너뜀). 건너뜀은 (등급, 사유) 이고 None 이면 실제로 검사한 것이다.
+#
+# 등급을 셋으로 가른 이유: "설정을 안 채워서 못 함"·"이 언어엔 규칙이 성립 안 함"·"도구가
+# 없어서 못 함"은 사용자가 해야 할 일이 전부 다르다. 하나로 뭉뚱그리면 무엇을 잃었는지 모른다.
+#   SKIP  설정·대상이 없다        → 프로파일을 채우면 켜진다
+#   N/A   이 언어엔 해당 없다      → 손실이 아니다. 언어가 이미 보장하거나 개념이 없다
+#   TOOL  외부 도구가 없다         → 설치하면 켜진다
+Skip = tuple[str, str]
+Section = tuple[str, str, list[str], "Skip | None"]
 
 LOCAL_PACKAGE = "harness_gates"
 BASELINE_FILE = ROOT / "harness_baseline.txt"
@@ -47,7 +54,8 @@ def _print_sections(sections: list[Section]) -> int:
     total = 0
     for _slug, title, violations, skipped in sections:
         if skipped:
-            print(f"[SKIP] {title} — {skipped}")
+            grade, reason = skipped
+            print(f"[{grade:<4}] {title} — {reason}")
         elif violations:
             total += len(violations)
             print(f"\n[FAIL] {title} — {len(violations)}건")
@@ -106,21 +114,39 @@ def _under(files: list[Path], layer_name: str) -> list[Path]:
 
 
 def _entry(slug: str, title: str, violations: list[str], ok: object, need: str) -> Section:
-    """ok 가 거짓이면 [SKIP]. `위반 0건`과 `대상 0개`를 구분하는 것이 이 함수의 전부다."""
-    return (slug, title, violations, None) if ok else (slug, title, [], need)
+    """ok 가 거짓이면 [SKIP]. `위반 0건`과 `대상 0개`를 구분하는 것이 이 함수의 전부다.
+
+    언어팩이 이 게이트를 '해당 없음'으로 선언했으면 그쪽이 우선이다 — 설정을 채우라고
+    안내해봐야 그 언어에서는 채울 것이 없다.
+    """
+    unneeded = profile.not_applicable(slug)
+    if unneeded:
+        return (slug, title, [], ("N/A", f"{profile.SYNTAX}: {unneeded}"))
+    return (slug, title, violations, None) if ok else (slug, title, [], ("SKIP", need))
 
 
 def _syntax_section(slug: str, title: str, check: object, args: tuple,
                     ok: object, need: str) -> Section:
-    """파이썬 구문 분석·관용구에 의존하는 검사.
+    """파이썬 구문 분석에 의존하는 검사.
 
-    언어가 다르면 **실행하지 않고** [SKIP] 으로 찍는다. 두 가지를 동시에 막는다.
-    `ast.parse` 를 다른 언어에 돌리면 전 파일이 '파싱 실패' 위반이 되고, `os.getenv` 같은
-    파이썬 관용구 정규식은 아무것도 안 걸려 [OK] 로 통과한다 — 후자가 더 위험하다.
+    언어가 다르면 **실행하지 않는다.** `ast.parse` 를 다른 언어에 돌리면 전 파일이
+    '파싱 실패' 위반이 되기 때문이다. 관용구 정규식 계열은 언어팩의 `PATTERNS` 로
+    갈아끼우므로 여기 오지 않는다 — 여기 남은 것은 진짜 파서가 필요한 것들뿐이다.
     """
+    unneeded = profile.not_applicable(slug)
+    if unneeded:
+        return (slug, title, [], ("N/A", f"{profile.SYNTAX}: {unneeded}"))
     if not profile.syntax_ready():
-        return (slug, title, [], profile.need_syntax())
+        return (slug, title, [], ("TOOL", profile.need_syntax()))
     return _entry(slug, title, check(*args), ok, need)   # type: ignore[operator]
+
+
+def _linter_sections() -> list[Section]:
+    """언어팩이 선언한 표준 도구에 위임한 결과."""
+    found: list[Section] = []
+    for slug, title, violations, skipped in linters.sections():
+        found.append((slug, title, violations, ("TOOL", skipped) if skipped else None))
+    return found
 
 
 def _need_layer(name: str) -> str:
@@ -148,7 +174,7 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
                both and vocab["abbrev_prefixes"], "설정에 금지할 축약 접두어를 안 적었음"),
         _entry("ui_jargon", "UI 라벨 금칙어", core.check_ui_jargon(ui_files),
                ui_files and vocab["ui_denylist"], "설정에 화면 금칙어를 안 적었음"),
-        _syntax_section("py_any", "Any 타입힌트", core.check_py_any, (files,), files, NO_PY),
+        _entry("py_any", "Any 타입힌트", core.check_py_any(files), files, NO_PY),
         _syntax_section("type_hints", "공개 함수 타입힌트", core.check_type_hints, (files,), files, NO_PY),
         _entry("secrets", "시크릿 토큰 하드코딩", core.check_secrets(both), both, NO_PY),
         _entry("ts_any", "TS any 타입", core.check_ts_any(ui_files), ui_files, NO_UI),
@@ -156,14 +182,14 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
                         layers.check_connection_processing, (files,),
                         _under(files, "db") and profile.symbol("db_accessor"),
                         _need_symbol("db_accessor")),
-        _syntax_section("env_access", "설정 밖 환경변수 조회", layers.check_env_access, (files,),
-                        files and settings, "설정에 환경변수 모듈을 안 적었음"),
+        _entry("env_access", "설정 밖 환경변수 조회", layers.check_env_access(files),
+               files and settings, "설정에 환경변수 모듈을 안 적었음"),
         _syntax_section("web_async", "await 없는 async 핸들러",
                         layers.check_web_async_no_await, (files,), web, _need_layer("web")),
-        _syntax_section("accessor_import", "커넥션 접근자 import 단일 경로",
-                        layers.check_accessor_import_path, (files,),
-                        (reads or _under(files, "write")) and profile.symbol("db_accessor_module"),
-                        _need_symbol("db_accessor_module")),
+        _entry("accessor_import", "커넥션 접근자 import 단일 경로",
+               layers.check_accessor_import_path(files),
+               (reads or _under(files, "write")) and profile.symbol("db_accessor_module"),
+               _need_symbol("db_accessor_module")),
         _entry("ssl_bypass", "전역 SSL 패치 호출 위치", layers.check_ssl_bypass_location(files),
                files and profile.symbol("ssl_bypass"), _need_symbol("ssl_bypass")),
         _syntax_section("routes_error", "라우트 에러 응답 형식",
@@ -247,6 +273,8 @@ def _build_sections(
     files: list[Path], ui_files: list[Path], include_md: bool, md_files: list[Path]
 ) -> list[Section]:
     sections = _kernel_sections(files, ui_files)
+    if include_md and files:            # 린터는 레포 전체를 보므로 --file 모드에선 건너뛴다
+        sections += _linter_sections()
     sections += _local_sections(files, ui_files)
     if md_files:
         hard, soft = md_style.check_md_style(md_files)

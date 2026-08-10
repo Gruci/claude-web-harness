@@ -14,7 +14,7 @@ exit=1
 [SKIP] UI 라벨 금칙어 — 설정에 화면 금칙어를 안 적었음
 
 [FAIL] Any 타입힌트 — 1건
-   - utils/anyhint.py:5: Any 타입힌트 → 구체 타입 (불가피하면 `# any-ok: 사유`)
+   - utils/anyhint.py:5: 임의 타입 → 구체 타입 (불가피하면 `# any-ok: 사유`)
 
 [FAIL] 공개 함수 타입힌트 — 10건
    - db/conn_loop.py:4: agg() 타입힌트 누락 — 반환

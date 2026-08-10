@@ -12,7 +12,7 @@ Harness v3.0.0
 
 `claude-web-harness` is an automated validation tool that prevents context loss and code quality degradation during developer–AI collaboration. It enforces an agreed design up front and maintains code consistency through checks that run at save time.
 
-The languages under inspection are set by configuration. Of the 32 checks, **24 operate independently of language**; the **8 that rely on Python syntax analysis run only when the server language is Python**. Those 8 are never treated as passing in other languages — they are reported as `[SKIP]` with a reason.
+The language under inspection is set by a single configuration line (`LANG`). Extensions, idiom patterns, and external tooling follow from it, so adding a language never requires editing the checker itself. Checks that cannot run are never treated as passing — they are reported with a reason.
 
 ## Table of contents
 
@@ -44,12 +44,14 @@ Recording rules in documents alone provides no enforcement. Conventions written 
 
 ### 1.2 Check statuses
 
-Results are reported in four grades. The distinction between `[OK]` and `[SKIP]` is the core design element of this tool.
+Results are reported in six grades. Splitting "could not run" into three distinct reasons is the core design element of this tool — the action required differs in each case.
 
 | Grade | Meaning | Session exit |
 |:--|:--|:--:|
 | `[OK]` | Check ran, no violations | Allowed |
-| `[SKIP]` | **Not performed — required configuration is missing** | Allowed |
+| `[SKIP]` | Not performed — required configuration is missing | Allowed |
+| `[N/A]` | The rule does not hold in this language | Allowed |
+| `[TOOL]` | External tooling absent, so the check cannot run | Allowed |
 | `[FAIL]` | Violation detected | Blocked |
 | `[REPORT]` | Soft signal with false-positive potential. Not counted in totals | Allowed |
 
@@ -149,7 +151,7 @@ An artifact missing any of the following is not accepted as a design, and stage 
 
 ## 4. Validation rules
 
-Thirty checks run at file save time. On detection, the change is blocked and a fix is requested. The full list and the rationale for each are defined in `HARNESS.md`.
+Thirty-two checks run at file save time. On detection, the change is blocked and a fix is requested. The full list and the rationale for each are defined in `HARNESS.md`.
 
 ### 4.1 Representative rules
 
@@ -225,10 +227,8 @@ Lower layers enforce upper ones. The checking logic holds only the **shape** of 
 When porting to another project, `harness_profile.py` is in principle the only file to modify.
 
 ```python
-# harness_profile.py — languages under inspection
-SOURCE_EXT = ("*.go",)            # Server source extensions
-UI_EXT     = ("*.tsx", "*.ts")    # Screen source extensions
-SYNTAX     = "go"                 # The 8 syntax checks run only when this is "python"
+# harness_profile.py — language under inspection (one line brings extensions, idioms, tooling)
+LANG = "go"                       # kernel/langs/go.py
 
 # Layer path definitions
 # Keys are roles the checker knows; values are this project's real paths.
@@ -343,15 +343,20 @@ Differences between the current output and the baseline are reported line by lin
 ## 7. FAQ
 
 **Can I use this with a language other than Python?**
-Yes. Set `SOURCE_EXT` to that language's extensions and its files become check targets. The eight checks that depend on Python syntax analysis — nested functions, type hints, `Any`, connection scope, environment access, `async` without `await`, import paths, route response shape — will not run, and are reported as `[SKIP]` with a reason rather than as passes.
+Yes. Write `LANG = "go"` in the configuration and the extensions, idiom patterns, list of rules that do not apply to that language, and the external tooling to delegate to all follow from it. `python`, `go`, and `typescript` ship with the harness; any other language needs a `profiles/lang/<name>.py` declaring four items — `EXT`, `PATTERNS`, `NOT_APPLICABLE`, `LINTERS`.
+
+Checks that require syntax analysis are delegated to that language's standard tooling: `go vet` and `staticcheck` for Go, `ruff` for Python, `tsc` and `eslint` for TypeScript. When a tool is absent the check is marked `[TOOL]` rather than passing, and the install command is printed alongside.
 
 Measured on a Go project (the regression fixture ships in the repository at `tests/fixtures/goproj`):
 
 | Category | Count |
 |:--|:--:|
-| Actually performed | 7 |
-| `[SKIP]` — Python only | 8 |
-| `[SKIP]` — configuration incomplete (activates once filled in) | 15 |
+| Actually performed | 9 |
+| `[N/A]` — rule does not hold in Go | 3 |
+| `[TOOL]` — activates once tooling is installed | 4 |
+| `[SKIP]` — configuration incomplete | 16 |
+
+Installation state can be inspected with `python -X utf8 harness_install.py --doctor`.
 
 **Can I install without having decided on a stack?**
 Yes. Onboarding asks about the shape of the deliverable, not technology names. Selecting "undecided" installs the most common configuration, and checks for unused areas remain inactive.

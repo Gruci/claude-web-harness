@@ -99,9 +99,13 @@ def check_connection_processing(py_files: list[Path]) -> list[str]:
 
 
 def check_env_access(py_files: list[Path]) -> list[str]:
+    """설정 모듈 밖에서 환경변수를 읽는 것. 읽는 방법은 언어마다 다르므로 패턴은 언어팩이 준다."""
     settings = profile.FILES.get("settings")
-    if not settings:
+    pattern = profile.pattern("env_read")
+    if not settings or not pattern:
         return []
+    env_re = re.compile(pattern)
+    comment = profile.pattern("comment") or "#"
     allow = tuple(profile.ALLOWLIST["env_access"])
     tests = profile.layer("tests")
     exempt = profile.scratch() + ("kernel/",) + ((tests,) if tests else ())
@@ -112,9 +116,9 @@ def check_env_access(py_files: list[Path]) -> list[str]:
             continue
         for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
-            if stripped.startswith("#"):
+            if stripped.startswith(comment):
                 continue
-            if _ENV_RE.search(line):
+            if env_re.search(line):
                 bad.append(f"{rel}:{i}: {settings} 밖에서 환경변수 조회 — {stripped[:60]}")
     return bad
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 import importlib.util
 from typing import Any
 
+from kernel import lang
 from kernel.context import ROOT
 
 PROFILE_FILE = "harness_profile.py"
@@ -84,21 +85,47 @@ ROOT_FILES: tuple[str, ...] = tuple(getattr(_MOD, "ROOT_FILES", ())) if _MOD els
 # 게이트가 볼 파일 확장자와, 구문 분석·언어 관용구에 의존하는 검사의 가용 여부.
 # SYNTAX 가 "python" 이 아니면 그 계열 검사 9종은 [OK] 가 아니라 [SKIP] 이 된다 —
 # 파이썬 정규식이 다른 언어에서 안 걸리는 것을 "위반 없음"으로 보고하면 그게 무음 통과다.
-SOURCE_EXT: tuple[str, ...] = tuple(getattr(_MOD, "SOURCE_EXT", ("*.py",))) if _MOD else ("*.py",)
+LANG: str | None = getattr(_MOD, "LANG", None) if _MOD else None
+_PACK = lang.load(LANG)
+
+SOURCE_EXT: tuple[str, ...] = (
+    tuple(getattr(_MOD, "SOURCE_EXT", _PACK["EXT"])) if _MOD else _PACK["EXT"]
+)
 UI_EXT: tuple[str, ...] = (
     tuple(getattr(_MOD, "UI_EXT", ("*.tsx", "*.ts"))) if _MOD else ("*.tsx", "*.ts")
 )
-SYNTAX: str | None = getattr(_MOD, "SYNTAX", "python") if _MOD else "python"
+SYNTAX: str | None = getattr(_MOD, "SYNTAX", _PACK["SYNTAX"]) if _MOD else _PACK["SYNTAX"]
+
+# 언어팩이 준 것 위에 프로파일이 덮어쓴다 — 프로젝트 사정이 언어 관례보다 우선이다.
+PATTERNS: dict[str, str] = dict(_PACK["PATTERNS"])
+if _MOD and getattr(_MOD, "PATTERNS", None):
+    PATTERNS.update(_MOD.PATTERNS)
+
+NOT_APPLICABLE: dict[str, str] = dict(_PACK["NOT_APPLICABLE"])
+if _MOD and getattr(_MOD, "NOT_APPLICABLE", None):
+    NOT_APPLICABLE.update(_MOD.NOT_APPLICABLE)
+
+LINTERS: tuple = tuple(getattr(_MOD, "LINTERS", _PACK["LINTERS"])) if _MOD else _PACK["LINTERS"]
+
+
+def pattern(name: str) -> str:
+    """언어 관용구 정규식. 언어팩이 안 주면 파이썬 기본값이다."""
+    return PATTERNS.get(name) or lang.DEFAULTS["PATTERNS"].get(name, "")
 
 
 def syntax_ready() -> bool:
-    """파이썬 구문 분석·관용구에 의존하는 검사를 돌릴 수 있는가."""
+    """파이썬 구문 분석에 의존하는 검사를 돌릴 수 있는가."""
     return SYNTAX == "python"
 
 
 def need_syntax() -> str:
     where = SYNTAX or "미선언"
-    return f"서버 언어가 {where} 라 파이썬 구문·관용구 검사를 못 함"
+    return f"{where} 구문 분석기가 없어 검사 못 함"
+
+
+def not_applicable(slug: str) -> str:
+    """이 언어에서 규칙 자체가 성립하지 않으면 그 사유. 아니면 빈 문자열."""
+    return NOT_APPLICABLE.get(slug, "")
 LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = (
     tuple(getattr(_MOD, "LEGACY_PATHS", ())) if _MOD else ()
 )

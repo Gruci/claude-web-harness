@@ -107,6 +107,40 @@ def report_install_location() -> bool:
     return False
 
 
+def print_language_report() -> None:
+    """이 프로젝트의 언어 설정과, 그 언어팩이 요구하는 도구의 설치 여부.
+
+    도구가 없으면 그 검사는 안 도는데, 설치 전에는 그 사실이 설치 화면에 안 나온다.
+    온보딩이 이걸 보고 "무엇이 지금 안 지켜지는지"를 사용자에게 말해줘야 한다.
+    """
+    from kernel import lang, linters
+
+    print(f"쓸 수 있는 언어팩: {' '.join(lang.available())}\n")
+    print(f"현재 설정 — LANG={profile.LANG!r} SYNTAX={profile.SYNTAX!r}")
+    print(f"   서버 소스: {' '.join(profile.SOURCE_EXT)}")
+    print(f"   화면 소스: {' '.join(profile.UI_EXT)}")
+
+    if profile.NOT_APPLICABLE:
+        print("\n이 언어에서 해당 없는 검사 (손실 아님):")
+        for slug, why in sorted(profile.NOT_APPLICABLE.items()):
+            print(f"   {slug:<16} {why}")
+
+    if not profile.LINTERS:
+        print("\n위임할 외부 도구 없음.")
+        return
+    print("\n외부 도구:")
+    for entry in profile.LINTERS:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("slug") or "?")
+        absent = linters.missing_tool(entry)
+        if absent:
+            print(f"   [없음] {name:<14} {absent} 미설치 — {entry.get('install', '설치 방법 미기재')}")
+        else:
+            print(f"   [있음] {name:<14} {' '.join(entry.get('cmd', []))}")
+    print("\n없는 도구는 해당 검사가 [TOOL] 로 꺼진 채 돈다. 통과로 처리되지는 않는다.")
+
+
 def presets() -> list[str]:
     """새 프로젝트에 권할 수 있는 것만. `PRESET_SUMMARY` 선언이 곧 프리셋 선언이다.
 
@@ -242,6 +276,10 @@ def main(argv: list[str]) -> int:
 
     if "--list" in args:
         print_presets()
+        return 0
+
+    if "--doctor" in args:
+        print_language_report()
         return 0
 
     # 무엇보다 먼저. 위치가 틀리면 나머지를 다 해도 훅이 하나도 안 걸린다.

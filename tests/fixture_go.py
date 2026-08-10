@@ -74,9 +74,7 @@ FILES["harness_profile.py"] = '''"""Go 픽스처 프로파일 — 서버 언어�
 
 STAGE = "mature"
 
-SOURCE_EXT = ("*.go",)
-UI_EXT = ("*.tsx", "*.ts")
-SYNTAX = "go"            # 파이썬이 아님 → 구문·관용구 검사 8종은 [SKIP]
+LANG = "go"              # profiles/lang/go.py — 확장자·관용구·해당없음·린터를 다 가져온다
 
 LAYERS = {
     "read": "db/reads", "write": "db/writes", "db": "db",
