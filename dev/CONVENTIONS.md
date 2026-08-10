@@ -4,7 +4,7 @@
 
 > **목적: 여러 세션의 Claude가 짜도 한 명이 짠 것처럼.**
 > 운영 규칙 2줄:
-> 1. **관례가 갈리는 선택을 새로 하게 되면 이 표에 등재하고, 검사 가능하면 `static_check.py`에 검사를 추가한다.**
+> 1. **관례가 갈리는 선택을 새로 하게 되면 이 표에 등재하고, 검사 가능하면 `kernel/runner.py`에 검사를 추가한다.**
 > 2. **이 표와 코드가 충돌하면 표가 정본이다** (표를 바꾸려면 사용자 합의 후).
 > 산문 금지 — 표만. 신규 파일 작성 전 이 표 + 레이어 MD의 정본 예시 파일(golden exemplar)을 읽는다.
 
@@ -14,9 +14,9 @@
 |---|------|------|-----------|
 | B1 | get_db import | `from db.connection import get_db` 단일 경로 | 간접 경유 금지 |
 | B2 | 에러 반환 | `web/routes/` = `raise HTTPException` | |
-| B3 | 라우트 핸들러 | 동기 `def`. `async def`는 본문에 실제 await(SSE·to_thread·request.form) 있을 때만 | static_check 게이트 |
-| B4 | 커넥션 스코프 | `with get_db()` 블록 안 = fetch만. 가공·2차 커넥션 호출 금지 | static_check 게이트 |
-| B5 | env 접근 | `from settings import X` 단일 (os.getenv/os.environ 직접 금지) | static_check 게이트 |
+| B3 | 라우트 핸들러 | 동기 `def`. `async def`는 본문에 실제 await(SSE·to_thread·request.form) 있을 때만 | 게이트 |
+| B4 | 커넥션 스코프 | `with get_db()` 블록 안 = fetch만. 가공·2차 커넥션 호출 금지 | 게이트 |
+| B5 | env 접근 | `from settings import X` 단일 (os.getenv/os.environ 직접 금지) | 게이트 |
 | B6 | 진입점 모듈 | import 부작용 금지 — 실행 로직은 `main()`+`__main__` 가드 | |
 | B7 | timestamp 저장 | naive 금지 — KST `+09:00` 명시 aware로 저장, cutoff 비교도 aware | |
 | B8 | 숫자 정제 | 0은 유효값, NULL 변환 금지 | |
@@ -29,7 +29,7 @@
 | # | 주제 | 정본 | 근거·예외 |
 |---|------|------|-----------|
 | F1 | 데이터 fetch | `useApi`(TanStack Query 래퍼) 단일 — raw fetch 금지 | 첫 구현 시 useApi 훅부터 만든다 |
-| F2 | 색상 | hex 리터럴 금지 — `constants/colors.ts` 상수 또는 CSS var. **예외 = colors.ts 자신·CSS 파일** | static_check 게이트 |
+| F2 | 색상 | hex 리터럴 금지 — `constants/colors.ts` 상수 또는 CSS var. **예외 = colors.ts 자신·CSS 파일** | 게이트 |
 | F3 | 투명도 | 문자열 접합(`+'99'`) 금지 — `hexAlpha()` 헬퍼 | |
 | F4 | 차트 래퍼 | `charts/` 래퍼 경유(기본 옵션 자동 주입). raw 차트 라이브러리 직생성 금지 | |
 | F5 | 사용자 노출 텍스트 | 한국어. 결측=`'-'`. 로딩=`'불러오는 중…'`. 이모지 금지(문서화된 예외만) | |
@@ -59,7 +59,7 @@
 |---|------|------|
 | R1 | **화면/로직 분리** — `.tsx` 컴포넌트는 표시(JSX)만. 데이터 가공·계산·조건 분기 로직은 `hooks/`·`utils/` 순수 TS 함수로 분리 | RN 전환 시 hooks/utils는 그대로 이동, 화면만 재작성 |
 | R2 | **디자인 토큰 TS 정본** — 색·간격·타이포·z-index 값은 `constants/` TS 상수가 정본, CSS `:root` 변수는 상수에서 파생(동기 유지) | 토큰 값은 RN StyleSheet에서 그대로 재사용 |
-| R3 | **브라우저 전용 API 직접 호출 금지** — `window.`·`document.`·`localStorage` 등은 `utils/platform.ts` 래퍼 경유 (첫 필요 시 생성). 불가피하면 `// web-ok: 사유` (static_check 게이트 15) | RN엔 브라우저 API가 없다 — 래퍼 한 파일만 교체하면 이식 끝 |
+| R3 | **브라우저 전용 API 직접 호출 금지** — `window.`·`document.`·`localStorage` 등은 `utils/platform.ts` 래퍼 경유 (첫 필요 시 생성). 불가피하면 `// web-ok: 사유` (게이트 15) | RN엔 브라우저 API가 없다 — 래퍼 한 파일만 교체하면 이식 끝 |
 | R4 | **라우팅 접점 최소화** — 라우터(react-router 등) import·페이지 이동 호출은 `pages/` 레벨에서만. 하위 컴포넌트에는 콜백 prop으로 전달 | 라우터는 전환 시 통째 교체 대상 — 접점이 적을수록 싸다 |
 
 ## 공용 헬퍼 레지스트리 (동일 목적 재구현 금지 — 신설 전 이 표 확인)

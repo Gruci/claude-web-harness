@@ -54,6 +54,10 @@ def _mapping(name: str, keys: tuple[str, ...], empty: object) -> dict[str, Any]:
 STAGE: str = getattr(_MOD, "STAGE", "greenfield") if _MOD else "greenfield"
 LOADED: bool = _MOD is not None
 
+# 하네스 레포 자신의 프로파일인가. clone 해 간 프로젝트에서 이게 참이면 아직 설정 전이다 —
+# 설치 스크립트가 프리셋으로 덮어쓴다.
+IS_HARNESS_SELF: bool = bool(getattr(_MOD, "HARNESS_SELF", False)) if _MOD else False
+
 LAYERS = _mapping("LAYERS", _LAYER_KEYS, None)
 FILES = _mapping("FILES", _FILE_KEYS, None)
 SYMBOLS = _mapping("SYMBOLS", _SYMBOL_KEYS, None)

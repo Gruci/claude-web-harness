@@ -69,7 +69,7 @@ plan.md와 Todo 리스트를 바탕으로 전부 구현해라.
 - 작업 완료할 때마다 plan.md에서 완료로 표시해라.
 - 모든 작업이 완료될 때까지 멈추지 말고 계속 진행해라.
 - `Any`/`unknown` 타입 남발 금지.
-- 지속적으로 typecheck·pytest·static_check를 실행하고 검증해라.
+- 지속적으로 typecheck·pytest·게이트를 실행하고 검증해라.
 - 코드 변경 완료된 그 턴 안에 관련 MD 업데이트까지 끝내라.
 ```
 

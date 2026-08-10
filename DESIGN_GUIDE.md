@@ -23,7 +23,7 @@
 
 ## 4대 원칙 ★
 
-1. **Hex 하드코딩 금지** — CSS는 `var(--...)`, TS는 `constants/colors.ts` import. (static_check 게이트가 검사)
+1. **Hex 하드코딩 금지** — CSS는 `var(--...)`, TS는 `constants/colors.ts` import. (게이트가 검사)
 2. **색상 중앙화** — 한 번만 쓰면 로컬 const 허용, 두 페이지 이상이면 반드시 `constants/colors.ts` / CSS `:root`에 올린다.
 3. **차트 래퍼 통일** — 모든 차트는 `frontend/src/charts/` 래퍼 경유 (기본 옵션 자동 주입). raw 라이브러리 직생성 금지.
 4. **수치 포맷 중앙화** — 금액·수치 표시는 `utils/format.ts` 함수 경유. 페이지 로컬 재구현 금지.

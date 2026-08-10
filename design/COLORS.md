@@ -36,6 +36,6 @@
 
 ## 규칙 (확정분)
 
-- hex 하드코딩 금지 — `constants/colors.ts` 상수 또는 CSS var (static_check 게이트)
+- hex 하드코딩 금지 — `constants/colors.ts` 상수 또는 CSS var (게이트)
 - 투명도는 `hexAlpha()` 헬퍼 — 문자열 접합(`+'99'`) 금지
 - 두 페이지 이상 쓰는 색은 반드시 중앙 상수로 승격

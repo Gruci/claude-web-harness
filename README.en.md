@@ -89,7 +89,7 @@ The longer a project runs, the more the harness fits that project's actual failu
 
 ## What is inside
 
-**28 gates.** Checks that run on save and when the conversation ends. 400 lines per file, naming, no code outside the declared folders, no colour literals in screen files, no fixed widths that break phones, whether paths written in documents actually exist, even which model handles which task. All on from the start. Tuning happens in one place, `harness_config.py`.
+**28 gates.** Checks that run on save and when the conversation ends. 400 lines per file, naming, no code outside the declared folders, no colour literals in screen files, no fixed widths that break phones, whether paths written in documents actually exist, even which model handles which task. All on from the start. Tuning happens in one place, `harness_profile.py`.
 
 **Hooks.** Scripts that fire at set moments. Right after a save, just before the conversation ends, at session start. They live in `.claude/hooks/`, and `.claude/settings.json` decides what runs when.
 
@@ -107,11 +107,11 @@ Human
      ├─ Skills
      ├─ Agents
      └─ Hooks
-         └─ static_check.py
-             └─ harness_config.py
+         └─ kernel/  (gate logic — knows nothing about the project)
+             └─ harness_profile.py  (this project's names and vocabulary)
 ```
 
-Each layer enforces the one above it. A human can break a rule and a hook still stops it, and one settings file decides what the hooks stop. That is also why porting to another project means editing one file, `harness_config.py`.
+Each layer enforces the one above it. A human can break a rule and a hook still stops it, and one settings file decides what the hooks stop. That is also why porting to another project means editing one file, `harness_profile.py`.
 
 ## Cost
 
@@ -162,23 +162,23 @@ Ignore these day to day. Roughly monthly, they only produce reports and never to
 | `DEVGUIDE.md` | Server rules → `dev/` |
 | `DESIGN_GUIDE.md` | Screen design rules → `design/` |
 | `EDITING.md` | Work board. Keeps parallel sessions from colliding |
-| `harness_config.py` | Single point for project settings |
+| `harness_profile.py` | Single point for project settings |
 | `harness_install.py` | Install script |
-| `static_check.py` | The checker core |
+| `kernel/runner.py` | The checker core |
 | `.claude/` | Hooks, agents, skills, settings |
 | `AGENTS.md` · `.agents/` · `.codex/` | For a different tool (Codex). Claude does not read these |
 
 ## FAQ
 
-**My stack is different.** Edit the stack line at the top of `CLAUDE.md` together with `harness_config.py`. If it differs a lot, adjust the affected checks too.
+**My stack is different.** Edit the stack line at the top of `CLAUDE.md` together with `harness_profile.py`. If it differs a lot, adjust the affected checks too.
 
-**I want to rename folders.** Go ahead. They are set at the top of `harness_config.py`. If your repo uses `api/`, change `WEB_PREFIX` to `"api/"` and the sub-paths (`routes`, `static`) follow, because they are derived. Only touch the parent.
+**I want to rename folders.** Go ahead. They are set at the top of `harness_profile.py`. If your repo uses `api/`, change `WEB_PREFIX` to `"api/"` and the sub-paths (`routes`, `static`) follow, because they are derived. Only touch the parent.
 
 If the declaration and the repo disagree, a gate catches it. Put app code in an undeclared folder and the save is blocked, and the install script points out undeclared code folders once up front.
 
-**A check does not fit us.** Turn it off in `ENABLED` in `harness_config.py`. Limits like the line count live in the same file.
+**A check does not fit us.** Turn it off in `ENABLED` in `harness_profile.py`. Limits like the line count live in the same file.
 
-**What do I fill in on a new project?** The stack line, the layer folder names, brand colours, and the reviewer's personality. All of it lives in `harness_config.py` and a few lines of docs, and you set it once. Keeping to it afterwards is the gates' job. Beyond that, what a person fills in is knowledge about the field this service belongs to: what it deals with, what terms it uses, which numbers matter. And that is not filled in up front either; it accumulates in the documents as you build.
+**What do I fill in on a new project?** The stack line, the layer folder names, brand colours, and the reviewer's personality. All of it lives in `harness_profile.py` and a few lines of docs, and you set it once. Keeping to it afterwards is the gates' job. Beyond that, what a person fills in is knowledge about the field this service belongs to: what it deals with, what terms it uses, which numbers matter. And that is not filled in up front either; it accumulates in the documents as you build.
 
 ## Author
 

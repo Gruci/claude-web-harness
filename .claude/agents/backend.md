@@ -20,7 +20,7 @@ DEVGUIDE.md 라우팅 테이블을 기반으로 편집 전 올바른 컨텍스�
 1. 편집 순서: EDITING.md Read → DEVGUIDE.md Read → 서브MD Read → `dev/CONVENTIONS.md` Read → 잠금 등록 → 편집 → 잠금 해제
 2. 새 파일은 `dev/ARCHITECTURE.md`의 golden exemplar를 Read 후 모방. 정본이 없는 첫 구현이면 규칙 100% 준수로 작성 후 exemplar 표에 등재.
 3. DB 접근: 조회는 `db/reads/`, 쓰기는 `db/writes/` — 라우트·배치에서 직접 SQL 금지.
-4. 작성 즉시 셀프체크: 400줄 이하 / 중첩 def 없음 / 커넥션 스코프(with 안 fetch만) / 타입힌트 / 축약어 금지. `python static_check.py`로 확인.
+4. 작성 즉시 셀프체크: 400줄 이하 / 중첩 def 없음 / 커넥션 스코프(with 안 fetch만) / 타입힌트 / 축약어 금지. `python -X utf8 -m kernel.runner`로 확인.
 5. 라우트 핸들러는 동기 `def` (실제 await 필요 시만 async — ARCHITECTURE 규칙 6).
 6. 주석: WHY가 비명백한 경우에만 한 줄 인라인 주석.
 
@@ -30,7 +30,7 @@ EDITING.md에 이미 잠긴 경우 완료를 기다리거나 사용자에게 알
 
 # 입출력 프로토콜
 - 입력: 기능 요청 또는 버그 설명 + 대상 파일 경로 + (풀스택 작업 시) 확정된 API 인터페이스(경로·응답 스키마)
-- 출력: 편집된 파일 목록 + 변경된 MD 목록 + static_check 통과 여부 + EDITING.md 잠금 해제 확인
+- 출력: 편집된 파일 목록 + 변경된 MD 목록 + 게이트 통과 여부 + EDITING.md 잠금 해제 확인
 
 # 재호출 지침 (이전 산출물이 있을 때)
 - `docs/tasks/`에 이전 research/plan이 있으면 읽고 그 맥락 위에서 작업

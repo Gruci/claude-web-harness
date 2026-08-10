@@ -53,8 +53,13 @@ SYMBOLS: dict[str, str | None] = {
 # ── 검사 스코프 ────────────────────────────────────────────────────────────────
 # exclude_all     : 어떤 게이트도 보지 않는다. 벤더 사본·참고 자료·레거시
 # exclude_scratch : 일회성 스크립트. 구조 규칙(중첩 def·축약어·타입)만 면제된다
+#
+# clone 으로 하네스를 가져왔다면 그 자기 자산(픽스처·정답지·설명서)도 빼야 한다. 안 빼면
+# 새 프로젝트가 자기 것도 아닌 위반을 안고 출발한다. 프리셋들이 `HARNESS_ASSETS` 로 묶어둔다.
 SCOPE: dict[str, tuple[str, ...]] = {
-    "exclude_all":     (),
+    "exclude_all":     ("tests/fixtures/", "tests/golden/", "tests/build_fixture.py",
+                        "tests/fixture_files.py", "tests/run_golden.py",
+                        "PLAN.md", "docs/site/"),
     "exclude_scratch": (),
 }
 

@@ -15,6 +15,11 @@ STAGE 가 greenfield 인 이유: 이 레포가 싣고 다니는 문서(`DEVGUIDE
 
 from __future__ import annotations
 
+# 이 프로파일은 하네스 레포 자신의 것이지 어떤 프로젝트의 설정도 아니다. clone 해 간
+# 프로젝트가 이걸 그대로 물려받으면 레이어가 전부 None 이라 게이트가 통째로 꺼진 채
+# 초록불이 뜬다. 설치 스크립트가 이 표식을 보고 "아직 설정 안 된 상태"로 취급해 덮어쓴다.
+HARNESS_SELF = True
+
 STAGE = "greenfield"
 
 # 앱 코드가 없다. tests/ 만 실물이고 나머지는 하네스 자신이다.

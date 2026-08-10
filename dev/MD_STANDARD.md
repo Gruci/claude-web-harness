@@ -86,8 +86,8 @@ MD는 이 프로젝트의 작동 규칙이자 하네스다. 코드에 적용하�
 
 | 층 | 수단 | 담당 |
 |---|---|---|
-| 작성 시점 | PostToolUse 훅 → `static_check.py --file` → 검사 17 | 구조적 신호 — 펜스 트리·나열 뭉개기·괄호 중첩·역할 계약 누락 |
-| 소급 유예 | `static_check_md_baseline.txt` — 등재 파일은 리포트로 강등, **감소만 허용** | 래칫 |
+| 작성 시점 | PostToolUse 훅 → `kernel.runner --file` → 검사 17 | 구조적 신호 — 펜스 트리·나열 뭉개기·괄호 중첩·역할 계약 누락 |
+| 소급 유예 | `md_style_baseline.txt` — 등재 파일은 리포트로 강등, **감소만 허용** | 래칫 |
 | 사람 판단 | 월 1회 `/md-audit` | 의미 단위 판정·성분 E/F 선별·의미 중복 — 자동화 불가 영역 |
 
-검사 17의 임계와 판정 로직 정본은 `static_check_md_style.py` 헤더다. 오탐이 나면 baseline에 넣지 말고 **문장을 고치는 게 기본**이다.
+검사 17의 임계와 판정 로직 정본은 `kernel/gates/md_style.py` 헤더다. 오탐이 나면 baseline에 넣지 말고 **문장을 고치는 게 기본**이다.

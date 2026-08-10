@@ -7,7 +7,7 @@ This is the Codex-only entry point for this project. Claude Code uses `CLAUDE.md
 ## Dual-agent boundary
 
 - Ordinary Codex work must not load `CLAUDE.md` or scan `.claude/`. A triggered `*-cdx` adapter may read only its single matching `.claude/skills/<name>/SKILL.md`.
-- Shared project truth lives in `README.md`, `DEVGUIDE.md`, `DESIGN_GUIDE.md`, `dev/`, `design/`, and `static_check.py`.
+- Shared project truth lives in `README.md`, `DEVGUIDE.md`, `DESIGN_GUIDE.md`, `dev/`, `design/`, and `kernel/runner.py`.
 - Codex-only behavior belongs in `AGENTS.md`, `.agents/`, or `.codex/`. Edit Claude-only harness files only for explicitly requested interoperability.
 - Codex skill names end in `-cdx`.
 
@@ -43,7 +43,7 @@ Search first and read targeted ranges. Do not preload unrelated Markdown.
 - New UI belongs in `frontend/src/` React. A backend route without its consuming component is an invisible orphan, not a finished feature.
 - Before changing a signature or response shape, trace callers and consumers across DB, API, and React.
 - Prefer existing helpers, the standard library, native platform features, and installed dependencies. Make surgical changes. Report unrelated dead code without removing it.
-- Python and database conventions live in `dev/ARCHITECTURE.md`, `dev/NAMING.md`, `dev/DATA_MODEL.md`, and `dev/CONVENTIONS.md`. `static_check.py` enforces the machine-checkable subset.
+- Python and database conventions live in `dev/ARCHITECTURE.md`, `dev/NAMING.md`, `dev/DATA_MODEL.md`, and `dev/CONVENTIONS.md`. `kernel/runner.py` enforces the machine-checkable subset.
 
 ## Evidence and debugging
 
@@ -54,12 +54,12 @@ Search first and read targeted ranges. Do not preload unrelated Markdown.
 
 ## Verification and completion
 
-- Run `python static_check.py` and the checks proportionate to the change before claiming completion.
+- Run `python -X utf8 -m kernel.runner` and the checks proportionate to the change before claiming completion.
 - A bug fix must show its reproduction test passing. UI work also requires a rendered inspection.
 - Do not claim a test or build passed unless that command exited 0 in this checkout.
 - Update the relevant shared Markdown in the same turn as durable contracts, routes, components, schemas, or user rules. Write it to `dev/MD_STANDARD.md`: one meaning per line, one fact in one place, and nothing that Glob, Grep, or git log already answers.
-- Enforce checkable rules in `static_check.py` or another deterministic gate. Markdown explains the rule but is not its enforcement. Check 17 validates Markdown structure at write time and `static_check_md_baseline.txt` may only shrink.
+- Enforce checkable rules in `kernel/runner.py` or another deterministic gate. Markdown explains the rule but is not its enforcement. Check 17 validates Markdown structure at write time and `md_style_baseline.txt` may only shrink.
 
 ## Codex harness
 
-Codex skills live in `.agents/skills/`, the lazy ladder in `.codex/lazy-persona-cdx.md`, and shared deterministic gates in `static_check.py`. Use the smallest applicable skill. Delegated results must be concise and include file:line evidence.
+Codex skills live in `.agents/skills/`, the lazy ladder in `.codex/lazy-persona-cdx.md`, and shared deterministic gates in `kernel/runner.py`. Use the smallest applicable skill. Delegated results must be concise and include file:line evidence.

@@ -55,11 +55,18 @@ def presets() -> list[str]:
 
 
 def install_profile(preset: str) -> bool:
-    """프로파일 실물이 없으면 프리셋에서 만든다. 반환은 '새로 만들었는가'."""
+    """프로파일 실물이 없으면 프리셋에서 만든다. 반환은 '새로 만들었는가'.
+
+    하네스 레포를 clone 해 온 경우 하네스 **자신의** 프로파일이 딸려 온다. 그건 이 프로젝트의
+    설정이 아니라 하네스가 자기를 검사하려고 둔 파일이고, 레이어가 전부 비어 있어 그대로 두면
+    게이트가 통째로 꺼진 채 초록불이 뜬다. 그래서 자기 프로파일은 '없음'으로 취급해 덮어쓴다.
+    """
     target = ROOT / profile.PROFILE_FILE
-    if target.exists():
+    if target.exists() and not getattr(profile, "IS_HARNESS_SELF", False):
         print(f"[프로파일] {profile.PROFILE_FILE} 이미 있음 — 건드리지 않는다")
         return False
+    if target.exists():
+        print(f"[프로파일] 딸려온 하네스 자기 프로파일을 이 프로젝트의 것으로 교체한다")
     source = PRESET_DIR / f"{preset}.py"
     if not source.exists():
         print(f"[프로파일] 프리셋 '{preset}' 없음. 쓸 수 있는 것: {' '.join(presets())}")

@@ -36,7 +36,7 @@ description: 풀스택 기능 구현 오케스트레이터 — backend + fronten
 대상 파일: <db/reads/xxx.py>, <web/routes/xxx.py>
 API 경로: <GET|POST /api/xxx>
 응답 스키마: { "<key>": "<type>", ... }   ← Phase 1 확정본 그대로
-작업: EDITING.md 잠금 → 편집 → static_check 통과 → 잠금 해제 → 관련 MD 갱신
+작업: EDITING.md 잠금 → 편집 → 게이트 통과 → 잠금 해제 → 관련 MD 갱신
 ```
 
 ### frontend 에이전트 지시 템플릿
@@ -67,7 +67,7 @@ qa 보고의 ❌ 불일치 항목 → 해당 에이전트에 수정 재지시 �
 1. **`/lazy-review` 자동 실행** — 이번 변경 diff 과잉설계 검토, 발견분은 그 자리에서 반영 후 재검증
 2. EDITING.md Active Edits 비어있는지 확인
 3. 관련 MD 업데이트 완료 확인 (CLAUDE.md 라우팅·모듈 소유권 표 포함)
-4. `python static_check.py` 최종 통과
+4. `python -X utf8 -m kernel.runner` 최종 통과
 5. docs/tasks/ 산출물 archive 이동
 
 ## 에러 핸들링
