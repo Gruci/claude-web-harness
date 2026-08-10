@@ -30,19 +30,21 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | ③ | SessionStart | 프로파일 검사 | `harness_profile.py` 없음 | 경고 문자열 |
 | ④ | SessionStart | 인터프리터 검사 | python 또는 node 실행 불가 | 경고 문자열 |
 | ⑤ | SessionStart | `git_staleness.py` | 기본 브랜치가 origin 보다 뒤 (**startup 한정**) | ff-only 자동 정렬 |
-| ⑥ | UserPromptSubmit | `check_context_growth.py` | transcript 가 임계 초과 | 경고 + `/clear` 권고 |
-| ⑦ | PreToolUse(Read) | `check_context_diet.py` | 추정 토큰 초과인데 분할 없음 | **차단** |
-| ⑧ | PostToolUse(Edit·Write) | `check_file_rules.py` | 저장한 파일이 게이트 위반 | **차단** |
-| ⑨ | PostToolUse(Edit·Write) | `impeccable/scripts/hook.mjs` | 항상 | 통과 (UI 리마인더) |
-| ⑩ | SubagentStop | `check_agent_return.py` | 반환이 임계 초과 | **차단** |
-| ⑪ | Stop | `check_editing_lock.py` | `EDITING.md` 에 자기 행 잔존 | **차단** |
-| ⑫ | Stop | `check_coding_rules.py` | 전 게이트 위반 잔존 | **차단** |
-| ⑬ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** |
+| ⑥ | SessionStart | `check_maintenance.py` | 정비 임계치 초과 (**startup 한정**) | 밀린 정비 목록 |
+| ⑦ | UserPromptSubmit | `check_context_growth.py` | transcript 가 임계 초과 | 경고 + `/clear` 권고 |
+| ⑧ | PreToolUse(Read) | `check_context_diet.py` | 추정 토큰 초과인데 분할 없음 | **차단** |
+| ⑨ | PostToolUse(Edit·Write) | `check_file_rules.py` | 저장한 파일이 게이트 위반 | **차단** |
+| ⑩ | PostToolUse(Edit·Write) | `impeccable/scripts/hook.mjs` | 항상 | 통과 (UI 리마인더) |
+| ⑪ | SubagentStop | `check_agent_return.py` | 반환이 임계 초과 | **차단** |
+| ⑫ | Stop | `check_editing_lock.py` | `EDITING.md` 에 자기 행 잔존 | **차단** |
+| ⑬ | Stop | `check_coding_rules.py` | 전 게이트 위반 잔존 | **차단** |
+| ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** |
 
-⑧ 은 페이로드 파싱에 실패해도 차단한다(fail-closed) — 무엇을 검사할지 모르는 상태를 통과로
-보고하지 않는다. ⑩ 은 반대로 fail-open 이다. 반환을 못 읽었다고 에이전트를 막는 건 더 위험하다.
+⑨ 는 페이로드 파싱에 실패해도 차단한다(fail-closed) — 무엇을 검사할지 모르는 상태를 통과로
+보고하지 않는다. ⑪ 은 반대로 fail-open 이다. 반환을 못 읽었다고 에이전트를 막는 건 더 위험하다.
 
-⑤ 만 `startup` matcher 로 분리돼 있다. `/clear` 와 compact 마다 `git pull` 이 도는 것을 막기 위해서다.
+⑤⑥ 만 `startup` matcher 로 분리돼 있다. `/clear` 와 compact 마다 `git pull` 과 정비 판정이
+다시 도는 것을 막기 위해서다.
 
 ## 게이트
 
@@ -131,6 +133,26 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | `md-audit` | 문서와 코드의 어긋남 감사 |
 | `review-loop` | 리뷰 반복 |
 | `test` | 테스트 작성 |
+
+## 정비 — 사용자가 시켜서 도는 게 아니다
+
+월간 감사류는 "한 달에 한 번 돌리세요"라고 적어두면 아무도 안 돈다. 사용자가 명령어를 외우고
+때를 판단해야 하기 때문이다. 그 판단을 훅 ⑥ 이 대신한다.
+
+| 정비 | 무엇을 보나 | 기본 임계치 |
+|------|-------------|-------------|
+| `md-audit` | 문서와 코드가 어긋난 곳 | 커밋 80개 또는 30일 |
+| `lazy-audit` | 필요 이상으로 복잡해진 코드 | 커밋 150개 또는 60일 |
+| `lazy-debt` | 미뤄둔 `lazy:` 표시의 재고 | 표시 12개 |
+| `impeccable critique` | 화면 사용성 | 화면 파일 20개 변경 또는 45일 |
+| `review-loop` | 사용자 관점의 지표·문구 | 화면 파일 12개 변경 |
+
+판정 정본은 `kernel/maintenance.py`, 임계치 조정은 프로파일의 `MAINTENANCE`, 마지막 실행
+기록은 `harness_maintenance.json` 이다. 기록은 커밋한다 — 세션과 머신이 바뀌어도 공유돼야
+주기가 성립한다. 화면 레이어가 선언되지 않은 프로젝트에선 화면 관련 두 항목이 아예 안 뜬다.
+
+전부 **보고서만 내고 코드는 고치지 않는다.** 그래서 알림이 뜨면 승인 없이 실행한다.
+고칠지 말지는 보고서를 본 뒤의 문제다.
 
 ## 하네스가 자라는 법
 

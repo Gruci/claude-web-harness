@@ -23,3 +23,7 @@ description: 월간 MD 드리프트 감사 — 정본 MD의 서술 vs 코드 실
 ## 재발 방지 3층 구조
 
 ①손사본 금지(코드 사실은 포인터로 — 예: 라우트 정본은 App.tsx) ②게이트(기계 검사) ③이 월간 감사(의미 서술).
+
+## 기록
+
+끝나면 `python -X utf8 -m kernel.maintenance --stamp md-audit` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.

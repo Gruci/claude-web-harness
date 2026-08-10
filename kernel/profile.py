@@ -85,6 +85,10 @@ LESSONS_DOC: str | None = getattr(_MOD, "LESSONS_DOC", None) if _MOD else None
 AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = (
     dict(getattr(_MOD, "AGENT_MODEL_POLICY", {})) if _MOD else {}
 )
+# 월간 감사류의 발동 임계치 항목별 덮어쓰기. 기본값은 kernel/maintenance.py 가 갖는다.
+MAINTENANCE: dict[str, dict[str, int]] = (
+    dict(getattr(_MOD, "MAINTENANCE", {})) if _MOD else {}
+)
 
 
 def layer(name: str) -> str | None:

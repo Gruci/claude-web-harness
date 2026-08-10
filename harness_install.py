@@ -25,6 +25,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import sys
 from pathlib import Path
@@ -50,8 +51,55 @@ GATE_BASELINES: tuple[tuple[Path, str], ...] = (
 )
 
 
-def presets() -> list[str]:
+# 목록에 보여줄 순서. 흔한 것부터, 빈 서식은 마지막. 여기 없는 프리셋은 뒤에 이름순으로 붙는다.
+PRESET_ORDER = ("web_fastapi_react", "api_fastapi", "batch_python", DEFAULT_PRESET)
+
+
+def profile_modules() -> list[str]:
+    """`--preset` 으로 지정 가능한 전부. 남의 프로젝트 프로파일도 포함된다."""
     return sorted(p.stem for p in PRESET_DIR.glob("*.py") if p.stem != "__init__")
+
+
+def presets() -> list[str]:
+    """새 프로젝트에 권할 수 있는 것만. `PRESET_SUMMARY` 선언이 곧 프리셋 선언이다.
+
+    선언을 요구하는 이유: `profiles/` 에는 특정 프로젝트의 실물 프로파일도 섞여 산다.
+    그걸 새 프로젝트에 권하면 남의 레이어 이름과 어휘를 물려받는다.
+    """
+    declared = [name for name in profile_modules() if _preset_meta(name)[0]]
+    ranked = [name for name in PRESET_ORDER if name in declared]
+    return ranked + [name for name in declared if name not in ranked]
+
+
+def _preset_meta(name: str) -> tuple[str, str]:
+    """프리셋의 (한 줄 요약, 언제 고르는지). 없으면 빈 문자열."""
+    spec = importlib.util.spec_from_file_location(f"_preset_{name}", PRESET_DIR / f"{name}.py")
+    if spec is None or spec.loader is None:
+        return "", ""
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        return "", ""
+    return getattr(module, "PRESET_SUMMARY", ""), getattr(module, "PRESET_FITS", "")
+
+
+def print_presets() -> None:
+    """사람이 고를 수 있게 요약과 함께 나열한다.
+
+    이름만 나열하면 `web_fastapi_react` 와 `api_fastapi` 중 무엇이 자기 경우인지 모른다.
+    스택 이름을 아는 사람만 고를 수 있는 목록은 목록이 아니다.
+    """
+    print("쓸 수 있는 프리셋:\n")
+    for name in presets():
+        summary, fits = _preset_meta(name)
+        print(f"  {name}")
+        if summary:
+            print(f"      {summary}")
+        if fits:
+            print(f"      → {fits}")
+        print()
+    print("고르기 어려우면 claude 를 켜고 \"하네스 깔아줘\" 라고 하라 — 물어보고 골라준다.")
 
 
 def install_profile(preset: str) -> bool:
@@ -70,6 +118,7 @@ def install_profile(preset: str) -> bool:
     source = PRESET_DIR / f"{preset}.py"
     if not source.exists():
         print(f"[프로파일] 프리셋 '{preset}' 없음. 쓸 수 있는 것: {' '.join(presets())}")
+        print("   --list 로 각각이 어떤 경우인지 볼 수 있다.")
         return False
     shutil.copy2(source, target)
     print(f"[프로파일] {profile.PROFILE_FILE} 생성 (프리셋 {preset})")
@@ -145,9 +194,7 @@ def main(argv: list[str]) -> int:
     args = set(argv)
 
     if "--list" in args:
-        print("쓸 수 있는 프리셋:")
-        for name in presets():
-            print(f"   {name}")
+        print_presets()
         return 0
 
     preset = DEFAULT_PRESET

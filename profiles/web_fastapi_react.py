@@ -10,6 +10,10 @@
 
 from __future__ import annotations
 
+# `--list` 와 온보딩 인터뷰가 읽는다. 스택 이름이 아니라 **무엇을 만들 때 고르는지**를 쓴다.
+PRESET_SUMMARY = "화면과 서버가 다 있는 웹 서비스 — FastAPI · PostgreSQL · React"
+PRESET_FITS = "로그인·대시보드·관리 화면처럼 사람이 브라우저로 쓰는 것을 만들 때. 가장 흔한 선택이다"
+
 # 새 프로젝트는 MD 가 코드보다 먼저 나온다. 뼈대가 서면 "growing" → "mature" 로 올린다.
 STAGE = "greenfield"
 

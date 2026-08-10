@@ -41,7 +41,7 @@
           },
           {
             "type": "command",
-            "command": "test -f harness_profile.py || echo '[HARNESS SETUP] harness_profile.py 없음 — 커널이 이 프로젝트에 대해 아무것도 모르는 상태다. 레이어를 요구하는 게이트가 전부 [SKIP] 으로 꺼져 있다. 코딩 전에 `python -X utf8 harness_install.py --preset web_fastapi_react` 를 돌리고(프리셋 목록은 --list) 레이어 이름을 실물에 맞춰라.'",
+            "command": "test -f harness_profile.py || echo '[HARNESS SETUP] harness_profile.py 없음 — 커널이 이 프로젝트를 모르는 상태이고 레이어를 요구하는 게이트가 전부 [SKIP] 으로 꺼져 있다. 코딩 전에 harness-init 스킬로 온보딩을 진행하라. 사용자에게 스택을 고르라고 묻지 말고 무엇을 만드는지 물은 뒤 프리셋을 근거와 함께 추천하는 것이 그 스킬의 요지다.'",
             "timeout": 10,
             "statusMessage": "Checking harness profile"
           },
@@ -61,6 +61,12 @@
             "command": "python -X utf8 .claude/hooks/git_staleness.py",
             "timeout": 25,
             "statusMessage": "Checking backlog freshness"
+          },
+          {
+            "type": "command",
+            "command": "python -X utf8 .claude/hooks/check_maintenance.py",
+            "timeout": 25,
+            "statusMessage": "Checking maintenance backlog"
           }
         ]
       }

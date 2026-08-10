@@ -1,0 +1,192 @@
+"""kernel/maintenance.py — 정비가 필요한 시점을 하네스가 스스로 판단한다.
+
+  python -X utf8 -m kernel.maintenance              지금 밀린 정비를 출력
+  python -X utf8 -m kernel.maintenance --stamp <이름>  방금 돌린 정비를 기록
+
+월간 감사류(문서 드리프트·과설계·부채 수확·UI 점검)는 "한 달에 한 번"이라고 문서에 적어두면
+아무도 안 한다. 사용자가 명령어를 외우고 때를 판단해야 하기 때문이다. 그건 하네스가 할 일이다.
+
+여기 있는 것은 **언제가 그때인지 재는 자**뿐이다. 무엇을 볼지는 각 스킬이 알고, 임계치는
+프로파일이 조정할 수 있다. 판정은 전부 레포 실물에서 나온다 — 커밋 수, 바뀐 파일, 남은 표시.
+
+기록은 `harness_maintenance.json` 이고 커밋한다. 세션과 머신이 바뀌어도 "언제 마지막으로
+돌았는지"가 공유돼야 주기가 성립한다.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import date, datetime
+from pathlib import Path
+
+from kernel import profile, runner
+from kernel.context import READ_ENC, ROOT
+
+LEDGER = ROOT / "harness_maintenance.json"
+
+# 기본 임계치. 프로파일의 MAINTENANCE 가 항목별로 덮어쓴다.
+DEFAULTS: dict[str, dict[str, int]] = {
+    "md-audit":            {"commits": 80, "days": 30},
+    "lazy-audit":          {"commits": 150, "days": 60},
+    "lazy-debt":           {"markers": 12},
+    "impeccable critique": {"ui_changes": 20, "days": 45},
+    "review-loop":         {"ui_changes": 12},
+}
+
+WHY: dict[str, str] = {
+    "md-audit":            "문서와 코드가 어긋난 곳 찾기",
+    "lazy-audit":          "필요 이상으로 복잡해진 코드 찾기",
+    "lazy-debt":           "미뤄둔 것들 수확",
+    "impeccable critique": "화면 사용성 점검",
+    "review-loop":         "실제 사용자 관점에서 지표와 문구 검수",
+}
+
+DEBT_MARKER = "lazy:"
+
+
+def _git(*args: str) -> str:
+    done = subprocess.run(("git", *args), cwd=ROOT, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def _threshold(name: str, key: str) -> int:
+    given = (profile.MAINTENANCE.get(name) or {}) if profile.MAINTENANCE else {}
+    return int(given.get(key, DEFAULTS.get(name, {}).get(key, 0)))
+
+
+def load_ledger() -> dict[str, dict[str, str]]:
+    if not LEDGER.exists():
+        return {}
+    try:
+        return json.loads(LEDGER.read_text(encoding=READ_ENC))
+    except (ValueError, OSError):
+        return {}                       # 손상된 기록은 "한 번도 안 돌았다"로 취급한다
+
+
+def stamp(name: str) -> None:
+    """방금 돌린 정비를 기록한다. 현재 HEAD 와 오늘 날짜를 남긴다."""
+    ledger = load_ledger()
+    ledger[name] = {"commit": _git("rev-parse", "HEAD"), "date": date.today().isoformat()}
+    LEDGER.write_text(json.dumps(ledger, indent=2, ensure_ascii=False) + "\n",
+                      encoding="utf-8")
+
+
+def _commits_since(sha: str) -> int:
+    if not sha:
+        return 0
+    out = _git("rev-list", "--count", f"{sha}..HEAD")
+    return int(out) if out.isdigit() else 0
+
+
+def _days_since(stamped: str) -> int:
+    if not stamped:
+        return 0
+    try:
+        return (date.today() - datetime.fromisoformat(stamped).date()).days
+    except ValueError:
+        return 0
+
+
+def _ui_changes_since(sha: str) -> int:
+    ui = profile.layer("ui")
+    if not ui or not sha:
+        return 0
+    changed = _git("diff", "--name-only", f"{sha}..HEAD", "--", ui)
+    return len([line for line in changed.splitlines() if line.strip()])
+
+
+def _sources() -> list[Path]:
+    """정비가 볼 소스 — 게이트와 **같은 목록**이다.
+
+    러너를 거치는 이유: 하네스 자기 발자국과 프로파일의 스코프 제외를 똑같이 적용해야 한다.
+    직접 세면 clone 으로 딸려온 픽스처 30개가 프로젝트 코드로 잡혀, 갓 만든 빈 프로젝트가
+    첫날부터 "감사할 때가 됐다"는 알림을 받는다.
+    """
+    py_files, ui_files = runner.source_files()
+    return py_files + ui_files
+
+
+def count_debt_markers() -> int:
+    """소스에 남은 `lazy:` 표시 수 — 미뤄둔 것의 재고."""
+    total = 0
+    for f in _sources():
+        try:
+            total += f.read_text(encoding=READ_ENC).count(DEBT_MARKER)
+        except OSError:
+            continue
+    return total
+
+
+def _never_ran_reason(name: str) -> str:
+    """한 번도 안 돌았을 때. 갓 만든 레포까지 채근하지 않도록 레포 규모를 본다."""
+    count = len(_sources())
+    if count < 20:
+        return ""
+    return f"한 번도 안 돌았고 소스가 {count}개까지 늘었다"
+
+
+def _due_for(name: str, entry: dict[str, str]) -> str:
+    """이 항목이 밀렸는지와 그 사유. 안 밀렸으면 빈 문자열."""
+    if name == "lazy-debt":
+        markers = count_debt_markers()
+        limit = _threshold(name, "markers")
+        return f"미뤄둔 표시가 {markers}개 쌓였다 (임계 {limit})" if markers >= limit else ""
+
+    if not entry:
+        return _never_ran_reason(name)
+
+    commits = _commits_since(entry.get("commit", ""))
+    limit_commits = _threshold(name, "commits")
+    if limit_commits and commits >= limit_commits:
+        return f"마지막 실행 후 커밋 {commits}개 (임계 {limit_commits})"
+
+    days = _days_since(entry.get("date", ""))
+    limit_days = _threshold(name, "days")
+    if limit_days and days >= limit_days:
+        return f"마지막 실행 후 {days}일 (임계 {limit_days})"
+
+    changes = _ui_changes_since(entry.get("commit", ""))
+    limit_ui = _threshold(name, "ui_changes")
+    if limit_ui and changes >= limit_ui:
+        return f"화면 파일 {changes}개 변경 (임계 {limit_ui})"
+    return ""
+
+
+def due() -> list[tuple[str, str]]:
+    """지금 밀린 정비 목록 — (이름, 사유)."""
+    ledger = load_ledger()
+    found: list[tuple[str, str]] = []
+    # 선언이 아니라 실물을 본다. 프리셋이 ui 레이어를 미리 적어두므로, 선언만 보면 화면
+    # 파일이 한 개도 없는 프로젝트가 첫날부터 "화면 사용성 점검할 때"라는 알림을 받는다.
+    has_ui = bool(runner.source_files()[1])
+    needs_ui = ("impeccable critique", "review-loop")
+    for name in DEFAULTS:
+        if name in needs_ui and not has_ui:
+            continue                    # 화면이 없으면 화면·지표 검수는 대상이 아니다
+        reason = _due_for(name, ledger.get(name, {}))
+        if reason:
+            found.append((name, reason))
+    return found
+
+
+def main(argv: list[str]) -> int:
+    if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+        sys.stdout.reconfigure(errors="replace")
+    if len(argv) >= 2 and argv[0] == "--stamp":
+        stamp(argv[1])
+        print(f"정비 기록: {argv[1]} — {LEDGER.name} 을 커밋하라")
+        return 0
+    pending = due()
+    if not pending:
+        print("밀린 정비 없음.")
+        return 0
+    for name, reason in pending:
+        print(f"[정비] {name} — {WHY.get(name, '')}. {reason}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -39,3 +39,7 @@ Scope: over-engineering and complexity only. Correctness bugs, security holes,
 and performance are explicitly out of scope. Route them to a normal review
 pass. Lists findings, applies nothing. One-shot.
 "stop lazy-audit" or "normal mode" to revert.
+
+## 기록
+
+끝나면 `python -X utf8 -m kernel.maintenance --stamp lazy-audit` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.

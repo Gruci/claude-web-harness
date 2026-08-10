@@ -49,3 +49,7 @@ description: 서비스 오너 검수 루프 — 화면·지표·문구를 produc
 - product-reviewer는 코드 품질 검수 안 함 — 비즈니스 의미·완결성만 평가
 - 피드백 없이 "좋아요" 판정만 나오면 에이전트 프롬프트 재점검 (yes-man 방지)
 - 같은 내용 2회 이상 반려 시 화면/지표 설계 자체를 사용자와 재논의할 것
+
+## 기록
+
+끝나면 `python -X utf8 -m kernel.maintenance --stamp review-loop` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.

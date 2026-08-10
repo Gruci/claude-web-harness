@@ -42,3 +42,7 @@ End with `<N> markers, <M> with no trigger.` Nothing found: `No lazy: debt. Clea
 Reads and reports only, changes nothing. To persist it, ask and it writes the
 ledger to a file (e.g. `LAZY-DEBT.md`). One-shot. "stop lazy-debt" or
 "normal mode" to revert.
+
+## 기록
+
+끝나면 `python -X utf8 -m kernel.maintenance --stamp lazy-debt` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.
