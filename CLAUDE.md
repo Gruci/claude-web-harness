@@ -16,14 +16,7 @@
 
 **⓪ git + GitHub 원격 확인 — 모든 코딩보다 최우선.** ⓪은 로컬 `git init`으로 끝나지 않는다. **GitHub 원격 연결과 최초 푸시까지가 ⓪이다.**
 
-1. `git rev-parse --is-inside-work-tree` 실패 시 코드 작업 전에 `git init`과 `.gitignore`부터 만든다. git이 없으면 게이트도 `EDITING.md` 직렬화도 archive `git mv`도 전부 무력화된다.
-2. `git remote get-url origin` 실패 시, **`gh`가 인증돼 있으면 묻지 말고 만든다** — `gh repo create <폴더명> --private --source . --push`. 계정은 이미 정해져 있고 레포 이름은 폴더 이름이면 되므로 사용자만 아는 정보가 아니다. 이름이 부적절하면 더 나은 것을 고르되 확인은 받지 않는다. **원격 미설정 상태에서 "완료" 선언 금지.**
-
-> **`--private` 는 바꾸지 않는다.** 공개 발행은 인덱싱·포크로 되돌리기 어려워 사람이 정할 일이다. 사용자가 명시적으로 공개를 요청했을 때만 `--public`을 쓴다.
-
-`gh` 인증이 없을 때만 사용자에게 묻는다 — 그때는 계정이 실제로 사용자만 아는 정보다. `gh auth login`을 안내하거나 레포 URL을 요구한다(이 질문은 허락 구하기 금지의 예외다).
-
-게이트 자체도 git 실패 시 통과가 아니라 **위반으로 처리**한다(fail-closed). SessionStart 훅이 세션마다 경고하고 Stop 훅이 원격 없이는 종료를 막는다.
+`.claude/hooks/check_git_remote.py`가 Stop 훅으로 강제하고(fail-closed) 미설정 시 절차를 직접 출력한다.
 
 **① 하네스 연결 — 코딩 전.** `harness_profile.py`가 없으면 커널이 이 프로젝트에 대해 아무것도 모르는 상태다. 레이어를 요구하는 게이트가 전부 `[SKIP]`으로 꺼져 있고, 그 상태의 초록불은 "지켜준다"가 아니라 "안 본다"는 뜻이다. `/harness-init` 스킬이 온보딩 인터뷰부터 꺼진 게이트 확인까지 처리한다.
 
