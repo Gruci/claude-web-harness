@@ -52,7 +52,7 @@ SYMBOLS: dict[str, str | None] = {
 # clone 으로 딸려온 하네스 자기 자산은 이 프로젝트의 코드가 아니다. 빼지 않으면 새 프로젝트가
 # 자기 것도 아닌 위반을 동결 목록에 안고 출발한다 — "신규는 처음부터 전부 통과"가 깨진다.
 HARNESS_ASSETS = ("tests/fixtures/", "tests/golden/", "tests/build_fixture.py",
-                  "tests/fixture_files.py", "tests/run_golden.py", "PLAN.md", "docs/site/")
+                  "tests/fixture_files.py", "tests/run_golden.py", "PLAN.md")
 
 SCOPE: dict[str, tuple[str, ...]] = {
     "exclude_all":     ("docs/", "web/static/") + HARNESS_ASSETS,

@@ -87,7 +87,7 @@ SYMBOLS: dict[str, str | None] = {
 SCOPE: dict[str, tuple[str, ...]] = {
     "exclude_all":     ("tests/fixtures/", "tests/golden/", "tests/build_fixture.py",
                         "tests/fixture_files.py", "tests/run_golden.py",
-                        "PLAN.md", "docs/site/"),
+                        "PLAN.md"),
     "exclude_scratch": (),
 }
 

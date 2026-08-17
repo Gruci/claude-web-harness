@@ -93,6 +93,5 @@ P2·P3 의 **골든 diff 0** 이 안전망이다. 리팩터 중 게이트가 조
 - 커널 게이트 30개는 전량 골든이 덮는다(각 1건씩 발화). 죽은 게이트가 없다.
 - **fund_monitor 는 게이트 9개를 잃은 상태다.** 커널에서 삭제했고 아직 그 레포에 심지 않았다. 원본은 커밋 `ee9805c` 의 `src/static_check_{krx,llm,region,dup,complete_date,batches,prompt}.py` 이고, `harness_gates/<이름>.py` 로 옮기며 `run(py, ui)` 계약에 맞춰야 한다. `profiles/fund_monitor.py` 의 `LOCAL_GATES` 가 그 목록이다.
 - `ui_hex` 예외 66개는 아직 프로파일에 안 옮겼다. 목록이 길어 레포 쪽 별도 파일로 뺄지 프로파일에 넣을지 이관 시점에 정한다.
-- `docs/site/` 5쪽은 병합 전 검사기를 설명한다. P6 에서 다시 쓰거나 지운다. 그때까지 근거로 삼지 않는다.
 - 지도 대조는 여전히 단방향이다 — 지도에만 남은 유령 항목은 안 잡힌다. P6.
 - 벤더 사본 `impeccable` 이 `.claude/skills/` 의 대부분(2.4MB)을 차지한다. 웹 UI 를 안 만드는 프로젝트엔 순수 무게다. 프리셋별로 뺄지는 정하지 않았다.
