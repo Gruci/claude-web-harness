@@ -50,7 +50,8 @@ HUB_DOMAIN_MD_IMPLICIT = True
 HARNESS_MAP = "HARNESS.md"
 
 MD: dict[str, tuple[str, ...]] = {
-    "doc_exclude":   (".claude/", ".agents/", ".codex/", "tests/fixtures/", "PLAN.md"),
+    "doc_exclude":   (".claude/", ".agents/", ".codex/", "tests/fixtures/", "PLAN.md",
+                      "docs/"),   # 작업 산출물 archive — 프리셋들과 동일하게 정본 그래프에서 제외
     "ref_exclude":   (),
     # `.claude/` 는 벤더 사본(impeccable 참고 문서 30여 개)과 frontmatter 형식의 정의
     # 파일이라 역할 계약 규약의 대상이 아니다. 레포 대문(README)도 마찬가지다.
