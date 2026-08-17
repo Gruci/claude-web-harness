@@ -33,12 +33,17 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | ⑥ | SessionStart | `check_maintenance.py` | 정비 임계치 초과 (**startup 한정**) | 밀린 정비 목록 |
 | ⑦ | UserPromptSubmit | `check_context_growth.py` | transcript 가 임계 초과 | 경고 + `/clear` 권고 |
 | ⑧ | PreToolUse(Read) | `check_context_diet.py` | 추정 토큰 초과인데 분할 없음 | **차단** |
+| ⑧-1 | PreToolUse(Bash·PowerShell) | `check_bash_write.py` | 셸로 소스 쓰기·판정 exit 삼킴·병렬 중 공유 트리 git 변경 | **차단** |
+| ⑧-2 | PreToolUse(EnterWorktree·Bash·PowerShell) | `check_worktree_name.py` | 새 worktree 이름에 `--<sid8>` 접미 없음 | **차단** |
 | ⑨ | PostToolUse(Edit·Write) | `check_file_rules.py` | 저장한 파일이 게이트 위반 | **차단** |
 | ⑩ | PostToolUse(Edit·Write) | `impeccable/scripts/hook.mjs` | 항상 | 통과 (UI 리마인더) |
 | ⑪ | SubagentStop | `check_agent_return.py` | 반환이 임계 초과 | **차단** |
 | ⑫ | Stop | `check_editing_lock.py` | `EDITING.md` 에 자기 행 잔존 | **차단** |
 | ⑬ | Stop | `check_coding_rules.py` | 전 게이트 위반 잔존 | **차단** |
 | ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** + 만들 명령 제시 |
+| ⑮ | Stop | `check_worktree_residue.py` | 머지 끝난 worktree 잔존 | **차단** + 정리 순서 제시 |
+| ⑯ | Stop | `check_mockup_residue.py` | `docs/tasks/mockup/` 에 판단 끝난 시안 잔존 | **차단** (`wip_` 예외) |
+| ⑰ | Stop | `check_task_residue.py` | 보드가 빈데 `docs/tasks/` 루트에 산출물 잔존 | **차단** (`wip_` 예외) |
 
 ⑨ 는 페이로드 파싱에 실패해도 차단한다(fail-closed) — 무엇을 검사할지 모르는 상태를 통과로
 보고하지 않는다. ⑪ 은 반대로 fail-open 이다. 반환을 못 읽었다고 에이전트를 막는 건 더 위험하다.
@@ -193,6 +198,7 @@ Go 픽스처(`tests/fixtures/goproj`)가 동작을 동결한다.
 | `frontend` | 화면 코드 편집 | 디자인 시스템을 로드한 별도 컨텍스트 |
 | `qa` | API 응답과 화면 소비의 경계면 교차검증 | 양쪽을 동시에 읽는 별도 컨텍스트가 필요하다 |
 | `product-reviewer` | 사용자 관점 검수 | 역할 분리가 본질 — 만든 사람은 자기 결과를 못 본다 |
+| `orchestrator` | 병렬 구현 지휘 — 소유권 배정·워커 스폰·공유 파일 직렬 적용 | 한 worktree 를 여럿이 쓰면 git 이 충돌을 못 잡는다. 소유권 판단이 유일한 방어다 |
 | `impeccable-manual-edit-applier` | impeccable 수동 편집 적용 | 벤더 사본. 손대지 않는다 |
 
 메인 루프가 몇 번의 툴 호출로 끝날 일을 위임하지 않는다. 부트스트랩 비용이 더 크다.
@@ -270,5 +276,4 @@ Go 픽스처(`tests/fixtures/goproj`)가 동작을 동결한다.
 부정 결과를 남기는 것도 같은 이유다. 거절된 제안이 기록되지 않으면 다음 회고가 같은 제안을
 다시 하고, 그 반복이 결국 하나를 통과시킨다.
 
-> 훅 command 는 상대경로로 등록한다. `%CLAUDE_PROJECT_DIR%` 표기는 이 환경에서 확장되지 않아 훅이 통째로 실패한다.
-> **훅 cwd 는 셸 툴의 잔류 작업 디렉토리를 따라간다** — 루트 보장이 아니다. 프로젝트 밖으로 `cd` 한 채 턴을 끝내면 상대경로 훅이 전부 실패한다. 외부 디렉토리 작업은 서브셸로 하고 턴이 끝나기 전 루트로 되돌린다.
+> 훅 command 는 `"$(git rev-parse --show-toplevel)/.claude/hooks/…"` 로 등록한다. `%CLAUDE_PROJECT_DIR%` 표기는 이 환경에서 확장되지 않고, 상대경로는 셸 툴의 잔류 cwd(`cd frontend` 한 번이면 그 뒤 전부)에 전멸한다 — toplevel 방식은 레포 안 어디서든 맞는다. 레포 밖 cwd 에서는 rev-parse 도 실패하나 상대경로도 같은 조건에서 실패하므로 순개선이다.

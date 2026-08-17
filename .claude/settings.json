@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat .claude/hooks/lazy-persona.md",
+            "command": "cat \"$(git rev-parse --show-toplevel)/.claude/hooks/lazy-persona.md\"",
             "timeout": 5,
             "statusMessage": "Loading lazy mode"
           },
@@ -41,7 +41,7 @@
           },
           {
             "type": "command",
-            "command": "test -f harness_profile.py || echo '[HARNESS SETUP] harness_profile.py 없음 — 커널이 이 프로젝트를 모르는 상태이고 레이어를 요구하는 게이트가 전부 [SKIP] 으로 꺼져 있다. 코딩 전에 harness-init 스킬로 온보딩을 진행하라. 사용자에게 스택을 고르라고 묻지 말고 무엇을 만드는지 물은 뒤 프리셋을 근거와 함께 추천하는 것이 그 스킬의 요지다.'",
+            "command": "test -f \"$(git rev-parse --show-toplevel)/harness_profile.py\" || echo '[HARNESS SETUP] harness_profile.py 없음 — 커널이 이 프로젝트를 모르는 상태이고 레이어를 요구하는 게이트가 전부 [SKIP] 으로 꺼져 있다. 코딩 전에 harness-init 스킬로 온보딩을 진행하라. 사용자에게 스택을 고르라고 묻지 말고 무엇을 만드는지 물은 뒤 프리셋을 근거와 함께 추천하는 것이 그 스킬의 요지다.'",
             "timeout": 10,
             "statusMessage": "Checking harness profile"
           },
@@ -58,13 +58,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -X utf8 .claude/hooks/git_staleness.py",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/git_staleness.py\"",
             "timeout": 25,
             "statusMessage": "Checking backlog freshness"
           },
           {
             "type": "command",
-            "command": "python -X utf8 .claude/hooks/check_maintenance.py",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/check_maintenance.py\"",
             "timeout": 25,
             "statusMessage": "Checking maintenance backlog"
           }
@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/check_context_growth.py",
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_context_growth.py\"",
             "timeout": 10
           }
         ]
@@ -88,9 +88,31 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/check_context_diet.py",
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_context_diet.py\"",
             "timeout": 10,
             "statusMessage": "Context diet gate"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_bash_write.py\"",
+            "timeout": 15,
+            "statusMessage": "Shell contract gate"
+          }
+        ]
+      },
+      {
+        "matcher": "EnterWorktree|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_worktree_name.py\"",
+            "timeout": 15,
+            "statusMessage": "Worktree name gate"
           }
         ]
       }
@@ -100,7 +122,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/check_agent_return.py",
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_agent_return.py\"",
             "timeout": 15,
             "statusMessage": "Agent return size gate"
           }
@@ -113,7 +135,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/check_file_rules.py"
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_file_rules.py\""
           }
         ]
       },
@@ -122,7 +144,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/skills/impeccable/scripts/hook.mjs",
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/skills/impeccable/scripts/hook.mjs\"",
             "timeout": 5,
             "statusMessage": "Checking UI changes"
           }
@@ -134,15 +156,30 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/check_editing_lock.py"
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_editing_lock.py\""
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/check_coding_rules.py"
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_coding_rules.py\""
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/check_git_remote.py"
+            "command": "python \"$(git rev-parse --show-toplevel)/.claude/hooks/check_git_remote.py\""
+          },
+          {
+            "type": "command",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/check_worktree_residue.py\"",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/check_mockup_residue.py\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/check_task_residue.py\"",
+            "timeout": 10
           }
         ]
       }

@@ -80,6 +80,7 @@ LESSONS_DOC: str | None = "dev/LESSONS.md"
 # 이 레포가 싣고 나가는 에이전트들. 프리셋 web_fastapi_react 와 같은 표를 쓴다.
 AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
     "executor":         ("fable", "high"),
+    "orchestrator":     ("fable", "high"),
     "backend":          ("opus", "high"),
     "frontend":         ("opus", "high"),
     "qa":               ("sonnet", "medium"),

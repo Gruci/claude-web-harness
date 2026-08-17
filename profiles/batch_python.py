@@ -103,9 +103,10 @@ BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = ()
 LESSONS_DOC: str | None = "dev/LESSONS.md"
 
 AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
-    "executor": ("fable", "high"),
-    "backend":  ("opus", "high"),
-    "qa":       ("sonnet", "medium"),
+    "executor":     ("fable", "high"),
+    "orchestrator": ("fable", "high"),
+    "backend":      ("opus", "high"),
+    "qa":           ("sonnet", "medium"),
 }
 
 LOCAL_GATES: tuple[str, ...] = ()

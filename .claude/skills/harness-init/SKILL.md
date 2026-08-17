@@ -95,6 +95,15 @@ python -X utf8 harness_install.py --preset <고른 것>
 비우면 `[SKIP]` 으로 사유와 함께 찍히고, 채우면 켜진다. 억지로 채우면 엉뚱한 경로를
 검사해서 오탐만 나온다.
 
+병렬 작업 사본 자리도 이때 등재한다 — `.git/info/exclude` 는 클론에 전파되지 않아서
+온보딩이 유일한 등재 시점이다:
+
+```bash
+grep -q "claude/worktrees" .git/info/exclude 2>/dev/null || echo ".claude/worktrees/" >> .git/info/exclude
+```
+
+빼먹으면 worktree 가 게이트의 검사 대상과 검색에 섞인다. 정본은 `EDITING.md` 병렬 프로토콜이다.
+
 **서버 언어가 파이썬이 아니면 `LANG` 부터 적는다.** 한 줄이면 확장자·관용구 정규식·
 해당없음 목록·외부 도구가 전부 따라온다.
 

@@ -108,6 +108,7 @@ LESSONS_DOC: str | None = "dev/LESSONS.md"
 # 판단은 위로, 볼륨은 아래로. 에이전트를 추가하면 여기 등재해야 드리프트가 잡힌다.
 AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
     "executor":         ("fable", "high"),
+    "orchestrator":     ("fable", "high"),
     "backend":          ("opus", "high"),
     "frontend":         ("opus", "high"),
     "qa":               ("sonnet", "medium"),

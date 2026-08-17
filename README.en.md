@@ -4,7 +4,7 @@
 
 **A guardrail that keeps AI from wrecking your code**
 
-Harness v3.1.0
+Harness v3.2.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -352,6 +352,32 @@ Doing neither 3 nor 4 is itself caught by a check — it means the judgment was 
 
 As a project grows, document drift, over-engineering, and unpaid debt accumulate. The tool measures thresholds from the repository itself, decides when reviews are due, and announces them at session start. They run after your current work finishes, produce reports only, and never touch source. Thresholds are tuned in `MAINTENANCE` in `harness_profile.py`.
 
+### Run several Claudes at once
+
+Run multiple Claude sessions on one project and they'll eventually trample each other's work in the shared folder. This tool ships a collaboration protocol — one isolated working copy (worktree) per session — and enforces it with automatic checks.
+
+- Every new working copy gets the session's identifier stamped into its name, so a single listing shows who is working on what.
+- The moment even one working copy exists, commits and branch switches in the shared folder are blocked automatically — parallel work has begun.
+- Writing source files through shell redirection, or merging while ignoring a check verdict, is stopped before it executes.
+- A session cannot end while a merged working copy is left behind — debris never piles up in the listing.
+- When an approved design splits into three or more non-overlapping tracks, a dedicated conductor AI divides file ownership and drives several AIs in parallel.
+
+Working solo in a single session, all of this stays dormant. It wakes only when parallelism starts.
+
+### Want to run several Claudes at once?
+
+As a project grows, so does the temptation: give the screens to this session, the API to that one, and let them run side by side. Do it naively and one day it bites — several sessions sharing one working folder, overwriting each other, your code swept into someone else's commit.
+
+This tool ships a collaboration protocol that was hardened by actually living through those accidents. Each session gets its own isolated working copy, works there, and git merges the results. And as always here — the protocol is kept by **blocking**, not by asking nicely.
+
+- Every working copy gets the session's mark stamped into its name. One listing shows who's doing what right now.
+- The moment even one working copy exists, the shared folder turns read-only automatically. Parallel work has begun.
+- Sneaking source edits past the checks through the shell, or merging before the verdict is in — stopped before it runs.
+- Leave a finished working copy behind and the session won't end. The tool knows "I'll clean up later" never comes.
+- When a design splits into three or more non-overlapping tracks, a dedicated conductor AI divides file ownership and drives several AIs at once.
+
+Working solo in one session? All of this sleeps quietly. It wakes only the moment parallelism starts.
+
 ### AI model division of labor
 
 Model tiers are split by the nature of the work. The assignment itself is checked — if the policy table and the actual assignment disagree, the session won't end.
@@ -379,6 +405,7 @@ Any line differing from the answer file is reported. Passing this comparison is 
 
 | Version | Changes |
 |:--|:--|
+| **v3.2.0** | You can now run several Claudes on one project at the same time. A collaboration protocol — one isolated working copy per session — ships built in, and it's kept by five automatic checks rather than by documentation: overwriting each other's work, sneaking edits past the checks, and leaving finished working copies behind are all blocked. Designs with three or more non-overlapping tracks get a dedicated conductor AI driving parallel implementation. Solo use stays exactly as before — everything sleeps until parallelism starts. |
 | **v3.1.0** | Introduced the project-shape setting (`ARCH`). In projects without screens or a web server, the corresponding checks are reported as `[N/A]` (not applicable to this project shape) instead of `[SKIP]` (configuration missing). The shape is declared in one line — `web_layered` (screens + server), `backend_only` (server only), or `headless` (no web, no screens) — and works the same way as the language setting (`LANG`). Undeclared, behavior is unchanged. |
 | **v3.0.1** | Reworked hook stdin reading to no longer depend on EOF. Windows Claude Code does not send EOF to the `UserPromptSubmit` hook's stdin, so `json.load(sys.stdin)` blocked waiting for EOF and was killed by the 10s hook timeout (output discarded). Every hook now reads through a shared reader (`.claude/hooks/_hookio.py`) that returns as soon as a complete JSON object parses, without waiting for EOF. As a side effect, stdin is now decoded as UTF-8 explicitly, removing potential corruption of non-ASCII payloads under the previous cp949 default decode. Each hook's fail-open / fail-closed policy and the gate decision logic are unchanged. |
 | **v3.0.0** | Initial public release. |
