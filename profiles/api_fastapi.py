@@ -47,7 +47,7 @@ SYMBOLS: dict[str, str | None] = {
 
 
 HARNESS_ASSETS = ("tests/fixtures/", "tests/golden/", "tests/build_fixture.py",
-                  "tests/fixture_files.py", "tests/run_golden.py", "PLAN.md")
+                  "tests/fixture_files.py", "tests/run_golden.py")
 
 SCOPE: dict[str, tuple[str, ...]] = {
     "exclude_all":     ("docs/",) + HARNESS_ASSETS,

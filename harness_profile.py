@@ -50,7 +50,7 @@ HUB_DOMAIN_MD_IMPLICIT = True
 HARNESS_MAP = "HARNESS.md"
 
 MD: dict[str, tuple[str, ...]] = {
-    "doc_exclude":   (".claude/", ".agents/", ".codex/", "tests/fixtures/", "PLAN.md",
+    "doc_exclude":   (".claude/", ".agents/", ".codex/", "tests/fixtures/",
                       "docs/"),   # 작업 산출물 archive — 프리셋들과 동일하게 정본 그래프에서 제외
     "ref_exclude":   (),
     # `.claude/` 는 벤더 사본(impeccable 참고 문서 30여 개)과 frontmatter 형식의 정의
@@ -87,5 +87,6 @@ AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
 }
 
 # 이 레포에서만 참인 규칙. 판정은 harness_gates/<이름>.py 의 run(py, ui) 이 한다.
-# edit_surface — 면제·제외 목록이 harness_surface.txt 동결본보다 늘면 막는다.
-LOCAL_GATES: tuple[str, ...] = ("edit_surface",)
+# edit_surface        — 면제·제외 목록이 harness_surface.txt 동결본보다 늘면 막는다.
+# archive_not_shipped — 배포본(master)에 docs/tasks/archive/ 가 추적되면 막는다.
+LOCAL_GATES: tuple[str, ...] = ("edit_surface", "archive_not_shipped")

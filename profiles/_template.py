@@ -86,8 +86,7 @@ SYMBOLS: dict[str, str | None] = {
 # 새 프로젝트가 자기 것도 아닌 위반을 안고 출발한다. 프리셋들이 `HARNESS_ASSETS` 로 묶어둔다.
 SCOPE: dict[str, tuple[str, ...]] = {
     "exclude_all":     ("tests/fixtures/", "tests/golden/", "tests/build_fixture.py",
-                        "tests/fixture_files.py", "tests/run_golden.py",
-                        "PLAN.md"),
+                        "tests/fixture_files.py", "tests/run_golden.py"),
     "exclude_scratch": (),
 }
 

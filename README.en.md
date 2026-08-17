@@ -160,7 +160,7 @@ A feature request goes through five stages. You step in at exactly two points: *
 | 4 | It implements per the approved design. Checks run on every save | Yes |
 | 5 | It updates related documents and cleans up. The full suite runs again at session end | Yes |
 
-A design containing `TBD`, "implement later", or "similar to the above" is not accepted as a design and is sent back.
+A design containing `TBD`, "implement later", or "similar to the above" is not accepted as a design and is sent back. Work that needs a visual draft gets a mockup file under `docs/tasks/mockup/` first, approved before implementation; when the work is done, research, plan, and mockup files are archived together under `docs/tasks/archive/`.
 
 ---
 

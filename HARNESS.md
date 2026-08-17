@@ -103,6 +103,7 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | 로컬 게이트 | 무엇을 막나 |
 |---|---|
 | `edit_surface` | 면제·제외 목록 증가. 게이트를 무르게 만드는 제일 싼 경로다 |
+| `archive_not_shipped` | 배포본(master)에 `docs/tasks/archive/` 산출물이 추적되는 것. 로컬 보관은 허용, git 추적만 막는다 — clone 해 간 프로젝트는 자기 archive 를 커밋하는 게 맞으므로 커널이 아니라 여기 산다 |
 
 `edit_surface` 의 동결본은 `harness_surface.txt` 이고 다른 래칫과 같이 **감소만 허용**한다.
 회고가 판정을 사람에게 맡기는 동안 이 문이 열려 있으면, 루프는 규칙을 고치는 대신 면제를
