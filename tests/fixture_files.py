@@ -339,6 +339,8 @@ FILES["harness_profile.py"] = '''"""픽스처 프로젝트 프로파일 — 게�
 
 STAGE = "mature"
 
+ARCH = "web_layered"      # 화면+서버 풀스택 — 아무것도 N/A 로 돌리지 않는다
+
 LAYERS = {
     "read": "db/reads", "write": "db/writes", "db": "db",
     "web": "web", "routes": "web/routes",

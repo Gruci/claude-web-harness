@@ -75,6 +75,7 @@ FILES["harness_profile.py"] = '''"""Go 픽스처 프로파일 — 서버 언어�
 STAGE = "mature"
 
 LANG = "go"              # profiles/lang/go.py — 확장자·관용구·해당없음·린터를 다 가져온다
+ARCH = "headless"        # 웹도 화면도 없다 — 화면·웹 검사 9종이 [N/A] 로 찍힌다
 
 LAYERS = {
     "read": "db/reads", "write": "db/writes", "db": "db",

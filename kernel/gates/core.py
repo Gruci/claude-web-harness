@@ -5,7 +5,6 @@
 
   파일 길이 상한   단일 책임을 잃은 파일. 상한이지 목표가 아니다
   중첩 def         테스트할 수 없는 숨은 로직
-  읽기 레이어 쓰기 읽기 전용 레이어의 부작용
   축약 이름·접두   내부 코드가 이름으로 새는 것
   UI 라벨 금칙어   사용자에게 노출되는 조어
   Any / any        타입으로 게이트 때우기
@@ -25,11 +24,6 @@ from kernel.context import READ_ENC, ROOT, _rel
 
 MAX_LINES = 400
 
-WRITE_SQL = re.compile(
-    r"\b(CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|INSERT\s+INTO|UPDATE\s+\w|DELETE\s+FROM)\b",
-    re.IGNORECASE,
-)
-COMMIT = re.compile(r"\.commit\s*\(")
 ANY_HINT = re.compile(r"[:\[,]\s*Any\b|->\s*Any\b")
 TS_ANY = re.compile(r":\s*any\b|\bas\s+any\b|<\s*any\b")
 
@@ -114,27 +108,6 @@ def check_closures(files: list[Path]) -> list[str]:
             continue
         for pair in _nested_defs(tree):
             bad.append(f"{rel}: 중첩 def {pair}")
-    return bad
-
-
-def check_reads_writes(files: list[Path]) -> list[str]:
-    """읽기 전용 레이어에 쓰기 SQL·commit 이 있으면 위반."""
-    read_layer = profile.layer("read")
-    if not read_layer:
-        return []
-    bad: list[str] = []
-    for f in files:
-        rel = _rel(f)
-        if not rel.startswith(read_layer):
-            continue
-        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
-            stripped = line.strip()
-            if stripped.startswith("#"):
-                continue
-            if WRITE_SQL.search(line):
-                bad.append(f"{rel}:{i}: 쓰기 SQL — {stripped[:60]}")
-            if COMMIT.search(line):
-                bad.append(f"{rel}:{i}: commit() — {stripped[:60]}")
     return bad
 
 

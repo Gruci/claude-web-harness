@@ -19,6 +19,9 @@ PRESET_FITS = "크롤러·배치·리포트 생성처럼 사람이 화면으로 
 
 STAGE = "greenfield"
 
+# 웹도 화면도 없다 — 화면·웹 검사 9종이 [SKIP] 이 아니라 [N/A] 로 찍힌다.
+ARCH = "headless"
+
 
 LAYERS: dict[str, str | None] = {
     "read":      "db/reads",

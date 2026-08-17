@@ -15,7 +15,7 @@ from __future__ import annotations
 import importlib.util
 from typing import Any
 
-from kernel import lang
+from kernel import arch, lang
 from kernel.context import ROOT
 
 PROFILE_FILE = "harness_profile.py"
@@ -101,9 +101,26 @@ PATTERNS: dict[str, str] = dict(_PACK["PATTERNS"])
 if _MOD and getattr(_MOD, "PATTERNS", None):
     PATTERNS.update(_MOD.PATTERNS)
 
-NOT_APPLICABLE: dict[str, str] = dict(_PACK["NOT_APPLICABLE"])
+# ── 아키텍처 ──────────────────────────────────────────────────────────────────
+#
+# 이 프로젝트 형태에 어떤 레이어가 존재하는가. 미선언(None)이면 아무것도 N/A 로
+# 돌리지 않는다 — ARCH 도입 전 프로파일의 동작이 그대로 보존된다.
+ARCH: str | None = getattr(_MOD, "ARCH", None) if _MOD else None
+_ARCH_PACK = arch.load(ARCH)
+
+
+def _na_prefixed(entries: dict[str, str], tag: str | None) -> dict[str, str]:
+    """N/A 사유에 출처 접두를 베이킹한다. 러너는 이 문자열을 그대로 찍는다."""
+    label = tag or "미선언"
+    return {slug: f"{label}: {reason}" for slug, reason in entries.items()}
+
+
+# 병합 순서: 언어팩 → 아키텍처팩 → 프로파일. 나중이 이긴다 —
+# 프로젝트 사정이 언어·아키텍처 관례보다 우선이라는 기존 원칙의 연장이다.
+NOT_APPLICABLE: dict[str, str] = _na_prefixed(dict(_PACK["NOT_APPLICABLE"]), SYNTAX)
+NOT_APPLICABLE.update(_na_prefixed(_ARCH_PACK["NOT_APPLICABLE"], ARCH))
 if _MOD and getattr(_MOD, "NOT_APPLICABLE", None):
-    NOT_APPLICABLE.update(_MOD.NOT_APPLICABLE)
+    NOT_APPLICABLE.update(_na_prefixed(dict(_MOD.NOT_APPLICABLE), SYNTAX))
 
 LINTERS: tuple = tuple(getattr(_MOD, "LINTERS", _PACK["LINTERS"])) if _MOD else _PACK["LINTERS"]
 
@@ -124,7 +141,7 @@ def need_syntax() -> str:
 
 
 def not_applicable(slug: str) -> str:
-    """이 언어에서 규칙 자체가 성립하지 않으면 그 사유. 아니면 빈 문자열."""
+    """이 언어·아키텍처에서 규칙 자체가 성립하지 않으면 그 사유. 아니면 빈 문자열."""
     return NOT_APPLICABLE.get(slug, "")
 LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = (
     tuple(getattr(_MOD, "LEGACY_PATHS", ())) if _MOD else ()

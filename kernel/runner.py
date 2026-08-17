@@ -127,7 +127,7 @@ def _entry(slug: str, title: str, violations: list[str], ok: object, need: str) 
     """
     unneeded = profile.not_applicable(slug)
     if unneeded:
-        return (slug, title, [], ("N/A", f"{profile.SYNTAX}: {unneeded}"))
+        return (slug, title, [], ("N/A", unneeded))   # 출처 접두는 profile 병합 시점에 베이킹됨
     return (slug, title, violations, None) if ok else (slug, title, [], ("SKIP", need))
 
 
@@ -141,7 +141,7 @@ def _syntax_section(slug: str, title: str, check: object, args: tuple,
     """
     unneeded = profile.not_applicable(slug)
     if unneeded:
-        return (slug, title, [], ("N/A", f"{profile.SYNTAX}: {unneeded}"))
+        return (slug, title, [], ("N/A", unneeded))   # 출처 접두는 profile 병합 시점에 베이킹됨
     if not profile.syntax_ready():
         return (slug, title, [], ("TOOL", profile.need_syntax()))
     return _entry(slug, title, check(*args), ok, need)   # type: ignore[operator]
@@ -172,7 +172,7 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
     return [
         _entry("line_limit", "파일 길이 상한", core.check_line_limit(files), files, NO_PY),
         _syntax_section("closures", "중첩 def(클로저)", core.check_closures, (files,), files, NO_PY),
-        _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", core.check_reads_writes(files),
+        _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", layers.check_reads_writes(files),
                reads, _need_layer("read")),
         _entry("abbrev_names", "축약 이름 단독 대입", core.check_abbrev_names(files),
                files and vocab["abbrev_names"], "설정에 금지할 축약어를 안 적었음"),

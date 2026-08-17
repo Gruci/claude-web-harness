@@ -113,15 +113,16 @@ def print_language_report() -> None:
     도구가 없으면 그 검사는 안 도는데, 설치 전에는 그 사실이 설치 화면에 안 나온다.
     온보딩이 이걸 보고 "무엇이 지금 안 지켜지는지"를 사용자에게 말해줘야 한다.
     """
-    from kernel import lang, linters
+    from kernel import arch, lang, linters
 
-    print(f"쓸 수 있는 언어팩: {' '.join(lang.available())}\n")
-    print(f"현재 설정 — LANG={profile.LANG!r} SYNTAX={profile.SYNTAX!r}")
+    print(f"쓸 수 있는 언어팩: {' '.join(lang.available())}")
+    print(f"쓸 수 있는 아키텍처팩: {' '.join(arch.available())}\n")
+    print(f"현재 설정 — LANG={profile.LANG!r} SYNTAX={profile.SYNTAX!r} ARCH={profile.ARCH!r}")
     print(f"   서버 소스: {' '.join(profile.SOURCE_EXT)}")
     print(f"   화면 소스: {' '.join(profile.UI_EXT)}")
 
     if profile.NOT_APPLICABLE:
-        print("\n이 언어에서 해당 없는 검사 (손실 아님):")
+        print("\n이 언어·아키텍처에서 해당 없는 검사 (손실 아님):")
         for slug, why in sorted(profile.NOT_APPLICABLE.items()):
             print(f"   {slug:<16} {why}")
 

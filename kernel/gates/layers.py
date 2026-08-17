@@ -4,6 +4,7 @@
 어디이고 커넥션 헬퍼 이름이 무엇인지는 전부 프로파일이 정한다. 선언이 없으면 판정하지 않고,
 러너가 그 섹션을 [SKIP] 으로 찍는다.
 
+  읽기 레이어 쓰기      읽기 전용 레이어의 부작용
   커넥션 블록 내 가공   커넥션을 쥔 채 집계 — 점유 시간이 늘어난다
   설정 밖 환경변수      환경변수를 읽는 지점이 흩어지는 것
   await 없는 async      비동기인 척하는 동기 핸들러
@@ -46,6 +47,36 @@ def _parse(f: Path) -> ast.AST | None:
         return ast.parse(f.read_text(encoding=READ_ENC))
     except SyntaxError:
         return None
+
+
+# ── 읽기 레이어의 쓰기 SQL·commit ─────────────────────────────────────────────
+
+WRITE_SQL = re.compile(
+    r"\b(CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|INSERT\s+INTO|UPDATE\s+\w|DELETE\s+FROM)\b",
+    re.IGNORECASE,
+)
+COMMIT = re.compile(r"\.commit\s*\(")
+
+
+def check_reads_writes(files: list[Path]) -> list[str]:
+    """읽기 전용 레이어에 쓰기 SQL·commit 이 있으면 위반."""
+    read_layer = profile.layer("read")
+    if not read_layer:
+        return []
+    bad: list[str] = []
+    for f in files:
+        rel = _rel(f)
+        if not rel.startswith(read_layer):
+            continue
+        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if WRITE_SQL.search(line):
+                bad.append(f"{rel}:{i}: 쓰기 SQL — {stripped[:60]}")
+            if COMMIT.search(line):
+                bad.append(f"{rel}:{i}: commit() — {stripped[:60]}")
+    return bad
 
 
 # ── 커넥션 블록 내 가공 ────────────────────────────────────────────────────────

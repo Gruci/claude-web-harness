@@ -4,7 +4,7 @@
 
 **Design first · Machine enforced · Stack agnostic**
 
-Harness v3.0.1
+Harness v3.1.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -50,7 +50,7 @@ Results are reported in six grades. Splitting "could not run" into three distinc
 |:--|:--|:--:|
 | `[OK]` | Check ran, no violations | Allowed |
 | `[SKIP]` | Not performed — required configuration is missing | Allowed |
-| `[N/A]` | The rule does not hold in this language | Allowed |
+| `[N/A]` | The rule does not hold in this language or project shape | Allowed |
 | `[TOOL]` | External tooling absent, so the check cannot run | Allowed |
 | `[FAIL]` | Violation detected | Blocked |
 | `[REPORT]` | Soft signal with false-positive potential. Not counted in totals | Allowed |
@@ -65,7 +65,7 @@ Results are reported in six grades. Splitting "could not run" into three distinc
 
 ```bash
 # 1. Clone and enter the repository
-git clone https://github.com/WooriGrunda/claude-web-harness.git my-project
+git clone https://github.com/Gruci/claude-web-harness.git my-project
 cd my-project
 
 # 2. Reset git history and make the initial commit
@@ -230,6 +230,10 @@ When porting to another project, `harness_profile.py` is in principle the only f
 # harness_profile.py — language under inspection (one line brings extensions, idioms, tooling)
 LANG = "go"                       # kernel/langs/go.py
 
+# Project shape (one line settles which checks simply do not apply)
+# In a service with no screens, screen checks are "not applicable" — not "misconfigured".
+ARCH = "backend_only"             # web_layered / backend_only / headless
+
 # Layer path definitions
 # Keys are roles the checker knows; values are this project's real paths.
 # A value of None puts every check that uses that role into [SKIP].
@@ -253,6 +257,7 @@ Principal configuration entries:
 | Entry | Purpose |
 |:--|:--|
 | `STAGE` | Project maturity: `greenfield` / `growing` / `mature` |
+| `ARCH` | Project shape. Checks that cannot hold in a project without screens or a web server report `[N/A]` |
 | `LAYERS` | Real path per role. Undeclared roles disable their checks |
 | `FILES` · `SYMBOLS` | Framework-specific names such as the settings module and connection helper |
 | `SCOPE` | Excluded paths: vendored copies, build output, fixtures |
@@ -352,9 +357,9 @@ Measured on a Go project (the regression fixture ships in the repository at `tes
 | Category | Count |
 |:--|:--:|
 | Actually performed | 9 |
-| `[N/A]` — rule does not hold in Go | 3 |
-| `[TOOL]` — activates once tooling is installed | 4 |
-| `[SKIP]` — configuration incomplete | 16 |
+| `[N/A]` — rule does not hold in this language or project shape | 12 |
+| `[TOOL]` — activates once tooling is installed | 3 |
+| `[SKIP]` — configuration incomplete | 9 |
 
 Installation state can be inspected with `python -X utf8 harness_install.py --doctor`.
 
@@ -362,7 +367,10 @@ Installation state can be inspected with `python -X utf8 harness_install.py --do
 Yes. Onboarding asks about the shape of the deliverable, not technology names. Selecting "undecided" installs the most common configuration, and checks for unused areas remain inactive.
 
 **What if the nature of the project changes after installation?**
-Modify the corresponding entry in `harness_profile.py`. Adding screens to a project that started without them means filling in `LAYERS["ui"]`, after which seven screen-related checks begin collecting targets. Two of them — screen terminology and the browser API wrapper — require additional configuration.
+Modify the corresponding entry in `harness_profile.py`. Adding screens to a project that started without them means switching `ARCH` to `web_layered` and filling in `LAYERS["ui"]`, after which seven screen-related checks begin collecting targets. Two of them — screen terminology and the browser API wrapper — require additional configuration.
+
+**My service has no screens, yet the screen checks keep showing up as "configuration incomplete".**
+Declare `ARCH = "backend_only"` (server only) or `ARCH = "headless"` (no web, no screens). Those checks are then reported as `[N/A]` (nothing to configure in this project shape) instead of `[SKIP]` (configuration left empty). What was lost and what never existed stay distinguishable in the output.
 
 **Can a specific check be disabled if it does not suit the project?**
 Emptying the corresponding configuration entry moves it to `[SKIP]`. Note that the inactive state is printed with its reason on every run; no setting suppresses that output.
@@ -399,6 +407,7 @@ Screens are approved only when desktop and mobile layouts are settled together a
 
 | Version | Changes |
 |:--|:--|
+| **v3.1.0** | Introduced the project-shape setting (`ARCH`). In projects without screens or a web server, the corresponding checks are reported as `[N/A]` (not applicable to this project shape) instead of `[SKIP]` (configuration missing). The shape is declared in one line — `web_layered` (screens + server), `backend_only` (server only), or `headless` (no web, no screens) — and works the same way as the language setting (`LANG`). Undeclared, behavior is unchanged. |
 | **v3.0.1** | Reworked hook stdin reading to no longer depend on EOF. Windows Claude Code does not send EOF to the `UserPromptSubmit` hook's stdin, so `json.load(sys.stdin)` blocked waiting for EOF and was killed by the 10s hook timeout (output discarded). Every hook now reads through a shared reader (`.claude/hooks/_hookio.py`) that returns as soon as a complete JSON object parses, without waiting for EOF. As a side effect, stdin is now decoded as UTF-8 explicitly, removing potential corruption of non-ASCII payloads under the previous cp949 default decode. Each hook's fail-open / fail-closed policy and the gate decision logic are unchanged. |
 | **v3.0.0** | Initial public release. |
 

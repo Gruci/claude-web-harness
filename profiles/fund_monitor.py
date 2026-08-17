@@ -11,6 +11,9 @@ from __future__ import annotations
 
 STAGE = "mature"
 
+# 화면+서버 풀스택 — 전 게이트가 성립한다. kernel/archs/web_layered.py
+ARCH = "web_layered"
+
 
 LAYERS: dict[str, str | None] = {
     "read":      "db/reads",

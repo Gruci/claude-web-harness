@@ -6,31 +6,31 @@ exit=1
    - db/reads/board.go:5: 쓰기 SQL — conn.Exec("DELETE FROM board_cache")
 [SKIP] 축약 이름 단독 대입 — 설정에 금지할 축약어를 안 적었음
 [SKIP] 축약 접두 식별자 — 설정에 금지할 축약 접두어를 안 적었음
-[SKIP] UI 라벨 금칙어 — 설정에 화면 금칙어를 안 적었음
+[N/A ] UI 라벨 금칙어 — headless: 화면 레이어가 없는 아키텍처
 [OK]   Any 타입힌트
 [N/A ] 공개 함수 타입힌트 — go: 언어가 타입을 강제하므로 누락이 불가능
 
 [FAIL] 시크릿 토큰 하드코딩 (secrets) — 1건
    - batches/leak.go:3: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, 이미 커밋됐다면 키를 회전하라
-[SKIP] TS any 타입 — 화면 소스 없음
+[N/A ] TS any 타입 — headless: 화면 레이어가 없는 아키텍처
 [TOOL] 커넥션 블록 내 가공 — go 구문 분석기가 없어 검사 못 함
 
 [FAIL] 설정 밖 환경변수 조회 (env_access) — 1건
    - utils/env.go:5: settings.go 밖에서 환경변수 조회 — var Token = os.Getenv("TOKEN")
-[N/A ] await 없는 async 핸들러 — go: async/await 개념이 없음 (goroutine 은 다른 모델)
+[N/A ] await 없는 async 핸들러 — headless: 웹 서버가 없는 아키텍처
 [SKIP] 커넥션 접근자 import 단일 경로 — 설정에 db_accessor_module 이름을 안 적었음
 [SKIP] 전역 SSL 패치 호출 위치 — 설정에 ssl_bypass 이름을 안 적었음
-[TOOL] 라우트 에러 응답 형식 — go 구문 분석기가 없어 검사 못 함
-[SKIP] 공용 래퍼 없는 fetch — 화면 소스 없음
-[SKIP] 프론트 색 리터럴 — 화면 소스 없음
-[SKIP] 폰을 깨뜨리는 고정 폭 — 화면 소스 없음
-[SKIP] 브라우저 API 직접 호출 — 설정에 브라우저 API 래퍼를 안 적었음
+[N/A ] 라우트 에러 응답 형식 — headless: 웹 서버가 없는 아키텍처
+[N/A ] 공용 래퍼 없는 fetch — headless: 화면 레이어가 없는 아키텍처
+[N/A ] 프론트 색 리터럴 — headless: 화면 레이어가 없는 아키텍처
+[N/A ] 폰을 깨뜨리는 고정 폭 — headless: 화면 레이어가 없는 아키텍처
+[N/A ] 브라우저 API 직접 호출 — headless: 화면 레이어가 없는 아키텍처
 
 [FAIL] 앱 코드 배치 (file_placement) — 1건
    - stray.go: 루트에 앱 코드 금지 — batches/·db/·db/reads/·db/writes/·tests/·utils/ 중 하나로 옮기거나 프로파일 ROOT_FILES 에 등재하라
 [SKIP] 수집·계산 모듈의 행동 테스트 짝 — 설정에 테스트 대상 폴더를 안 적었음
 [SKIP] DDL 저장 타입 잘림 — 설정에 schema 폴더를 안 적었음
-[SKIP] API 응답 배열 필드 옵셔널 — 화면 소스 없음
+[N/A ] API 응답 배열 필드 옵셔널 — headless: 화면 레이어가 없는 아키텍처
 [TOOL] 정적 분석(vet) — go 미설치 — 설치: Go 툴체인에 포함
 [TOOL] 정적 분석(staticcheck) — staticcheck 미설치 — 설치: go install honnef.co/go/tools/cmd/staticcheck@latest
 [OK]   MD 작성 규칙
