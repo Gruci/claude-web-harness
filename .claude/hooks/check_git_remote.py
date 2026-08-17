@@ -11,11 +11,12 @@
 
 **private 로만 만든다.** 공개 레포는 되돌리기 어려운 발행이라 사람이 정할 일이다.
 """
-import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+from _hookio import read_hook_payload
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -39,7 +40,7 @@ _UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
 def _sid() -> str:
     """stdin 페이로드의 session_id. 세션 구분이 없으면 이 차단은 레포 생애 한 번만 기록된다."""
     try:
-        return str(json.load(sys.stdin).get("session_id") or "")
+        return str(read_hook_payload().get("session_id") or "")
     except Exception:
         return ""
 

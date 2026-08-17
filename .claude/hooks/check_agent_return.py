@@ -13,9 +13,10 @@
 주는지 확정되지 않아, 메인 루프 응답을 서브 반환으로 오인해 오차단할 수 있었다.
 전 게이트 통틀어 "확실한 위반만 잡고 오탐 0" 원칙이 우선한다.
 """
-import json
 import sys
 from pathlib import Path
+
+from _hookio import read_hook_payload
 
 try:
     sys.stderr.reconfigure(encoding="utf-8")
@@ -36,7 +37,7 @@ except Exception:
 
 def main() -> None:
     try:
-        payload = json.load(sys.stdin)
+        payload = read_hook_payload()
     except Exception:
         sys.exit(0)
 

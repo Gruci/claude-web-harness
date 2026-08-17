@@ -4,7 +4,7 @@
 
 **Design first · Machine enforced · Stack agnostic**
 
-Harness v3.0.0
+Harness v3.0.1
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -392,6 +392,15 @@ When an app becomes necessary, only the screen layer is reimplemented; server, l
 Screens are approved only when desktop and mobile layouts are settled together at the design stage.
 
 </details>
+
+---
+
+## Changelog
+
+| Version | Changes |
+|:--|:--|
+| **v3.0.1** | Reworked hook stdin reading to no longer depend on EOF. Windows Claude Code does not send EOF to the `UserPromptSubmit` hook's stdin, so `json.load(sys.stdin)` blocked waiting for EOF and was killed by the 10s hook timeout (output discarded). Every hook now reads through a shared reader (`.claude/hooks/_hookio.py`) that returns as soon as a complete JSON object parses, without waiting for EOF. As a side effect, stdin is now decoded as UTF-8 explicitly, removing potential corruption of non-ASCII payloads under the previous cp949 default decode. Each hook's fail-open / fail-closed policy and the gate decision logic are unchanged. |
+| **v3.0.0** | Initial public release. |
 
 ---
 

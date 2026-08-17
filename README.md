@@ -4,7 +4,7 @@
 
 **설계 우선 · 기계 강제 · 스택 비종속**
 
-하네스 v3.0.0
+하네스 v3.0.1
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -394,6 +394,15 @@ Go 프로젝트 실측 결과입니다. 회귀 검증용 픽스처가 저장소�
 화면은 설계 단계에서 데스크톱과 모바일 배치를 함께 확정한 경우에만 승인됩니다.
 
 </details>
+
+---
+
+## 변경 이력
+
+| 버전 | 변경 내용 |
+|:--|:--|
+| **v3.0.1** | 훅 stdin 읽기를 EOF 비의존 방식으로 교체. Windows Claude Code가 `UserPromptSubmit` 훅 stdin에 EOF를 보내지 않아 `json.load(sys.stdin)`이 EOF를 기다리다 10초 타임아웃으로 강제 종료(output discarded)되던 문제를 수정했습니다. 전 훅이 공용 리더(`.claude/hooks/_hookio.py`)를 경유하며, 완결된 JSON 객체가 파싱되는 즉시 반환해 EOF를 기다리지 않습니다. 부수적으로 stdin을 UTF-8로 명시 디코드하여, 기존 cp949 기본 디코드로 인한 한글 페이로드 손상 가능성을 함께 제거했습니다. 각 훅의 fail-open·fail-closed 정책과 판정 로직은 변경되지 않았습니다. |
+| **v3.0.0** | 초기 공개 버전. |
 
 ---
 

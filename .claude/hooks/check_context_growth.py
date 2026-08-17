@@ -13,12 +13,14 @@ import json
 import sys
 from pathlib import Path
 
+from _hookio import read_hook_payload
+
 WARN_BYTES = 15_000_000
 
 
 def main() -> None:
     try:
-        payload = json.load(sys.stdin)
+        payload = read_hook_payload()
     except Exception:
         sys.exit(0)
 

@@ -4,10 +4,11 @@ Stop 훅(종료 시점 전체 검사)만으로는 "다 짜놓고 마지막에 �
 이 훅이 저장한 그 순간 위반을 돌려줘서 규칙 위반 코드가 애초에 쌓이지 않게 한다.
 (전체 검사·종료 차단은 check_coding_rules.py 가 계속 담당 — 이중 게이트)
 """
-import json
 import subprocess
 import sys
 from pathlib import Path
+
+from _hookio import read_hook_payload
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -33,7 +34,7 @@ except Exception:
 
 def main() -> None:
     try:
-        payload = json.load(sys.stdin)
+        payload = read_hook_payload()
     except Exception as e:
         # fail-closed: 페이로드를 못 읽으면 검사 대상도 모른다 — 조용히 통과시키지 않는다
         record("check_file_rules", "gate_error", msg=f"페이로드 파싱 실패({e.__class__.__name__})")

@@ -8,10 +8,11 @@
   - 다른 sid 태그 행이나 태그 없는 행 → 다른 세션의 활성 잠금일 수 있으므로 차단하지 않는다.
   - stdin 페이로드에서 session_id 를 못 읽으면 fail-closed로 전 행 차단(구동작 유지).
 """
-import json
 import re
 import sys
 from pathlib import Path
+
+from _hookio import read_hook_payload
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -35,7 +36,7 @@ except Exception:
 def _my_sid8() -> str | None:
     """Stop 훅 stdin JSON의 session_id 앞 8자. 파싱 실패 시 None(fail-closed)."""
     try:
-        payload = json.load(sys.stdin)
+        payload = read_hook_payload()
         session_id = str(payload.get("session_id") or "")
         return session_id[:8] if len(session_id) >= 8 else None
     except Exception:

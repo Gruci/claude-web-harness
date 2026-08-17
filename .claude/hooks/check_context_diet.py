@@ -11,9 +11,10 @@
   - 이미지·바이너리는 예외 (비전 에이전트가 통으로 읽어야 함 — 기계 판별 불가)
   - PDF는 Read 자체가 pages 분할을 강제하므로 예외
 """
-import json
 import sys
 from pathlib import Path
+
+from _hookio import read_hook_payload
 
 try:
     sys.stderr.reconfigure(encoding="utf-8")
@@ -46,7 +47,7 @@ def _estimate_tokens(path: Path) -> int:
 
 def main() -> None:
     try:
-        payload = json.load(sys.stdin)
+        payload = read_hook_payload()
     except Exception:
         sys.exit(0)
 

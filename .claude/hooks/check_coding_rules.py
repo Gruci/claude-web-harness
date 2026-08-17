@@ -6,10 +6,11 @@
 규칙을 MD 산문으로만 적어두면 세션마다 새로 들어온 모델이 제멋대로 짜서 드리프트한다.
 이 훅이 검사 가능한 규칙을 부탁이 아니라 차단으로 만든다. (판정 정본: kernel/runner.py)
 """
-import json
 import subprocess
 import sys
 from pathlib import Path
+
+from _hookio import read_hook_payload
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -31,7 +32,7 @@ except Exception:
 def _sid() -> str:
     """stdin 페이로드의 session_id. 못 읽으면 빈 문자열 — 중복 제거만 느슨해진다."""
     try:
-        return str(json.load(sys.stdin).get("session_id") or "")
+        return str(read_hook_payload().get("session_id") or "")
     except Exception:
         return ""
 
