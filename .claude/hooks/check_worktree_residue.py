@@ -10,7 +10,12 @@
 갓 판 worktree 와 머지 끝난 worktree 는 둘 다 기본 브랜치의 조상이고 자기 커밋이 0개라
 그것만으로는 안 갈린다. 갈라주는 것은 **push 이력**이다.
 
-1. `branch.<브랜치>.remote` 설정이 있다 = 한 번이라도 push 했다. 갓 판 브랜치는 절대 안 걸린다.
+1. `branch.<브랜치>.merge` 가 **자기 이름**(`refs/heads/<브랜치>`)이다 = `push -u` 로 한 번이라도
+   올렸다. **`.remote` 유무로 가르면 안 된다** — `git worktree add -b X origin/<기본>` 은 시작점을
+   upstream 으로 자동 등록해 `remote=origin, merge=refs/heads/<기본>` 을 남긴다. 그걸 push 이력으로
+   읽으면 아래 셋이 전부 참이 되어 **갓 판 worktree 가 통째로 "머지 완료"** 가 된다. 실측으로
+   확인했다 — 만든 직후 `remote=origin`, origin ref 없음, 기본 브랜치의 조상 참. 갓 판 브랜치의
+   `merge` 는 기본 브랜치를 가리키므로 여기서 걸러진다.
 2. `refs/remotes/origin/<브랜치>` 가 없다 = 머지되어 원격에서 삭제됐다.
    PR 이 열려 있는 동안은 있으므로 작업 중엔 안 걸린다.
    **미탐 조건**: 원격 자동삭제(deleteBranchOnMerge)가 없는 레포에서는 이 조건이 영영 거짓이라
@@ -26,11 +31,22 @@
 
 훅 자신이 판정 불능이면(git 실패·기본 브랜치 미상) 통과시킨다. 하네스 오작동으로 종료를
 막으면 복구 수단이 그 세션이라 잠긴다.
+
+## 단계 = 경고(exit 1), 차단(2) 아님
+
+여기 판정은 전부 **git 상태 추론**이다 — ref 유무와 config 값으로 "머지가 끝났을 것"을 추측한다.
+직접 관측(검사기가 뱉은 위반·실제로 거기 있는 파일)이 아니라서 틀릴 수 있고, 실제로 틀렸다.
+차단이면 잘못된 지시를 따르거나 세션이 잠기거나 둘 중 하나인데 둘 다 나쁘다.
+
+검출을 끄면 잔해가 안 보이므로 **끄는 대신 단계를 낮춘다** — 매 턴 말은 하되 문은 안 잠근다.
+정본은 `HARNESS.md` 「단계」다.
 """
 import re
-import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _hookio import default_branch, git_output as _git  # noqa: E402
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -40,27 +56,6 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parents[2]
 _LOCK_PID = re.compile(r"\(pid (\d+)\)")
-
-
-def _git(*args: str) -> str | None:
-    """git 표준출력. 실패면 None — 판정을 건너뛰라는 신호다."""
-    try:
-        done = subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True,
-                              text=True, encoding="utf-8", errors="replace", timeout=15)
-    except Exception:
-        return None
-    return done.stdout if done.returncode == 0 else None
-
-
-def default_branch() -> str | None:
-    """원격 기본 브랜치. `origin/HEAD` → 실패 시 main·master 실물 순 폴백."""
-    head = _git("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
-    if head and head.strip():
-        return head.strip().rsplit("/", 1)[-1]
-    for name in ("main", "master"):
-        if _git("show-ref", "--verify", "--quiet", f"refs/remotes/origin/{name}") is not None:
-            return name
-    return None
 
 
 def _alive(pid: int) -> bool:
@@ -99,7 +94,8 @@ def parse_worktrees(porcelain: str) -> list[dict]:
 
 def is_dead(branch: str, base: str) -> bool:
     """머지가 끝나 존재 이유가 사라진 브랜치인가. 판정 근거는 모듈 머리 참조."""
-    if not _git("config", "--get", f"branch.{branch}.remote"):
+    upstream = (_git("config", "--get", f"branch.{branch}.merge") or "").strip()
+    if upstream != f"refs/heads/{branch}":
         return False                                    # push 이력 없음 = 작업 전이거나 작업 중
     if _git("show-ref", "--verify", "--quiet", f"refs/remotes/origin/{branch}") is not None:
         return False                                    # 원격에 살아있음 = PR 진행 중
@@ -130,7 +126,8 @@ def main() -> None:
         print(f"  {name}  [{tree['branch']}] — 머지 완료·원격 삭제됨", file=sys.stderr)
     print("`git worktree remove <경로>` → `git branch -d <브랜치>` 순서로 정리한 후 종료하세요.", file=sys.stderr)
     print("(순서가 계약이다 — worktree 가 점유 중인 브랜치는 로컬 삭제가 거부된다)", file=sys.stderr)
-    sys.exit(2)
+    # 경고(1)지 차단(2)이 아니다 — 판정 근거가 git 상태 추론이라서다. HARNESS.md 「단계」 참조.
+    sys.exit(1)
 
 
 if __name__ == "__main__":

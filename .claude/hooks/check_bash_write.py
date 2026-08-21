@@ -1,4 +1,4 @@
-"""PreToolUse(Bash|PowerShell) 훅 — 셸 명령이 깨면 안 되는 계약 3종을 사전 차단.
+"""PreToolUse(Bash|PowerShell) 훅 — 셸 명령이 깨면 안 되는 계약 4종을 사전 차단.
 
 매처에 **셸을 실행하는 툴을 전부** 담아야 한다. `Bash` 만 걸면 같은 명령이 `PowerShell`
 툴로 그냥 나간다(원류 프로젝트 2026-08-06 실측). 두 툴의 입력 필드가 똑같이 `command` 다.
@@ -8,6 +8,22 @@
 | 소스 쓰기 | 리다이렉트·tee·sed -i 로 레포 안 소스 파일 쓰기 | 작성 시점 게이트 우회 |
 | 판정 우회 | 판정 명령(gh pr checks 등)을 파이프·체인 앞에 두기 | exit code 가 사라져 pending 인 채 merge 가 나간다 |
 | 공유 트리 변경 | 병렬 체제에서 공유 메인 체크아웃의 git 변경 명령 | add -A 쓸어담기·브랜치 오염 |
+| 격리 밖 링크 | 트리 밖·의존성 디렉토리를 잇는 junction·symlink 생성 | 한쪽을 걷을 때 다른 쪽이 딸려 간다 |
+
+## 절 4 — 격리 밖 링크 (worktree 격리 무력화 방지)
+
+worktree 마다 의존성을 다시 깔기 싫어서 worktree 안의 `node_modules` 를 공유 체크아웃 쪽으로
+junction 걸었다. 빌드 몇 초를 아끼려고 **격리 구역에서 공유 트리로 실을 이어놓은 것**이고,
+worktree 를 걷는 과정 어딘가에서 그 실을 타고 공유 트리 쪽이 비워졌다. 어느 삭제가 타고
+들어갔는지는 재현되지 않았다 — 그래서 **삭제 쪽을 촘촘히 막는 대신 링크가 생기는 것을 막는다.**
+실이 없으면 탈 것도 없다.
+
+판정이 **두 조건**인 것이 핵심이다. worktree 자리(`.claude/worktrees/`)가 레포 **안**이라
+「트리 밖」 판정만으로는 그 사고 경로가 양쪽 다 트리 안이 되어 그대로 빠져나간다. 의존성
+디렉토리는 어느 방향이든 링크할 이유가 없다 — 그 트리에서 직접 깔면 된다.
+
+worktree 프로토콜의 값은 격리다(`EDITING.md`). 격리 밖을 가리키는 링크는 그 값을 무효로 만든다.
+안에서 안으로 거는 링크는 통과시킨다 — 격리를 안 깬다.
 
 ## 절 1 — 소스 쓰기 (작성 시점 게이트 우회 방지)
 
@@ -158,6 +174,60 @@ def piped_verdict(command: str) -> str | None:
     return None
 
 
+_LINK_ITEM_TYPES = ("junction", "symboliclink", "hardlink")
+
+# 언어 불문 의존성·산출물 디렉토리. 어느 방향이든 링크할 이유가 없다 — 그 트리에서 직접 깐다.
+# 커널이 언어를 모르므로 리터럴 하나가 아니라 집합이다. 새 생태계가 늘면 여기에 더한다.
+DEP_DIRS = ("node_modules", ".venv", "venv", "vendor", "target", "Pods", ".gradle")
+
+
+def _makes_link(segment: list[str]) -> bool:
+    """이 조각이 junction·symlink 생성 명령인가. cmd `mklink`·PowerShell `New-Item -ItemType
+    Junction`·POSIX `ln -s` 세 형태를 본다.
+
+    **조각의 머리(앞 3토큰)만** 본다. 토큰 전체를 훑으면 커밋 메시지 heredoc 안의 `ln -s` 같은
+    산문을 명령으로 오독한다 — 원류에서 이 훅이 자기 커밋을 막았다. `_tokens` 가 따옴표를
+    풀어주는 것과 같은 이유로, 명령인지 인자인지는 자리가 정한다.
+    """
+    head = [t.lower() for t in segment[:3]]
+    if not head:
+        return False
+    if "mklink" in head:                       # `cmd /c mklink /J ...` 라 머리 3칸을 본다
+        return True
+    if "new-item" in head:
+        return any(t.lower() in _LINK_ITEM_TYPES for t in segment)
+    if head[0] == "ln":
+        return any(t.startswith("-") and "s" in t for t in head)
+    return False
+
+
+def outbound_link(command: str) -> str | None:
+    """트리 **밖**을 가리키거나 의존성 디렉토리를 잇는 링크 생성 경로.
+
+    경로 후보는 구분자를 가진 토큰만 본다 — `-Target` 같은 플래그명과 `Junction` 같은 값은
+    경로가 아니다. 존재하지 않는 경로도 판정 대상이다(`-Path` 는 아직 만들기 전이다).
+    """
+    for segment in _segments(_tokens(command)):
+        if not _makes_link(segment):
+            continue
+        for token in segment:
+            if not token or token.startswith("-") or ("/" not in token and "\\" not in token):
+                continue
+            parts = token.replace("\\", "/").split("/")
+            if any(part in DEP_DIRS for part in parts):
+                return token
+            candidate = Path(token)
+            if not candidate.is_absolute():
+                candidate = ROOT / token
+            try:
+                resolved = candidate.resolve()
+            except OSError:
+                continue
+            if ROOT not in resolved.parents and resolved != ROOT:
+                return token
+    return None
+
+
 def _is_main_checkout() -> bool:
     """공유 메인 체크아웃 판정. 링크된 worktree 는 `.git` 이 파일이고 메인은 디렉토리다.
 
@@ -222,6 +292,17 @@ def main() -> None:
         print(
             f"[BASH GATE] `{verdict}` 뒤에 파이프·체인이 붙었다 — 판정의 exit code 가 사라진다.\n"
             "판정 명령을 단독 실행하고, merge 는 성공을 확인한 다음 호출로 분리하라.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    link = outbound_link(command)
+    if link:
+        print(
+            f"[BASH GATE] 격리 밖을 가리키는 링크를 만들려 한다 — `{link}`.\n"
+            "worktree 격리의 값이 격리다. 밖으로 실을 이으면 한쪽을 걷을 때 다른 쪽이 딸려 간다\n"
+            "(원류 실사고: node_modules junction 을 걸었다가 공유 체크아웃 쪽이 비워졌다).\n"
+            "의존성은 그 트리에서 직접 깔아라. 파일이 필요하면 링크 말고 복사하라.",
             file=sys.stderr,
         )
         sys.exit(2)

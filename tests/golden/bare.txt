@@ -45,6 +45,14 @@ exit=1
 [SKIP] 수집·계산 모듈의 행동 테스트 짝 — 설정에 테스트 대상 폴더를 안 적었음
 [SKIP] DDL 저장 타입 잘림 — 설정에 schema 폴더를 안 적었음
 [SKIP] API 응답 배열 필드 옵셔널 — 화면 소스 없음
+[SKIP] 소비 UI 없는 API 라우트 — 화면 소스 없음
+
+[FAIL] 미정의 모듈 상수 (undefined_const) — 1건
+   - utils/stale_const.py:6: 미정의 모듈 상수 DEFAULT_LIMIT — 개명·삭제에서 소비처를 놓쳤다. 호출 시점 NameError 가 된다
+
+[FAIL] 선언 본문 중복(정본 재구현) (dup_decl) — 1건
+   - utils/money_a.py:4: 선언 본문 동일(signed_won/won_signed) — 파일 2개가 같은 구현을 들고 있다. 공용 모듈로 뽑고 한 벌만 남긴다. 위치: utils/money_a.py:4, utils/money_b.py:4
+[OK]   블록 중복(선언 안 복붙)
 
 [FAIL] MD 작성 규칙 (md_style) — 4건
    - DESIGN_GUIDE.md:5: ⑬a 코드펜스 트리 덤프 — 파일 목록의 정본은 Glob
@@ -58,5 +66,6 @@ exit=1
    - HARNESS.md: 스킬 'runbook' 이 지도에 없음 — 같은 턴에 등재하라
 [SKIP] 에이전트 모델 정책 — 설정에 담당 AI 모델 표를 안 적었음
 [SKIP] 사고 절 승격 상태 — 설정에 사고 기록 문서를 안 적었음
+[SKIP] MD 함수 참조 실존 — greenfield — 문서가 코드보다 먼저다
 
-총 19건 위반.
+총 21건 위반.

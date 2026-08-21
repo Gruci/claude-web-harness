@@ -60,6 +60,10 @@ def worktree_add_target(command: str) -> str | None:
 
     `list`·`remove`·`move` 는 생성이 아니라 통과다. 옵션과 `-b <브랜치>` 값을 걷어낸 첫 인자가
     경로다 — 브랜치명을 경로로 오독하면 정상 호출이 막힌다.
+
+    **명령의 머리에서만 찾는다.** 문자열 전체를 훑으면 커밋 메시지 heredoc 안에 적힌
+    `git worktree add ...` 같은 산문을 명령으로 오독한다 — 이 훅이 자기 커밋을 막았다.
+    같은 부류를 `check_bash_write.py` 의 링크 판정도 앞 3토큰 제한으로 막는다.
     """
     if not WORKTREE_ADD.search(command):
         return None
@@ -71,7 +75,11 @@ def worktree_add_target(command: str) -> str | None:
         return None
     if "add" not in tokens:
         return None
-    rest = tokens[tokens.index("add") + 1:]
+    index = tokens.index("add")
+    # `git worktree add` 는 세 토큰이 붙어 있다. 앞 둘이 그 형태가 아니면 인용문 안의 산문이다.
+    if index < 2 or tokens[index - 1] != "worktree" or "git" not in tokens[index - 2]:
+        return None
+    rest = tokens[index + 1:]
     skip_next = False
     for token in rest:
         if skip_next:

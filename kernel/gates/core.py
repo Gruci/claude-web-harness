@@ -11,11 +11,13 @@
   타입힌트 누락    공개 함수의 경계면이 문서화되지 않는 것
   시크릿 토큰      실키 하드코딩 — 커밋되면 회전까지가 수습이다
   헤더 경로 주석   파일 이사 후 남은 잘못된 경로 주석
+  미정의 모듈 상수 import 는 통과하고 호출 시점에 터지는 이름
 """
 
 from __future__ import annotations
 
 import ast
+import builtins
 import re
 from pathlib import Path
 
@@ -254,4 +256,50 @@ def check_ts_any(files: list[Path]) -> list[str]:
                 continue
             if TS_ANY.search(line):
                 bad.append(f"{rel}:{i}: TS any → 구체 타입 (불가피하면 `// any-ok: 사유`)")
+    return bad
+
+
+def _bound_names(tree: ast.AST) -> set[str]:
+    """그 모듈에서 이름이 될 수 있는 것 — import·정의·대입·인자·global·except as."""
+    names = set(dir(builtins))
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            names.update((a.asname or a.name).split(".")[0] for a in node.names)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            names.add(node.id)
+        elif isinstance(node, ast.arg):
+            names.add(node.arg)
+        elif isinstance(node, ast.Global):
+            names.update(node.names)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            names.add(node.name)
+    return names
+
+
+def check_undefined_module_constants(files: list[Path]) -> list[str]:
+    """모듈 상수 꼴(`UPPER`·`_UPPER`)인데 어디서도 바인딩되지 않는 참조.
+
+    함수 본문 안의 이름은 **import 를 통과하고 호출 시점에** NameError 로 터진다. 라우트에서는
+    그게 곧 500 이다. 서버는 정상 기동하고 그 함수를 안 부르는 테스트도 통과하므로, 개명·삭제에서
+    소비처 하나를 놓친 것이 사용자가 그 화면을 누를 때까지 안 보인다.
+
+    대문자로 좁히는 이유는 지역 변수 오탐 없이 모듈 상수만 겨냥하기 위해서다. 소문자까지 보면
+    동적 바인딩·전역 주입 같은 정당한 형태가 대량으로 걸린다.
+    """
+    bad: list[str] = []
+    for f in files:
+        try:
+            tree = ast.parse(f.read_text(encoding=READ_ENC))
+        except (SyntaxError, ValueError):
+            continue
+        bound = _bound_names(tree)
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)):
+                continue
+            if node.id in bound or not node.id.lstrip("_").isupper():
+                continue
+            bad.append(f"{_rel(f)}:{node.lineno}: 미정의 모듈 상수 {node.id} — "
+                       f"개명·삭제에서 소비처를 놓쳤다. 호출 시점 NameError 가 된다")
     return bad

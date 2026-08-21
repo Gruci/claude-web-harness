@@ -82,6 +82,16 @@ exit=1
 [FAIL] API 응답 배열 필드 옵셔널 (api_array) — 1건
    - frontend/src/types/api.ts:items: API 응답 타입의 배열 필드는 옵셔널(`?`)로 — 백엔드 배포가 늦으면 undefined 로 도착해 소비처가 크래시한다. 필수로 둬야 하면 baseline 에 등재
 
+[FAIL] 소비 UI 없는 API 라우트 (orphan_api) — 1건
+   - web/routes/orphan.py:9: `/api/nobody-consumes-this` — 소비하는 화면 코드가 없다. 컴포넌트까지가 한 단위다
+
+[FAIL] 미정의 모듈 상수 (undefined_const) — 1건
+   - utils/stale_const.py:6: 미정의 모듈 상수 DEFAULT_LIMIT — 개명·삭제에서 소비처를 놓쳤다. 호출 시점 NameError 가 된다
+
+[FAIL] 선언 본문 중복(정본 재구현) (dup_decl) — 1건
+   - utils/money_a.py:4: 선언 본문 동일(signed_won/won_signed) — 파일 2개가 같은 구현을 들고 있다. 공용 모듈로 뽑고 한 벌만 남긴다. 위치: utils/money_a.py:4, utils/money_b.py:4
+[OK]   블록 중복(선언 안 복붙)
+
 [FAIL] MD 작성 규칙 (md_style) — 4건
    - DESIGN_GUIDE.md:5: ⑬a 코드펜스 트리 덤프 — 파일 목록의 정본은 Glob
    - README.md:7: ⑬b 한 줄에 설명 붙은 나열 7개 — 표나 불릿으로 쪼개라
@@ -103,6 +113,7 @@ exit=1
 
 [FAIL] 사고 절 승격 상태 (lessons_promotion) — 1건
    - dev/LESSONS.md:5: §1 에 `> 강제:` 선언이 없다 — 게이트를 적거나 `산문 전용 — 사유` 로 적어라
+[OK]   MD 함수 참조 실존
 
 [FAIL] 문서↔코드 대조(DEVGUIDE.md↔batch_runner.py) (doc_sync:DEVGUIDE.md) — 1건
    - DEVGUIDE.md:9: BATCH_HOUR=5 인데 문서 값 [0, 3] 불일치
@@ -111,4 +122,4 @@ exit=1
    - settings.py 가 읽는 'ALPHA_KEY' 가 DEVGUIDE.md 목록에 없음
    - DEVGUIDE.md 의 'BETA_KEY' 를 settings.py 가 읽지 않음(타 모듈 로드 가능 — 확인)
 
-총 46건 위반.
+총 49건 위반.

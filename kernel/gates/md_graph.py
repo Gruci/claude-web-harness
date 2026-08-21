@@ -282,3 +282,95 @@ def check_harness_map() -> list[str]:
     text = doc.read_text(encoding=READ_ENC)
     return [f"{profile.HARNESS_MAP}: {kind} '{name}' 이 지도에 없음 — 같은 턴에 등재하라"
             for kind, names in actuals.items() for name in sorted(names) if name not in text]
+
+
+# 백틱 안 `이름()` 또는 `모듈.이름()`. 한글 단어+괄호가 아니라 코드 식별자만 잡는다.
+_FN_CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(")
+# 정의부 — 파이썬·TS·Go 를 한 패턴으로 본다. 언어팩을 타지 않는 이유는 대상이 MD 이고,
+# 그 MD 가 어느 언어를 가리키는지 백틱만 보고는 알 수 없기 때문이다.
+_DEF_KEYWORDS = ("def", "class", "function", "const", "let", "var",
+                 "interface", "type", "enum", "func")
+
+# 언어·플랫폼 내장 함수. 어느 프로젝트에서도 레포가 실존을 책임지지 않으므로 커널이 기본으로
+# 뺀다. 프로젝트 예외 파일(`md_ref_allowlist.txt`)에 매번 다시 적게 하면 그 파일이 내장 목록의
+# 사본이 되고, 사본은 갈린다. CSS 는 특히 화면 정본 MD 에 그대로 등장한다.
+_BUILTIN_CALLS = frozenset({
+    # CSS
+    "var", "calc", "clamp", "minmax", "repeat", "media", "url", "rgb", "rgba", "hsl", "hsla",
+    "translate", "translateX", "translateY", "scale", "rotate", "blur", "linear-gradient",
+    "cubic-bezier", "attr", "counter", "fit-content", "supports", "container",
+    # 여러 언어 공통
+    "print", "len", "range", "map", "filter", "sum", "min", "max", "int", "str", "float",
+    "list", "dict", "set", "tuple", "bool", "type", "open", "format", "fetch", "require",
+})
+
+
+def _module_roots() -> set[str]:
+    """레포 최상위 패키지·디렉토리 이름. `json.dumps()` 같은 외부 참조를 가려낸다."""
+    roots: set[str] = set()
+    for rel in _tracked_set():
+        head = rel.split("/", 1)[0]
+        roots.add(head.rsplit(".", 1)[0] if "." in head else head)
+    return roots
+
+
+def _fn_ref_sites() -> list[tuple[str, str]]:
+    """(검사할 이름, 'MD경로:줄'). 템플릿 표기·외부 라이브러리·등재 예외를 걸러낸 뒤의 후보다."""
+    allow = _load_ref_allowlist()
+    roots = _module_roots()
+    sites: list[tuple[str, str]] = []
+    for md in _doc_md_files():
+        rel_md = _rel(md)
+        for number, line in enumerate(
+                md.read_text(encoding=READ_ENC, errors="replace").splitlines(), 1):
+            for chunk in _BACKTICK.findall(line):
+                if "*" in chunk:
+                    continue                # `init_*_db()` 류 템플릿 표기 — 이름이 아니다
+                for token in _FN_CALL.findall(chunk):
+                    if token in allow or token in _BUILTIN_CALLS:
+                        continue
+                    if "." in token:
+                        if token.split(".")[0] not in roots:
+                            continue        # stdlib·외부 라이브러리 — 실존은 우리 책임이 아니다
+                        leaf = token.split(".")[-1]
+                    else:
+                        leaf = token
+                    if leaf not in allow and leaf not in _BUILTIN_CALLS:
+                        sites.append((leaf, f"{rel_md}:{number}"))
+    return sites
+
+
+def _defined_names(candidates: list[str]) -> set[str]:
+    """후보 이름만 한 번에 훑는다 — 비용이 레포 크기가 아니라 후보 수에 비례한다."""
+    if not candidates:
+        return set()
+    wanted = set(candidates)
+    found: set[str] = set()
+    pattern = re.compile(
+        r"\b(?:" + "|".join(_DEF_KEYWORDS) + r")\s+([A-Za-z_][A-Za-z0-9_]*)")
+    for rel in _tracked_set():
+        if not rel.endswith((".py", ".ts", ".tsx", ".go", ".mjs", ".js")):
+            continue
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        for name in pattern.findall(path.read_text(encoding=READ_ENC, errors="replace")):
+            if name in wanted:
+                found.add(name)
+        if found >= wanted:
+            break
+    return found
+
+
+def check_md_fn_refs() -> list[str]:
+    """MD 백틱의 `함수()` 가 코드에 실존하는지 — 개명 누락이 MD 를 거짓말로 만드는 것을 막는다.
+
+    다음 세션은 MD 를 사실로 믿고 없는 함수를 부르려 한다. 경로 참조 게이트가 같은 일을
+    파일 단위로 하는데, 개명은 파일보다 함수에서 훨씬 자주 일어난다.
+    """
+    sites = _fn_ref_sites()
+    if not sites:
+        return []
+    defined = _defined_names(sorted({name for name, _ in sites}))
+    return [f"{where}: 실존하지 않는 함수 참조 `{name}()` — 개명했으면 MD 도 같은 턴에 고친다"
+            for name, where in sites if name not in defined]

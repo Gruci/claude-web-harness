@@ -31,13 +31,18 @@ exit=1
 [SKIP] 수집·계산 모듈의 행동 테스트 짝 — 설정에 테스트 대상 폴더를 안 적었음
 [SKIP] DDL 저장 타입 잘림 — 설정에 schema 폴더를 안 적었음
 [N/A ] API 응답 배열 필드 옵셔널 — headless: 화면 레이어가 없는 아키텍처
+[SKIP] 소비 UI 없는 API 라우트 — 화면 소스 없음
+[TOOL] 미정의 모듈 상수 — go 구문 분석기가 없어 검사 못 함
 [TOOL] 정적 분석(vet) — go 미설치 — 설치: Go 툴체인에 포함
 [TOOL] 정적 분석(staticcheck) — staticcheck 미설치 — 설치: go install honnef.co/go/tools/cmd/staticcheck@latest
+[OK]   선언 본문 중복(정본 재구현)
+[OK]   블록 중복(선언 안 복붙)
 [OK]   MD 작성 규칙
 [OK]   MD 경로 참조 실존
 [OK]   고아 MD(허브 도달 불가)
 [SKIP] 하네스 지도 대조 — greenfield — HARNESS.md 아직 없음
 [SKIP] 에이전트 모델 정책 — 설정에 담당 AI 모델 표를 안 적었음
 [SKIP] 사고 절 승격 상태 — 설정에 사고 기록 문서를 안 적었음
+[OK]   MD 함수 참조 실존
 
 총 4건 위반.

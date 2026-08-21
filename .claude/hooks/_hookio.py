@@ -1,4 +1,8 @@
-"""훅 stdin 리더 — EOF에 의존하지 않는다.
+"""훅 stdin 리더와 git 조회 — EOF에 의존하지 않는다.
+
+git 헬퍼가 여기 있는 이유는 두 Stop 훅이 같은 조회를 하기 때문이다. 훅마다 따로 두면
+기본 브랜치 감지 같은 판정이 두 벌이 되고, 한쪽만 고치는 순간 두 훅의 판정이 갈린다.
+
 
 json.load(sys.stdin)은 stdin을 EOF까지 읽는다: CC가 페이로드를 준 뒤 파이프를 닫아준다는
 가정이다. macOS/Linux와 EOF를 보내는 이벤트(Stop·PreToolUse·PostToolUse·SubagentStop)에선
@@ -13,10 +17,39 @@ JSON 객체가 파싱되는 즉시 멈춰 EOF를 기다리지 않는다. EOF를 
 정책 판단은 호출자 몫이다 — 헬퍼가 실패를 삼키면 fail-closed 훅이 무력화된다.
 """
 import json
+import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 _CHUNK = 65536
+_ROOT = Path(__file__).resolve().parents[2]
+_GIT_TIMEOUT_SEC = 10
+
+
+def git_output(*args: str) -> str | None:
+    """git 표준출력. 실패(비정상 종료·예외)면 None — 판정을 건너뛰라는 신호다."""
+    try:
+        done = subprocess.run(["git", *args], cwd=str(_ROOT), capture_output=True,
+                              text=True, encoding="utf-8", errors="replace",
+                              timeout=_GIT_TIMEOUT_SEC)
+    except Exception:
+        return None
+    return done.stdout if done.returncode == 0 else None
+
+
+def default_branch() -> str | None:
+    """원격 기본 브랜치 이름. `origin/HEAD` → 실패 시 main·master 실물 순 폴백.
+
+    main 하드코딩은 이식성을 깬다 — master 레포에서 판정이 통째로 조용히 꺼진다.
+    """
+    head = git_output("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+    if head and head.strip():
+        return head.strip().rsplit("/", 1)[-1]
+    for name in ("main", "master"):
+        if git_output("show-ref", "--verify", "--quiet", f"refs/remotes/origin/{name}") is not None:
+            return name
+    return None
 
 
 def read_hook_payload() -> dict[str, Any]:

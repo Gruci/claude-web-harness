@@ -25,8 +25,8 @@ from pathlib import Path
 
 from kernel import linters, profile
 from kernel.context import READ_ENC, ROOT, _rel, app_code, is_harness_own, tracked
-from kernel.gates import (api_types, core, harness_self, layers, md_graph, md_style,
-                          placement, schema, tests_pairing)
+from kernel.gates import (api_types, core, duplication, harness_self, layers, md_graph,
+                          md_style, orphan_api, placement, schema, tests_pairing)
 
 # (slug, 제목, 위반 목록, 건너뜀). 건너뜀은 (등급, 사유) 이고 None 이면 실제로 검사한 것이다.
 #
@@ -224,6 +224,12 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
                api_types.check_api_array_optional(ui_files),
                ui_files and api_types.baseline_ready(),
                NO_UI if not ui_files else "배열 동결 파일 미생성 — harness_install.py 가 만든다"),
+        _entry("orphan_api", "소비 UI 없는 API 라우트",
+               orphan_api.check_orphan_api(files, ui_files),
+               (_under(files, "routes") or _under(files, "web")) and ui_files,
+               NO_UI if not ui_files else _need_layer("routes")),
+        _syntax_section("undefined_const", "미정의 모듈 상수",
+                        core.check_undefined_module_constants, (files,), files, NO_PY),
     ]
 
 
@@ -250,6 +256,8 @@ def _doc_sections() -> list[Section]:
         _entry("lessons_promotion", "사고 절 승격 상태", harness_self.check_lessons_promotion(),
                lessons and (ROOT / lessons).exists(),
                f"선언된 {lessons} 가 아직 없음" if lessons else "설정에 사고 기록 문서를 안 적었음"),
+        _entry("md_fn_refs", "MD 함수 참조 실존", md_graph.check_md_fn_refs(),
+               not greenfield, "greenfield — 문서가 코드보다 먼저다"),
     ]
     for pair in profile.DOC_SYNC:
         title = f"문서↔코드 대조({pair['doc']}↔{pair['code']})"
@@ -281,6 +289,15 @@ def _build_sections(
     sections = _kernel_sections(files, ui_files)
     if include_md and files:            # 린터는 레포 전체를 보므로 --file 모드에선 건너뛴다
         sections += _linter_sections()
+    # 중복은 파일 간 교차 비교라 대상이 전량일 때만 성립한다. `--file` 은 비교 상대가 없다.
+    if include_md:
+        decl, block = (duplication.check_duplication(files, ui_files)
+                       if files or ui_files else ([], []))
+        both = files or ui_files
+        sections += [
+            _entry("dup_decl", "선언 본문 중복(정본 재구현)", decl, both, NO_PY),
+            _entry("dup_block", "블록 중복(선언 안 복붙)", block, both, NO_PY),
+        ]
     sections += _local_sections(files, ui_files)
     if md_files:
         hard, soft = md_style.check_md_style(md_files)

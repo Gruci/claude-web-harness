@@ -1,3 +1,9 @@
 __pycache__/
 *.pyc
 .claude/settings.local.json
+
+# 이 레포는 배포본이라 자기 작업 산출물을 싣지 않는다. 로컬 보관은 하고 추적만 막는다 —
+# `harness_gates/archive_not_shipped.py` 가 같은 규칙을 게이트로 강제하고, gitignore 가
+# 없으면 `git add -A` 한 번에 다시 추적돼 그 게이트가 매번 걸린다.
+# clone 해 간 프로젝트는 자기 archive 를 커밋하는 게 맞으므로 이 행은 따라가지 않는다.
+docs/tasks/archive/
