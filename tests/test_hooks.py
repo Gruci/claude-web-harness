@@ -113,15 +113,26 @@ def test_worktree_add_only_at_command_head() -> None:
     `outbound_link` 가 앞 3토큰 제한으로 막는 것과 같은 부류다 — 명령인지 인자인지는 자리가 정한다.
     """
     naming = _load("check_worktree_name")
+    # 실제로 이 훅을 터뜨린 명령이다. heredoc 본문은 따옴표가 아니라 shlex 가 그대로 낱말로
+    # 쪼개므로 `git`·`worktree`·`add` 가 나란히 선다 — 인접성 검사로는 안 갈리고 자리로만 갈린다.
+    heredoc_prose = (
+        "git commit -q -F - <<'EOF'\n"
+        "feat(harness): 역이식\n\n"
+        "잔해 훅이 갓 판 worktree 를 뒤집었다. `git worktree add -b X origin/main`\n"
+        "이 시작점을 upstream 으로 자동 등록해서 remote 가 갓 판 브랜치에도 있다.\n"
+        "EOF"
+    )
     real = [
         ("git worktree add .claude/worktrees/feat-x--16aa3fa6 -b feat/x origin/main",
          "feat-x--16aa3fa6"),
         ("git worktree add -b feat/x .claude/worktrees/topic--abcd1234 origin/main",
          "topic--abcd1234"),
+        ("cd /repo && git worktree add .claude/worktrees/z--abcd1234", "z--abcd1234"),
     ]
     prose = [
-        ('git commit -m "git worktree add -b X origin/main 설명"', "커밋 메시지 안 산문"),
-        ('echo "git worktree add foo" >> notes.txt', "인용문 안"),
+        (heredoc_prose, "커밋 메시지 heredoc 안 산문 — 실제 사고 케이스"),
+        ('git commit -m "git worktree add -b X origin/main 설명"', "인용문 안"),
+        ("echo git worktree add foo > notes.txt", "echo 인자"),
         ("git worktree list", "생성이 아닌 하위명령"),
         ("git worktree remove .claude/worktrees/a", "제거"),
     ]

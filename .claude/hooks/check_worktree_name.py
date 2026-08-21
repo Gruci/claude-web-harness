@@ -37,6 +37,7 @@ except Exception:
 
 SID_LEN = 8
 WORKTREE_ADD = re.compile(r"\bgit\b.*\bworktree\s+add\b")
+SEPARATORS = (";", "|", "||", "&&", "&")
 
 
 def session_id8(payload: dict) -> str | None:
@@ -61,8 +62,10 @@ def worktree_add_target(command: str) -> str | None:
     `list`·`remove`·`move` 는 생성이 아니라 통과다. 옵션과 `-b <브랜치>` 값을 걷어낸 첫 인자가
     경로다 — 브랜치명을 경로로 오독하면 정상 호출이 막힌다.
 
-    **명령의 머리에서만 찾는다.** 문자열 전체를 훑으면 커밋 메시지 heredoc 안에 적힌
+    **조각의 머리에서만 찾는다.** 문자열 전체를 훑으면 커밋 메시지 heredoc 안에 적힌
     `git worktree add ...` 같은 산문을 명령으로 오독한다 — 이 훅이 자기 커밋을 막았다.
+    heredoc 본문은 따옴표가 아니라 shlex 가 그대로 낱말로 쪼개므로, `git`·`worktree`·`add` 가
+    나란히 서 있는지만 봐서는 안 갈린다. 자리로 갈라야 한다.
     같은 부류를 `check_bash_write.py` 의 링크 판정도 앞 3토큰 제한으로 막는다.
     """
     if not WORKTREE_ADD.search(command):
@@ -73,13 +76,30 @@ def worktree_add_target(command: str) -> str | None:
         tokens = shlex.split(command.replace("\\", "/"), posix=True)
     except ValueError:
         return None
-    if "add" not in tokens:
-        return None
-    index = tokens.index("add")
-    # `git worktree add` 는 세 토큰이 붙어 있다. 앞 둘이 그 형태가 아니면 인용문 안의 산문이다.
-    if index < 2 or tokens[index - 1] != "worktree" or "git" not in tokens[index - 2]:
-        return None
-    rest = tokens[index + 1:]
+    for segment in _segments(tokens):
+        # `git worktree add` 는 조각의 **머리 세 칸**이다. 뒤쪽에 나오면 인자거나 산문이다.
+        head = segment[:3]
+        if len(head) < 3 or head[1] != "worktree" or head[2] != "add":
+            continue
+        if Path(head[0]).name not in ("git", "git.exe"):
+            continue                    # 백틱이 붙은 `` `git `` 같은 산문 조각을 배제한다
+        return _first_path(segment[3:])
+    return None
+
+
+def _segments(tokens: list[str]) -> list[list[str]]:
+    """셸 구분자로 끊은 명령 조각들. 각 조각의 첫 토큰이 그 조각의 명령이다."""
+    segments: list[list[str]] = [[]]
+    for token in tokens:
+        if token in SEPARATORS:
+            segments.append([])
+        else:
+            segments[-1].append(token)
+    return [s for s in segments if s]
+
+
+def _first_path(rest: list[str]) -> str | None:
+    """옵션과 `-b <브랜치>` 값을 걷어낸 첫 인자의 basename."""
     skip_next = False
     for token in rest:
         if skip_next:
