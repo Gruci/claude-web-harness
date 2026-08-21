@@ -4,7 +4,7 @@
 
 **A guardrail that keeps AI from wrecking your code**
 
-Harness v3.2.0
+Harness v3.3.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -236,9 +236,20 @@ Splitting "couldn't run" into three distinct reasons is the core of this tool �
 
 > **`[SKIP]` is not a pass.** A previous generation of tooling treated it as one — and a single mismatched folder name left eight checks idle while everything reported green.
 
+### Whether it blocks or just warns depends on the evidence
+
+The same violation is handled differently depending on **how it was determined**.
+
+| Evidence | Handling | Example |
+|:--|:--|:--|
+| **Directly observed** — a checker emitted the violation, or the file is actually there | Blocks | Rule violations, unfiled artifacts |
+| **Inferred** — deduced from git state that something "must be finished" | Warns only | Working-copy and task-board cleanup reminders |
+
+Blocking on an inference leaves no way out when the inference is wrong. That happened: a working copy created moments earlier was reported as finished and slated for deletion, and an unmerged task entry held a session open indefinitely. Detection still runs — **the door just isn't locked anymore.**
+
 ### What gets caught
 
-Thirty-odd checks run on every file save. The full list and rationale live in `HARNESS.md`. Representative examples:
+Thirty-five checks run on every file save. The full list and rationale live in `HARNESS.md`. Representative examples:
 
 | Caught | Why, and the fix |
 |:--|:--|
@@ -405,6 +416,7 @@ Any line differing from the answer file is reported. Passing this comparison is 
 
 | Version | Changes |
 |:--|:--|
+| **v3.3.0** | Lessons from incidents on a live production project. Fixed a misjudgment that told you to delete a working copy created moments earlier, and a case where an unfinished task entry kept a session from ending. **Inferred verdicts now warn instead of blocking.** Five checks added: APIs with no screen, reimplementations renamed, copy-pasted blocks, ghost functions in docs, and constant typos that only surface at runtime. Creating a shortcut from inside a working copy to somewhere outside it is also blocked now (it once emptied the original folder entirely). |
 | **v3.2.0** | You can now run several Claudes on one project at the same time. A collaboration protocol — one isolated working copy per session — ships built in, and it's kept by five automatic checks rather than by documentation: overwriting each other's work, sneaking edits past the checks, and leaving finished working copies behind are all blocked. Designs with three or more non-overlapping tracks get a dedicated conductor AI driving parallel implementation. Solo use stays exactly as before — everything sleeps until parallelism starts. |
 | **v3.1.0** | Introduced the project-shape setting (`ARCH`). In projects without screens or a web server, the corresponding checks are reported as `[N/A]` (not applicable to this project shape) instead of `[SKIP]` (configuration missing). The shape is declared in one line — `web_layered` (screens + server), `backend_only` (server only), or `headless` (no web, no screens) — and works the same way as the language setting (`LANG`). Undeclared, behavior is unchanged. |
 | **v3.0.1** | Reworked hook stdin reading to no longer depend on EOF. Windows Claude Code does not send EOF to the `UserPromptSubmit` hook's stdin, so `json.load(sys.stdin)` blocked waiting for EOF and was killed by the 10s hook timeout (output discarded). Every hook now reads through a shared reader (`.claude/hooks/_hookio.py`) that returns as soon as a complete JSON object parses, without waiting for EOF. As a side effect, stdin is now decoded as UTF-8 explicitly, removing potential corruption of non-ASCII payloads under the previous cp949 default decode. Each hook's fail-open / fail-closed policy and the gate decision logic are unchanged. |
