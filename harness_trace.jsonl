@@ -3,3 +3,4 @@
 {"ts": "2026-08-21T15:44:25", "sid": "39f60753", "hook": "check_editing_lock", "kind": "editing_lock", "gate": "", "file": "", "msg": "| chore/upgrade-backport #sid:39f60753 | `_upgrade/harness/` 실운영본 전수 대조 — 훅·게이트·Codex 층·MD 규약 역이식 범위 확정 | 2026-08-21 | 리서치 완료·범위 대기 |"}
 {"ts": "2026-08-21T15:45:05", "sid": "ffffffff", "hook": "check_editing_lock", "kind": "editing_lock", "gate": "", "file": "", "msg": "| chore/upgrade-backport #sid:39f60753 | `_upgrade/harness/` 실운영본 전수 대조 — 훅·게이트·Codex 층·MD 규약 역이식 범위 확정 | 2026-08-21 | 리서치 완료·범위 대기 |"}
 {"ts": "2026-08-21T16:01:54", "sid": "39f60753", "hook": "check_file_rules", "kind": "gate", "gate": "closures", "file": "tests/test_hooks.py", "msg": "tests/test_hooks.py: 중첩 def test_fresh_worktree_not_dead > fake_git"}
+{"ts": "2026-08-21T16:25:30", "sid": "39f60753", "hook": "check_workflow_script", "kind": "workflow_model", "gate": "", "file": "", "msg": "model 미지정 agent() 1건 — 줄 [8]"}

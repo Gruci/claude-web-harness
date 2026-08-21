@@ -142,10 +142,36 @@ def test_worktree_add_only_at_command_head() -> None:
         assert naming.worktree_add_target(command) is None, f"명령으로 오독: {label}"
 
 
+def test_workflow_model_required() -> None:
+    """`agent()` 의 model 미지정만 잡고, 주석·문자열 안의 `agent(` 는 호출로 세지 않는다.
+
+    워크플로우 스크립트는 프롬프트를 문자열로 들고 다닌다. 거기 "agent(" 가 들어가는 것이
+    정상이라, 자리를 안 가르면 정상 스크립트가 막힌다.
+    """
+    gate = _load("check_workflow_script")
+    violating = [
+        ("const r = await agent('find bugs')", [1], "한 줄 · model 없음"),
+        ("await agent(\n  'p',\n  {label: 'x',\n   phase: 'Find'}\n)", [1], "여러 줄 · model 없음"),
+        ("await agent('a', {model:'opus'})\nawait agent('b')", [2], "둘 중 하나만 누락"),
+    ]
+    passing = [
+        ("const r = await agent('find bugs', {model: 'opus'})", "model 있음"),
+        ("await agent(\n  'p',\n  {label: 'x',\n   model: 'sonnet'}\n)", "여러 줄 · model 있음"),
+        ("// await agent('x')\nawait agent('y', {model:'opus'})", "주석 안 호출"),
+        ("await agent(`설명: agent( 를 쓰는 법`, {model:'opus'})", "템플릿 문자열 안"),
+        ("await agent('a', {...opts})", "전개 — 런타임 값이라 판정 불능"),
+    ]
+    for source, expected, label in violating:
+        assert gate.missing_model(source) == expected, f"잘못 잡았다: {label}"
+    for source, label in passing:
+        assert gate.missing_model(source) == [], f"통과해야 하는데 막음: {label}"
+
+
 def demo() -> None:
     for check in (test_fresh_worktree_not_dead, test_outbound_link,
                   test_board_header_is_split_by_separator,
-                  test_worktree_add_only_at_command_head):
+                  test_worktree_add_only_at_command_head,
+                  test_workflow_model_required):
         check()
         print(f"  [OK] {check.__name__}")
     print("훅 행동 테스트 전건 통과")
