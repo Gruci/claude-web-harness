@@ -4,7 +4,7 @@
 
 **A guardrail that keeps AI from wrecking your code**
 
-Harness v3.3.0
+Harness v3.4.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -249,7 +249,7 @@ Blocking on an inference leaves no way out when the inference is wrong. That hap
 
 ### What gets caught
 
-Thirty-five checks run on every file save. The full list and rationale live in `HARNESS.md`. Representative examples:
+Forty-six checks run on every file save. The full list and rationale live in `HARNESS.md`. Representative examples:
 
 | Caught | Why, and the fix |
 |:--|:--|
@@ -261,6 +261,10 @@ Thirty-five checks run on every file save. The full list and rationale live in `
 | A documented file path that doesn't exist | Clean up references left after deletes and renames |
 | Missing type hints on public functions | Specify the module boundary |
 | Agent definition disagreeing with the model policy table | Keeps model assignment aligned with policy |
+| Column names interpolated into read-layer SQL as strings | If user input leaks in, that's SQL injection. Route through a whitelist helper |
+| A single function over 80 lines | The axis the file limit can't see — functions have single responsibility too |
+| Frontend logic or components without a test twin | Type checks and builds can't catch wrong values |
+| New screen copy using internal jargon or slang | Terms outside the denylist get an AI copy review at session end |
 
 Checks run at three moments:
 
@@ -308,10 +312,10 @@ Measured on a Go project (regression fixture ships in the repository at `tests/f
 
 | Category | Count |
 |:--|:--:|
-| Actually performed | 9 |
-| `[N/A]` — rule does not hold in this language or project shape | 12 |
-| `[TOOL]` — activates once tooling is installed | 3 |
-| `[SKIP]` — configuration incomplete | 9 |
+| Actually performed | 16 |
+| `[N/A]` — rule does not hold in this language or project shape | 11 |
+| `[TOOL]` — activates once tooling is installed | 5 |
+| `[SKIP]` — configuration incomplete | 16 |
 
 Installation state can be inspected with `python -X utf8 harness_install.py --doctor`.
 
@@ -416,6 +420,7 @@ Any line differing from the answer file is reported. Passing this comparison is 
 
 | Version | Changes |
 |:--|:--|
+| **v3.4.0** | Second back-port from the live production harness. Checks grew from 35 to 46 — SQL injection via column interpolation, an 80-line function limit, frontend test pairing, hash-navigation discipline, root-directory litter, prompt version bumps, and more — plus a session-end AI review of newly added screen copy that catches jargon the static denylist has never seen. Fixed defects the comparison surfaced in the harness itself: a residue-detection hook silently dead from a missing import, a fully implemented check that was never registered with the runner, and a path-handling gap that let files inside working copies bypass save-time checks. Three over-blocking cases relaxed, including a 24-hour grace period for freshly written planning documents. |
 | **v3.3.0** | Lessons from incidents on a live production project. Fixed a misjudgment that told you to delete a working copy created moments earlier, and a case where an unfinished task entry kept a session from ending. **Inferred verdicts now warn instead of blocking.** Five checks added: APIs with no screen, reimplementations renamed, copy-pasted blocks, ghost functions in docs, and constant typos that only surface at runtime. Creating a shortcut from inside a working copy to somewhere outside it is also blocked now (it once emptied the original folder entirely). |
 | **v3.2.0** | You can now run several Claudes on one project at the same time. A collaboration protocol — one isolated working copy per session — ships built in, and it's kept by five automatic checks rather than by documentation: overwriting each other's work, sneaking edits past the checks, and leaving finished working copies behind are all blocked. Designs with three or more non-overlapping tracks get a dedicated conductor AI driving parallel implementation. Solo use stays exactly as before — everything sleeps until parallelism starts. |
 | **v3.1.0** | Introduced the project-shape setting (`ARCH`). In projects without screens or a web server, the corresponding checks are reported as `[N/A]` (not applicable to this project shape) instead of `[SKIP]` (configuration missing). The shape is declared in one line — `web_layered` (screens + server), `backend_only` (server only), or `headless` (no web, no screens) — and works the same way as the language setting (`LANG`). Undeclared, behavior is unchanged. |
