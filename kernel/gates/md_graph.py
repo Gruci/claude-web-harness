@@ -284,8 +284,10 @@ def check_harness_map() -> list[str]:
             for kind, names in actuals.items() for name in sorted(names) if name not in text]
 
 
-# 백틱 안 `이름()` 또는 `모듈.이름()`. 한글 단어+괄호가 아니라 코드 식별자만 잡는다.
-_FN_CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(")
+# 백틱 안 **빈 괄호** `이름()` 또는 `모듈.이름()` 만 잡는다. 인자 있는 `foo(x)` 까지 넓히면
+# SQL 집계(`MAX(`)·CSS 함수(`var(`)가 같은 모양이라 오탐이 열 배가 된다 — 커버리지를
+# 포기하고 신뢰도를 샀다(실운영 판정). 인자 표기의 실존은 사람 감사(/md-audit) 몫이다.
+_FN_CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(\s*\)")
 # 정의부 — 파이썬·TS·Go 를 한 패턴으로 본다. 언어팩을 타지 않는 이유는 대상이 MD 이고,
 # 그 MD 가 어느 언어를 가리키는지 백틱만 보고는 알 수 없기 때문이다.
 _DEF_KEYWORDS = ("def", "class", "function", "const", "let", "var",

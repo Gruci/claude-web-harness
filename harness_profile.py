@@ -40,7 +40,8 @@ SYMBOLS: dict[str, str | None] = {
 
 # 픽스처는 일부러 위반을 심어둔 가짜 프로젝트다 — 검사 대상이 아니라 검사의 재료다.
 SCOPE: dict[str, tuple[str, ...]] = {
-    "exclude_all":     ("tests/fixtures/",),
+    # upgrade/ 는 실운영(fund_monitor) 하네스 스냅샷 — 역이식 비교 재료이지 앱 코드가 아니다.
+    "exclude_all":     ("tests/fixtures/", "upgrade/"),
     "exclude_scratch": (),
 }
 

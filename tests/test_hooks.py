@@ -65,6 +65,24 @@ def test_fresh_worktree_not_dead() -> None:
     assert residue.is_dead("feat/x", "main") is False
 
 
+def test_alive_no_nameerror() -> None:
+    """`_alive` 가 실제로 실행 가능한가 — import 누락이면 NameError 가 `except` 에 삼켜져
+    lock 걸린 worktree 가 영구 면제된다(2026-09-07 실측: `import subprocess` 누락)."""
+    import os
+    residue = _load("check_worktree_residue")
+    assert residue._alive(os.getpid()) is True, "살아있는 자기 PID 를 죽었다고 판정했다"
+
+
+def test_worktree_rel_strip() -> None:
+    """worktree 안 파일의 상대경로는 접두를 벗겨야 한다 — 안 벗기면 `.claude/` 접두가
+    is_harness_own 에 걸려 작성 시점 검사가 무음 통과한다."""
+    sys.path.insert(0, str(ROOT))
+    from kernel.context import ROOT as KROOT, _rel
+    inside = KROOT / ".claude" / "worktrees" / "feat-x--12345678" / "db" / "reads" / "a.py"
+    assert _rel(inside) == "db/reads/a.py"
+    assert _rel(KROOT / "db" / "reads" / "a.py") == "db/reads/a.py"
+
+
 def test_outbound_link() -> None:
     """격리 밖 링크만 잡고 산문·트리 안 링크는 통과시킨다."""
     gate = _load("check_bash_write")
@@ -168,7 +186,8 @@ def test_workflow_model_required() -> None:
 
 
 def demo() -> None:
-    for check in (test_fresh_worktree_not_dead, test_outbound_link,
+    for check in (test_fresh_worktree_not_dead, test_alive_no_nameerror,
+                  test_worktree_rel_strip, test_outbound_link,
                   test_board_header_is_split_by_separator,
                   test_worktree_add_only_at_command_head,
                   test_workflow_model_required):

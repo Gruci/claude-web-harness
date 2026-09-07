@@ -6,6 +6,9 @@ exit=1
 [FAIL] 파일 길이 상한 (line_limit) — 1건
    - utils/long_report.py: 401줄 (>400)
 
+[FAIL] 헤더 경로 주석 (header_path) — 1건
+   - utils/moved.py: 헤더 주석 'utils/old_name.py' ≠ 실경로 — 주석을 실경로로 갱신
+
 [FAIL] 중첩 def(클로저) (closures) — 1건
    - utils/closure.py: 중첩 def outer > inner
 [SKIP] 읽기 레이어의 쓰기 SQL·commit — 설정에 read 폴더를 안 적었음
@@ -68,4 +71,4 @@ exit=1
 [SKIP] 사고 절 승격 상태 — 설정에 사고 기록 문서를 안 적었음
 [SKIP] MD 함수 참조 실존 — greenfield — 문서가 코드보다 먼저다
 
-총 21건 위반.
+총 22건 위반.

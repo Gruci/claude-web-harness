@@ -171,6 +171,7 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
 
     return [
         _entry("line_limit", "파일 길이 상한", core.check_line_limit(files), files, NO_PY),
+        _entry("header_path", "헤더 경로 주석", core.check_header_path_comment(files), files, NO_PY),
         _syntax_section("closures", "중첩 def(클로저)", core.check_closures, (files,), files, NO_PY),
         _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", layers.check_reads_writes(files),
                reads, _need_layer("read")),
@@ -348,8 +349,8 @@ def _single_file_lists(raw_path: str) -> tuple[list[Path], list[Path], bool, lis
     """--file 모드: 대상 파일 하나를 (py, ui, 전역검사 여부, 스타일 대상)으로 분류."""
     p = Path(raw_path).resolve()
     try:
-        rel = p.relative_to(ROOT).as_posix()
-    except ValueError:
+        rel = _rel(p)                    # worktree 접두를 벗긴다 — 안 벗기면 `.claude/` 로 시작해
+    except ValueError:                   # is_harness_own 에 걸려 작성 시점 검사가 무음 통과한다
         return [], [], False, []
     exclude = profile.SCOPE["exclude_all"]
     if not p.exists() or (exclude and rel.startswith(exclude)):

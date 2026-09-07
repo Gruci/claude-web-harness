@@ -11,3 +11,4 @@
 # 다시 떠라 — `python -X utf8 -c "from harness_gates.edit_surface import current
 # ; [print(f'{k}\t{v}') for k, v in sorted(current())]"` 가 현재 선언을 그대로 뽑는다.
 SCOPE["exclude_all"]	tests/fixtures/
+SCOPE["exclude_all"]	upgrade/

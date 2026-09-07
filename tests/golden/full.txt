@@ -4,6 +4,9 @@ exit=1
 [FAIL] 파일 길이 상한 (line_limit) — 1건
    - utils/long_report.py: 401줄 (>400)
 
+[FAIL] 헤더 경로 주석 (header_path) — 1건
+   - utils/moved.py: 헤더 주석 'utils/old_name.py' ≠ 실경로 — 주석을 실경로로 갱신
+
 [FAIL] 중첩 def(클로저) (closures) — 1건
    - utils/closure.py: 중첩 def outer > inner
 
@@ -122,4 +125,4 @@ exit=1
    - settings.py 가 읽는 'ALPHA_KEY' 가 DEVGUIDE.md 목록에 없음
    - DEVGUIDE.md 의 'BETA_KEY' 를 settings.py 가 읽지 않음(타 모듈 로드 가능 — 확인)
 
-총 49건 위반.
+총 50건 위반.

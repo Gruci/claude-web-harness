@@ -24,7 +24,15 @@ READ_ENC = "utf-8-sig"
 
 
 def _rel(f: Path) -> str:
-    return f.relative_to(ROOT).as_posix()
+    """루트 기준 경로. worktree(`.claude/worktrees/<이름>/`) 안 파일은 접두를 벗긴다 —
+    작성 시점 훅은 메인 체크아웃의 ROOT 로 도는데 구현은 worktree 안에서 일어난다.
+    안 벗기면 `.claude/` 접두가 is_harness_own 에 걸려 검사가 무음 통과하고,
+    경로 기반 게이트(레이어·헤더 주석)는 전부 오탐한다."""
+    rel = f.relative_to(ROOT).as_posix()
+    parts = rel.split("/")
+    if len(parts) > 3 and parts[0] == ".claude" and parts[1] == "worktrees":
+        return "/".join(parts[3:])
+    return rel
 
 
 def _ls_files(*patterns: str) -> list[str]:

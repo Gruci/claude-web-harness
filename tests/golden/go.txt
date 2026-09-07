@@ -1,5 +1,6 @@
 exit=1
 [OK]   파일 길이 상한
+[OK]   헤더 경로 주석
 [N/A ] 중첩 def(클로저) — go: 클로저가 관용구라 금지가 부적절
 
 [FAIL] 읽기 레이어의 쓰기 SQL·commit (reads_writes) — 1건

@@ -38,7 +38,11 @@ DATE_TAG = re.compile(r"\b20\d\d-\d\d-\d\d\b")
 PATH_TOKEN = re.compile(r"[\w][\w./-]*\.(?:py|tsx|ts|css|md|mjs|json|html)\b")
 SIG_TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\(")   # 한글 단어+괄호가 아니라 코드 식별자만
 INLINE_CODE = re.compile(r"`[^`]*`")
-ROLE_CONTRACT = re.compile(r"^>\s*담는 것:.*담지 않는 것:.*읽는 시점:", re.DOTALL)
+# 두 표기를 모두 인정한다 — 내부 MD 의 기본형과 사내 배포용 격식형. 슬롯 3개(무엇을 담나·
+# 무엇을 안 담나·언제 읽나)가 같아야 계약이고, 어휘만 바꾸고 슬롯을 빼면 걸린다.
+ROLE_CONTRACT = re.compile(
+    r"^>\s*(?:담는 것|문서 범위):.*(?:담지 않는 것|제외 범위):.*(?:읽는 시점|열람 시점):",
+    re.DOTALL)
 
 
 def style_target(rel: str) -> bool:

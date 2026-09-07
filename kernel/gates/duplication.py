@@ -203,12 +203,20 @@ def _block_decls(text: str, rel: str, marks: tuple[str, ...],
 
 
 def _sources(py_files: list[Path], ui_files: list[Path]) -> list[tuple[str, str, tuple[str, ...]]]:
-    """(경로, 본문, 주석표기) — 파일을 한 번만 읽어 두 검사가 함께 쓴다."""
+    """(경로, 본문, 주석표기) — 파일을 한 번만 읽어 두 검사가 함께 쓴다.
+
+    일회성 스크립트(scratch)는 뺀다 — 재사용 대상이 아니라 정본 재구현의 신호가 아니고,
+    등재해봐야 소거할 수 없는 baseline 부채만 된다.
+    """
+    scratch = profile.scratch()
     out: list[tuple[str, str, tuple[str, ...]]] = []
     for marks, files in ((_PY_COMMENT, py_files), (_UI_COMMENT, ui_files)):
         for path in files:
+            rel = _rel(path)
+            if scratch and rel.startswith(scratch):
+                continue
             try:
-                out.append((_rel(path), path.read_text(encoding=READ_ENC), marks))
+                out.append((rel, path.read_text(encoding=READ_ENC), marks))
             except OSError:
                 continue
     return out

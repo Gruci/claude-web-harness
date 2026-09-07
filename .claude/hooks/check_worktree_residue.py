@@ -42,6 +42,7 @@
 정본은 `HARNESS.md` 「단계」다.
 """
 import re
+import subprocess
 import sys
 from pathlib import Path
 
