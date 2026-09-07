@@ -19,9 +19,20 @@ plan 은 목업과 달리 **과업이 끝날 때까지 루트에 있는 게 정�
 대가는 명시한다 — 다른 과업이 진행 중인 동안에는 끝난 과업의 잔해도 안 잡힌다. 미탐을 택한
 이유는 오탐이 곧 종료 데드락이기 때문이다.
 
+## 갓 만든 산출물도 검사하지 않는다
+
+보드 행은 **3단계(구현) 시작 시** 등록한다. 그래서 1~2단계(리서치·계획 작성 중)인 세션은
+보드에 행이 없고, 위 「보드가 busy 면 건너뛴다」가 그 세션을 못 지킨다 — 다른 세션이 자기 행을
+지우는 순간 보드가 비면서 남의 갓 쓴 plan 이 검출된다(2026-09-07 실측: 1분 전 생성된 산출물이
+종료를 막았다). 그 상태의 탈출구가 파일 이름 변경뿐이라, 계획 단계 세션이 자기 파일을 잃는다.
+
+그래서 최근 수정분은 검출하지 않는다. 잔해는 **끝난 과업이 남긴 것**이라 시간이 지나고,
+진행 중인 것은 방금 손댄 것이다 — 이 구분이 보드보다 이른 단계까지 덮는다.
+
 예외: `wip_` 접두는 차단하지 않는다. 보드가 빈 상태로 세션을 넘겨 이어지는 검토용 산출물이다.
 """
 import sys
+import time
 from pathlib import Path
 
 # 보드 행 파싱은 `check_editing_lock.py` 가 정본이다 — 주석 블록·헤더 제외 규칙을 재구현하지 않는다.
@@ -37,6 +48,11 @@ except Exception:
 TASK_DIR = Path(__file__).resolve().parents[2] / "docs" / "tasks"
 EDITING_MD = Path(__file__).resolve().parents[2] / "EDITING.md"
 
+# 갓 만든 산출물의 유예(초) — 계획 단계 세션이 보드 행 없이 작업하는 구간을 덮는다.
+# 하루로 두면 "어제 끝낸 과업의 잔해"가 다음날 첫 세션에서 잡힌다 — 다음 세션의 오독을
+# 막는다는 목적은 그 정도 지연으로 안 흔들린다(당일 이어 붙는 세션은 대개 같은 과업이다).
+FRESH_SEC = 24 * 60 * 60
+
 
 def board_is_busy() -> bool:
     """과업 보드에 진행 중 행이 있는지. 읽지 못하면 True — 판정 불능일 때는 막지 않는다.
@@ -51,12 +67,23 @@ def board_is_busy() -> bool:
     return any("#sid:" in row for row in rows)
 
 
+def _is_fresh(path: Path, now: float) -> bool:
+    """방금 손댄 산출물인가 — 그렇다면 누군가 쓰는 중이다.
+    stat 실패는 fresh 로 본다(판정 불능일 때는 막지 않는다 — board_is_busy 와 같은 방향)."""
+    try:
+        return now - path.stat().st_mtime < FRESH_SEC
+    except OSError:
+        return True
+
+
 def residue() -> list[Path]:
     """루트에 남은 과업 산출물. 정렬은 출력 안정성 목적이다."""
     if not TASK_DIR.is_dir() or board_is_busy():
         return []
+    now = time.time()
     return sorted(path for path in TASK_DIR.glob("*.md")
-                  if path.is_file() and not path.name.startswith("wip_"))
+                  if path.is_file() and not path.name.startswith("wip_")
+                  and not _is_fresh(path, now))
 
 
 def main() -> None:

@@ -24,9 +24,13 @@ import sys
 from pathlib import Path
 
 from kernel import linters, profile
+# 재수출 — trace(violation_path)·설치 스크립트(BASELINE_FILE·load_baseline)가 러너 경유로 쓴다.
+from kernel.baseline import (BASELINE_FILE, apply_baseline as _apply_baseline,  # noqa: F401
+                             load_baseline, violation_path)
 from kernel.context import READ_ENC, ROOT, _rel, app_code, is_harness_own, tracked
-from kernel.gates import (api_types, core, duplication, harness_self, layers, md_graph,
-                          md_style, orphan_api, placement, schema, tests_pairing)
+from kernel.gates import (api_types, core, duplication, frontend, harness_self, layers,
+                          md_graph, md_style, orphan_api, placement, prompt_version,
+                          schema, tests_pairing)
 
 # (slug, 제목, 위반 목록, 건너뜀). 건너뜀은 (등급, 사유) 이고 None 이면 실제로 검사한 것이다.
 #
@@ -39,7 +43,6 @@ Skip = tuple[str, str]
 Section = tuple[str, str, list[str], "Skip | None"]
 
 LOCAL_PACKAGE = "harness_gates"
-BASELINE_FILE = ROOT / "harness_baseline.txt"
 
 NO_PY = "검사할 소스 없음"
 NO_UI = "화면 소스 없음"
@@ -70,46 +73,6 @@ def _print_sections(sections: list[Section]) -> int:
         else:
             print(f"[OK]   {title}")
     return total
-
-
-# ── 동결(baseline) ─────────────────────────────────────────────────────────────
-#
-# 하네스를 기존 레포에 끼운 첫 실행이 수백 건을 뱉으면 사람은 게이트를 통째로 끈다. 그게
-# 하네스가 죽는 실제 경로다. 그래서 설치는 현재 위반을 (slug, 파일)로 얼리고 초록불에서
-# 출발한다. 줄번호로 얼리지 않는 이유는 코드가 한 줄만 밀려도 동결이 풀리기 때문이다.
-
-
-def violation_path(violation: str) -> str | None:
-    """위반 문자열 앞머리의 파일 경로. 파일에 귀속되지 않는 전역 위반이면 None."""
-    head = violation.split(":", 1)[0].strip()
-    if not head or " " in head or ("/" not in head and "." not in head):
-        return None
-    return head
-
-
-def load_baseline() -> set[tuple[str, str]]:
-    if not BASELINE_FILE.exists():
-        return set()
-    frozen: set[tuple[str, str]] = set()
-    for line in BASELINE_FILE.read_text(encoding=READ_ENC).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        slug, _tab, path = line.partition("\t")
-        if path.strip():
-            frozen.add((slug.strip(), path.strip()))
-    return frozen
-
-
-def _apply_baseline(sections: list[Section]) -> list[Section]:
-    frozen = load_baseline()
-    if not frozen:
-        return sections
-    kept: list[Section] = []
-    for slug, title, violations, skipped in sections:
-        live = [v for v in violations
-                if (slug, violation_path(v) or "") not in frozen]
-        kept.append((slug, title, live, skipped))
-    return kept
 
 
 def _under(files: list[Path], layer_name: str) -> list[Path]:
@@ -166,6 +129,7 @@ def _need_symbol(name: str) -> str:
 def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
     both = files + ui_files
     reads, web = _under(files, "read"), _under(files, "web")
+    writes, batch = _under(files, "write"), _under(files, "batch")
     vocab = profile.VOCAB
     settings = profile.FILES.get("settings")
 
@@ -173,8 +137,17 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
         _entry("line_limit", "파일 길이 상한", core.check_line_limit(files), files, NO_PY),
         _entry("header_path", "헤더 경로 주석", core.check_header_path_comment(files), files, NO_PY),
         _syntax_section("closures", "중첩 def(클로저)", core.check_closures, (files,), files, NO_PY),
+        _syntax_section("func_limit", "함수 길이 상한", core.check_func_length, (files,), files, NO_PY),
+        _entry("type_checking_future", "TYPE_CHECKING↔future annotations 짝",
+               core.check_type_checking_future(files), files, NO_PY),
         _entry("reads_writes", "읽기 레이어의 쓰기 SQL·commit", layers.check_reads_writes(files),
                reads, _need_layer("read")),
+        _entry("reads_col_interp", "읽기 레이어 컬럼 식별자 raw 보간",
+               layers.check_reads_col_interpolation(files), reads, _need_layer("read")),
+        _entry("writes_round", "쓰기 레이어 round() 절삭", layers.check_writes_round(files),
+               writes, _need_layer("write")),
+        _entry("batch_select", "배치 직접 SELECT", layers.check_batch_direct_select(files),
+               batch, _need_layer("batch")),
         _entry("abbrev_names", "축약 이름 단독 대입", core.check_abbrev_names(files),
                files and vocab["abbrev_names"], "설정에 금지할 축약어를 안 적었음"),
         _entry("abbrev_prefixes", "축약 접두 식별자", core.check_abbrev_prefixes(both),
@@ -203,16 +176,28 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
                         layers.check_routes_error_response, (files,),
                         _under(files, "routes") and profile.symbol("error_response"),
                         _need_symbol("error_response")),
-        _entry("raw_fetch", "공용 래퍼 없는 fetch", layers.check_frontend_raw_fetch(ui_files),
+        _entry("raw_fetch", "공용 래퍼 없는 fetch", frontend.check_frontend_raw_fetch(ui_files),
                ui_files, NO_UI),
-        _entry("hex_literal", "프론트 색 리터럴", layers.check_frontend_hex(ui_files),
+        _entry("hex_literal", "프론트 색 리터럴", frontend.check_frontend_hex(ui_files),
                ui_files, NO_UI),
-        _entry("responsive", "폰을 깨뜨리는 고정 폭", layers.check_frontend_responsive(ui_files),
+        _entry("responsive", "폰을 깨뜨리는 고정 폭", frontend.check_frontend_responsive(ui_files),
                ui_files, NO_UI),
         _entry("browser_api", "브라우저 API 직접 호출",
-               layers.check_frontend_browser_api(ui_files),
+               frontend.check_frontend_browser_api(ui_files),
                ui_files and profile.ALLOWLIST["ui_platform"],
                "설정에 브라우저 API 래퍼를 안 적었음"),
+        _entry("hash_nav", "해시 네비게이션 단일 기전",
+               frontend.check_frontend_hash_nav(ui_files), ui_files, NO_UI),
+        _entry("ui_logic_tests", "프론트 로직 테스트 짝",
+               tests_pairing.check_ui_logic_test_pairing(ui_files), ui_files, NO_UI),
+        _entry("ui_component_tests", "프론트 컴포넌트 테스트 짝",
+               tests_pairing.check_ui_component_test_pairing(ui_files), ui_files, NO_UI),
+        _entry("root_litter", "루트 직속 잡파일", placement.check_root_litter(),
+               profile.ROOT_FILES, "설정에 루트 허용 파일을 안 적었음"),
+        _entry("prompt_version", "프롬프트 버전 범프", prompt_version.check_prompt_version(),
+               profile.VERSIONED_PROMPTS and prompt_version.ready(),
+               "설정에 버전 관리 프롬프트 목록을 안 적었음" if not profile.VERSIONED_PROMPTS
+               else "원격 기본 브랜치 미상 — 비교 기준이 없음"),
         _entry("file_placement", "앱 코드 배치",
                placement.check_file_placement(files, ui_files),
                placement.layer_prefixes(), "설정에 폴더를 하나도 안 적었음"),

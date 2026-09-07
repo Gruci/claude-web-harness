@@ -76,6 +76,12 @@ SEPARATORS = (";", "|", "||", "&&", "&")
 # 하네스는 누적형과 비가역형만 강제한다.
 VERDICT_COMMANDS = ("gh pr checks", "gh run watch")
 
+# 절 2-1 — `gh pr merge --auto`. 이름이 "체크 통과를 기다렸다가 머지"라 판정을 대신하는 것처럼
+# 읽히지만, 기다림의 주체는 **branch protection 필수 체크**다. 필수 체크가 없는 레포에서 auto 는
+# 기다릴 대상이 없어 즉시 머지한다(=배포 트리거일 수 있다). 절 2 가 파이프로 판정을 잃는 경로라면
+# 이건 판정 자체를 GitHub 에 위임했다고 착각하는 경로다.
+AUTO_MERGE = "gh pr merge"
+
 # 절 3 — 병렬 체제의 공유 메인 체크아웃에서 금지되는 git 변경 명령.
 # `git checkout` 은 파일 복원도 겸하지만 브랜치 전환이 실사고의 실제 기전이라 통째로 막는다.
 MUTATING_GIT = ("git commit", "git add", "git switch", "git checkout", "git merge")
@@ -172,6 +178,18 @@ def piped_verdict(command: str) -> str | None:
         if hit:
             return hit
     return None
+
+
+def auto_merge(command: str) -> bool:
+    """`gh pr merge` 조각에 `--auto` 가 붙었나.
+
+    조각의 머리(앞 3토큰)로 명령을 식별하는 것은 `_makes_link` 와 같은 이유다 — 커밋 메시지
+    산문 안의 `gh pr merge --auto` 를 명령으로 오독하지 않는다.
+    """
+    for segment in _segments(_tokens(command)):
+        if " ".join(segment[:3]).startswith(AUTO_MERGE) and "--auto" in segment:
+            return True
+    return False
 
 
 _LINK_ITEM_TYPES = ("junction", "symboliclink", "hardlink")
@@ -292,6 +310,15 @@ def main() -> None:
         print(
             f"[BASH GATE] `{verdict}` 뒤에 파이프·체인이 붙었다 — 판정의 exit code 가 사라진다.\n"
             "판정 명령을 단독 실행하고, merge 는 성공을 확인한 다음 호출로 분리하라.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    if auto_merge(command):
+        print(
+            "[BASH GATE] `gh pr merge --auto` — 기다림의 주체는 branch protection 필수 체크다.\n"
+            "필수 체크가 없는 레포에서 auto 는 기다릴 대상이 없어 즉시 머지한다(기다리는 척만 한다).\n"
+            "`gh pr checks <PR>` 을 단독 실행해 pass 를 확인한 뒤 `--auto` 없이 머지하라.",
             file=sys.stderr,
         )
         sys.exit(2)

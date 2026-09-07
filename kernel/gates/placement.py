@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 from kernel import profile
@@ -25,6 +26,16 @@ DOMAIN_PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 # 커널 자신의 발자국 — 프로젝트 앱 코드가 아니므로 배치 규칙의 대상이 아니다.
 SELF_FILES = ("harness_profile.py", "harness_install.py")
 SELF_PREFIXES = ("kernel/", "profiles/", "harness_gates/", ".claude/")
+
+# 하네스가 만들거나 요구하는 루트 실물 — 프로파일마다 다시 적게 하면 그 목록이 커널의 사본이
+# 되고 사본은 갈린다. 프로젝트 고유분만 프로파일 ROOT_FILES 가 든다.
+ROOT_INFRA = frozenset({
+    ".gitignore", "setup_global_permissions.py",
+    "harness_baseline.txt", "harness_surface.txt", "harness_trace.jsonl",
+    "harness_maintenance.json", "test_pairing_baseline.txt",
+    "md_style_baseline.txt", "md_ref_allowlist.txt",
+    "dup_decl_baseline.txt", "dup_block_baseline.txt", "api_array_baseline.txt",
+})
 
 
 def layer_prefixes() -> tuple[str, ...]:
@@ -72,6 +83,23 @@ def _check_domain_shape(domains: tuple[str, ...]) -> list[str]:
             bad.append(f"{prefix}: 도메인 정본 MD 없음 — {name}/{name.upper()}.md 를 만들고 "
                        f"허브에서 링크하라 (고아 MD 게이트가 도달성을 본다)")
     return bad
+
+
+def check_root_litter() -> list[str]:
+    """루트 직속 파일은 프로파일 ROOT_FILES 등재분만 — 확장자 불문.
+
+    file_placement 의 루트 검사는 앱 소스만 봐서 덤프·메모·스크린샷 같은 비소스 잡파일을
+    통째로 놓친다. 미추적이라도 ignore 안 된 파일은 커밋 후보라 같이 잡는다 — 커밋 뒤에야
+    알리면 이미 루트에 굴러다닌 뒤다. 로컬 전용 잔재는 `.git/info/exclude` 로 뺀다.
+    """
+    allow = set(profile.ROOT_FILES) | set(SELF_FILES) | ROOT_INFRA
+    out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+                         cwd=ROOT, capture_output=True, text=True)
+    names = {line.strip() for line in out.stdout.splitlines()}
+    strays = sorted(n for n in names if n and "/" not in n
+                    and n not in allow and (ROOT / n).exists())
+    return [f"{n}: 루트 직속 파일 금지 — 읽는 코드의 패키지 안에 두고, 루트가 맞으면 사유와 "
+            f"함께 프로파일 ROOT_FILES 에 등재하라" for n in strays]
 
 
 def check_file_placement(py_files: list[Path], ui_files: list[Path]) -> list[str]:

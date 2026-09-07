@@ -160,6 +160,45 @@ def test_worktree_add_only_at_command_head() -> None:
         assert naming.worktree_add_target(command) is None, f"명령으로 오독: {label}"
 
 
+def test_auto_merge() -> None:
+    """`gh pr merge --auto` 만 잡는다 — 산문·일반 머지는 통과."""
+    gate = _load("check_bash_write")
+    assert gate.auto_merge("gh pr merge 12 --auto") is True
+    assert gate.auto_merge("gh pr checks 12 ; gh pr merge 12 --auto --squash") is True
+    assert gate.auto_merge("gh pr merge 12 --merge") is False, "일반 머지를 막았다"
+    assert gate.auto_merge('git commit -m "gh pr merge --auto 설명"') is False, "산문을 명령으로 오독"
+
+
+def test_task_residue_fresh() -> None:
+    """방금 만든 산출물은 검출하지 않는다 — 보드 행 없는 계획 단계 세션을 유예가 덮는다."""
+    import time
+    residue = _load("check_task_residue")
+    fake = ROOT / "EDITING.md"                     # 실존 파일이면 무엇이든 mtime 조작 없이 fresh
+    assert residue._is_fresh(fake, time.time()) in (True, False)   # 판정이 죽지 않는다
+    assert residue._is_fresh(fake, fake.stat().st_mtime + 60) is True, "1분 전 파일을 잔해로 판정"
+    assert residue._is_fresh(fake, fake.stat().st_mtime + residue.FRESH_SEC + 1) is False, \
+        "하루 지난 파일을 fresh 로 판정"
+    assert residue._is_fresh(ROOT / "no-such-file.md", time.time()) is True, \
+        "stat 실패는 fresh(막지 않는다) 여야 한다"
+
+
+def test_ui_copy_extract() -> None:
+    """추출기 단위 — JSX 텍스트 추출·JSDoc 이어짐 줄 제외·`${}` 마스킹 후 조각 탈락 (LLM 무호출)."""
+    gate = _load("check_ui_copy")
+    lines = [
+        "  <span>수탁고 추이</span>",                      # JSX 텍스트 → 추출
+        "  const label = '기간 선택';",                    # 리터럴 → 추출
+        " * '주석 속 인용'은 화면에 안 나간다",             # JSDoc 이어짐 줄 → 제외
+        "  const t = `${y}년 ${m}월`;",                    # 치환 잔여 조각 → 제외
+        "  const u = `${name} 님의 보유 현황`;",           # 치환 + 실문구 → 마스킹 추출
+    ]
+    found = gate.extract_strings(lines)
+    assert "수탁고 추이" in found and "기간 선택" in found
+    assert all("주석" not in s for s in found), "주석 이어짐 줄을 추출했다"
+    assert "{값}년 {값}월" not in found, "조사·단위 조각을 문구로 추출했다"
+    assert "{값} 님의 보유 현황" in found, "치환 마스킹 실문구를 놓쳤다"
+
+
 def test_workflow_model_required() -> None:
     """`agent()` 의 model 미지정만 잡고, 주석·문자열 안의 `agent(` 는 호출로 세지 않는다.
 
@@ -178,11 +217,20 @@ def test_workflow_model_required() -> None:
         ("// await agent('x')\nawait agent('y', {model:'opus'})", "주석 안 호출"),
         ("await agent(`설명: agent( 를 쓰는 법`, {model:'opus'})", "템플릿 문자열 안"),
         ("await agent('a', {...opts})", "전개 — 런타임 값이라 판정 불능"),
+        ("await agent('a', {agentType: 'code-reviewer'})", "agentType — frontmatter 가 모델 정본"),
+        ("const O = {model:'opus'}\nawait agent('a', O)", "식별자 opts — 정의부에 model"),
+        ("foo.agent('x')", "남의 객체 메서드 — 호출로 세지 않는다"),
     ]
     for source, expected, label in violating:
         assert gate.missing_model(source) == expected, f"잘못 잡았다: {label}"
     for source, label in passing:
         assert gate.missing_model(source) == [], f"통과해야 하는데 막음: {label}"
+
+    # 판정 불능은 차단(missing)이 아니라 경고(unknown)로 갈린다.
+    missing, unknown = gate.classify_calls("await agent('a', mysteryOpts)")
+    assert missing == [] and unknown == [1], "미정의 식별자 opts 는 판정 불능(경고)여야 한다"
+    missing, unknown = gate.classify_calls("const O = {label:'x'}\nawait agent('a', O)")
+    assert missing == [2] and unknown == [], "정의부에 model 없는 식별자 opts 는 위반이어야 한다"
 
 
 def demo() -> None:
@@ -190,6 +238,7 @@ def demo() -> None:
                   test_worktree_rel_strip, test_outbound_link,
                   test_board_header_is_split_by_separator,
                   test_worktree_add_only_at_command_head,
+                  test_auto_merge, test_task_residue_fresh, test_ui_copy_extract,
                   test_workflow_model_required):
         check()
         print(f"  [OK] {check.__name__}")

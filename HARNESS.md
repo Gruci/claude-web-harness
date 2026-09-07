@@ -47,7 +47,8 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** + 만들 명령 제시 |
 | ⑮ | Stop | `check_worktree_residue.py` | 머지 끝난 worktree 잔존 — upstream 이 자기 브랜치일 때만 push 이력으로 센다 | 경고 (추론) + 정리 순서 제시 |
 | ⑯ | Stop | `check_mockup_residue.py` | `docs/tasks/mockup/` 에 판단 끝난 시안 잔존 | **차단** (`wip_` 예외) |
-| ⑰ | Stop | `check_task_residue.py` | 보드가 빈데 `docs/tasks/` 루트에 산출물 잔존 | **차단** (`wip_` 예외) |
+| ⑰ | Stop | `check_task_residue.py` | 보드가 빈데 `docs/tasks/` 루트에 산출물 잔존 (`wip_`·최근 24시간 수정분 예외 — 보드 행은 3단계에 등록하므로 계획 단계 세션을 유예가 덮는다) | **차단** |
+| ⑱ | Stop | `check_ui_copy.py` | 브랜치에서 새로 추가된 ui 레이어 한글 문구(리터럴·JSX 텍스트, 주석·테스트 파일 제외)를 Haiku 1콜로 감수 — `ui_denylist` 명단 밖 신종 내부어·축약·구어를 잡는다. 같은 문구 집합은 해시 캐시로 재호출 없음, 인프라 실패·ui 레이어 미선언은 stderr 고지 후 통과 | **차단** (위반 시) |
 
 ### 단계 — 차단이냐 경고냐는 판정 근거가 정한다
 

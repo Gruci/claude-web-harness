@@ -11,8 +11,11 @@
   접근자 import 경로    같은 헬퍼를 두 경로로 부르는 것
   전역 SSL 패치 위치    검증 우회가 아무 데서나 켜지는 것
   라우트 에러 응답      에러 응답 형식이 라우트마다 다른 것
-  프론트 raw fetch      캐시·에러 처리 없는 직접 호출
-  프론트 hex 리터럴     색 하드코딩 — 토큰·팔레트 우회
+  컬럼 식별자 보간      바인딩 불가 자리의 f-string — 새면 미인증 SQLi
+  쓰기 레이어 round     적재 정밀도 절삭 — 반올림은 표시 레이어 소관
+  배치 직접 SELECT      조회가 배치마다 흩어지는 것
+
+화면 레이어 규칙은 frontend.py 다 — 파일 400줄 상한 앞에서 기능 단위로 갈랐다.
 """
 
 from __future__ import annotations
@@ -23,18 +26,6 @@ from pathlib import Path
 
 from kernel import profile
 from kernel.context import READ_ENC, _rel
-
-_FETCH_RE = re.compile(r"\bfetch\s*\(|\baxios\b")
-_HEX_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
-_RGB_HSL_RE = re.compile(r"\brgba?\s*\(|\bhsla?\s*\(")   # hex 게이트 우회 경로를 같이 막는다
-_ENV_RE = re.compile(r"\bos\.(getenv|environ)\b")
-
-# max-width·min-width 는 반응형의 상한·하한이라 정상이다. 뒤돌아보기로 그것만 제외한다.
-_FIXED_WIDTH_RE = re.compile(r"(?<![-\w])width\s*:\s*['\"]?\d{3,}px")
-_VIEWPORT_VW_RE = re.compile(r"\b100vw\b")
-_BROWSER_API_RE = re.compile(r"\b(localStorage|sessionStorage|document\.|window\.)")
-
-_JS_COMMENT = ("//", "*", "/*", "{/*")
 
 
 def _under(rel: str, layer_name: str) -> bool:
@@ -287,94 +278,82 @@ def check_routes_error_response(py_files: list[Path]) -> list[str]:
     return bad
 
 
-# ── 프론트 ─────────────────────────────────────────────────────────────────────
+# ── 읽기 레이어의 컬럼 식별자 raw 보간 ─────────────────────────────────────────
+#
+# 파라미터 바인딩으로 못 묶는 식별자 자리라, 유저 입력 column/columns 가 f-string 으로
+# 새면 미인증 SQLi 다(원류 보안감사 Critical). 화이트리스트 헬퍼(quote_col 류) 경유를
+# 강제하고, 헬퍼 자신의 정의 파일은 ALLOWLIST["sql_ident"] 로 뺀다.
+
+_COL_INTERP = re.compile(r'"\{column\}"')
+_COL_JOIN = re.compile(r'\.join\(\s*f[\'"]"\{\w+\}".*for\s+\w+\s+in\s+columns')
 
 
-def _is_admin_ui(rel: str) -> bool:
-    admin = profile.layer("ui_admin")
-    return bool(admin) and (rel.startswith(admin) or "/admin/" in rel)
-
-
-def check_frontend_raw_fetch(ui_files: list[Path]) -> list[str]:
-    """공용 래퍼를 거치지 않는 직접 호출. 쓰기·비2xx 시맨틱이 필요하면 프로파일에 사유와 함께 등재."""
-    allow = tuple(profile.ALLOWLIST["ui_fetch"]) + tuple(profile.ALLOWLIST["ui_fetch_wrappers"])
+def check_reads_col_interpolation(py_files: list[Path]) -> list[str]:
+    reads = profile.layer("read")
+    if not reads:
+        return []
+    allow = tuple(profile.ALLOWLIST["sql_ident"])
     bad: list[str] = []
-    for f in ui_files:
+    for f in py_files:
         rel = _rel(f)
-        if _is_admin_ui(rel) or rel in allow:
+        if not rel.startswith(reads) or rel in allow:
             continue
         for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
-            if stripped.startswith(("//", "*", "/*")):
+            if stripped.startswith("#"):
                 continue
-            if _FETCH_RE.search(line):
-                bad.append(f"{rel}:{i}: 공용 래퍼를 거치지 않는 fetch() — {stripped[:50]}")
+            if _COL_INTERP.search(line) or _COL_JOIN.search(line):
+                bad.append(f"{rel}:{i}: 컬럼 식별자 raw 보간 — 바인딩 불가 자리라 새면 SQLi 다. "
+                           f"화이트리스트 헬퍼(quote_col 류) 경유, 헬퍼 정의 파일은 "
+                           f"ALLOWLIST['sql_ident'] 등재 — {stripped[:60]}")
     return bad
 
 
-def check_frontend_hex(ui_files: list[Path]) -> list[str]:
-    """색 하드코딩. 토큰 정본이 선언돼 있으면 메시지가 그 파일을 가리킨다."""
-    allow = tuple(profile.ALLOWLIST["ui_hex"])
-    tokens = profile.layer_raw("ui_tokens")
-    where = f"{tokens} 또는 CSS 변수" if tokens else "토큰 정본 또는 CSS 변수"
-    bad: list[str] = []
-    for f in ui_files:
-        rel = _rel(f)
-        if _is_admin_ui(rel) or rel in allow or (tokens and rel == tokens):
-            continue
-        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
-            stripped = line.strip()
-            if stripped.startswith(("//", "*", "/*")):
-                continue
-            for m in _HEX_RE.finditer(line):
-                bad.append(f"{rel}:{i}: hex 리터럴 {m.group(0)} — {where} 로")
-            if _RGB_HSL_RE.search(line):
-                bad.append(f"{rel}:{i}: rgb()·hsl() 색 리터럴 — {where} 로")
-    return bad
+# ── 쓰기 레이어의 round() 절삭 ─────────────────────────────────────────────────
+
+_ROUND_RE = re.compile(r"\bround\s*\(")
 
 
-def check_frontend_responsive(ui_files: list[Path]) -> list[str]:
-    """폰을 깨뜨리는 두 원인. 만든 뒤 고치면 재작업이고 저장 시점에 막으면 그냥 작성이다.
+def check_writes_round(py_files: list[Path]) -> list[str]:
+    """적재 직전 round() — 저장은 원 정밀도, 반올림은 표시 레이어 소관이다.
 
-    고정 px 폭은 좁은 화면에서 가로 스크롤을 만들고, `100vw` 는 스크롤바 폭만큼 넘쳐서
-    세로 스크롤이 있는 페이지면 반드시 가로로도 넘친다.
+    DDL 타입의 정밀도 잘림은 ddl_types 게이트가 막는다 — 이 규칙이 그 나머지 절반이다.
     """
-    bad: list[str] = []
-    for f in ui_files:
-        rel = _rel(f)
-        if _is_admin_ui(rel):
-            continue
-        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
-            stripped = line.strip()
-            if "px-ok" in line or stripped.startswith(_JS_COMMENT):
-                continue
-            if _FIXED_WIDTH_RE.search(line):
-                bad.append(f"{rel}:{i}: 고정 px 폭 — max-width·%·minmax·clamp 로 "
-                           f"(불가피하면 `// px-ok: 사유`)")
-            if _VIEWPORT_VW_RE.search(line):
-                bad.append(f"{rel}:{i}: 100vw 는 스크롤바 폭만큼 가로 오버플로 — 100% 로")
-    return bad
-
-
-def check_frontend_browser_api(ui_files: list[Path]) -> list[str]:
-    """브라우저 API 직접 호출. 래퍼 정본이 선언돼 있을 때만 판정한다.
-
-    래퍼 하나를 거치게 해두면 나중에 앱으로 옮길 때 교체 대상이 그 파일 하나로 끝난다.
-    선언이 없으면 "어디로 가라"고 말할 수 없으므로 이 게이트는 [SKIP] 이다.
-    """
-    allow = tuple(profile.ALLOWLIST["ui_platform"])
-    if not allow:
+    writes = profile.layer("write")
+    if not writes:
         return []
     bad: list[str] = []
-    for f in ui_files:
+    for f in py_files:
         rel = _rel(f)
-        if _is_admin_ui(rel) or rel in allow:
+        if not rel.startswith(writes):
             continue
         for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
             stripped = line.strip()
-            if "web-ok" in line or stripped.startswith(_JS_COMMENT):
+            if stripped.startswith("#"):
                 continue
-            if _BROWSER_API_RE.search(line):
-                bad.append(f"{rel}:{i}: 브라우저 API 직접 호출 — {allow[0]} 래퍼 경유 "
-                           f"(불가피하면 `// web-ok: 사유`)")
+            if _ROUND_RE.search(line):
+                bad.append(f"{rel}:{i}: 적재 값 round() 절삭 — 저장은 원 정밀도, 반올림은 "
+                           f"표시 레이어에서 — {stripped[:60]}")
+    return bad
+
+
+# ── 배치 레이어의 직접 SELECT ──────────────────────────────────────────────────
+
+_SELECT_BODY = re.compile(r'(?i)\bSELECT\s+[\w"*,\s.]+\bFROM\b|"""\s*WITH\s+\w+\s+AS\b')
+
+
+def check_batch_direct_select(py_files: list[Path]) -> list[str]:
+    """배치 안 직접 SELECT — 조회가 배치마다 흩어지지 않게 읽기 레이어를 경유시킨다."""
+    batch = profile.layer("batch")
+    if not batch:
+        return []
+    read = profile.layer("read")
+    bad: list[str] = []
+    for f in py_files:
+        rel = _rel(f)
+        if not rel.startswith(batch):
+            continue
+        text = f.read_text(encoding=READ_ENC)
+        if ".execute(" in text and _SELECT_BODY.search(text):
+            bad.append(f"{rel}: 배치 안 직접 SELECT — 조회는 {read or '읽기 레이어'} 경유")
     return bad

@@ -2,9 +2,14 @@ exit=1
 [OK]   파일 길이 상한
 [OK]   헤더 경로 주석
 [N/A ] 중첩 def(클로저) — go: 클로저가 관용구라 금지가 부적절
+[TOOL] 함수 길이 상한 — go 구문 분석기가 없어 검사 못 함
+[OK]   TYPE_CHECKING↔future annotations 짝
 
 [FAIL] 읽기 레이어의 쓰기 SQL·commit (reads_writes) — 1건
    - db/reads/board.go:5: 쓰기 SQL — conn.Exec("DELETE FROM board_cache")
+[OK]   읽기 레이어 컬럼 식별자 raw 보간
+[SKIP] 쓰기 레이어 round() 절삭 — 설정에 write 폴더를 안 적었음
+[OK]   배치 직접 SELECT
 [SKIP] 축약 이름 단독 대입 — 설정에 금지할 축약어를 안 적었음
 [SKIP] 축약 접두 식별자 — 설정에 금지할 축약 접두어를 안 적었음
 [N/A ] UI 라벨 금칙어 — headless: 화면 레이어가 없는 아키텍처
@@ -26,6 +31,11 @@ exit=1
 [N/A ] 프론트 색 리터럴 — headless: 화면 레이어가 없는 아키텍처
 [N/A ] 폰을 깨뜨리는 고정 폭 — headless: 화면 레이어가 없는 아키텍처
 [N/A ] 브라우저 API 직접 호출 — headless: 화면 레이어가 없는 아키텍처
+[SKIP] 해시 네비게이션 단일 기전 — 화면 소스 없음
+[SKIP] 프론트 로직 테스트 짝 — 화면 소스 없음
+[SKIP] 프론트 컴포넌트 테스트 짝 — 화면 소스 없음
+[SKIP] 루트 직속 잡파일 — 설정에 루트 허용 파일을 안 적었음
+[SKIP] 프롬프트 버전 범프 — 설정에 버전 관리 프롬프트 목록을 안 적었음
 
 [FAIL] 앱 코드 배치 (file_placement) — 1건
    - stray.go: 루트에 앱 코드 금지 — batches/·db/·db/reads/·db/writes/·tests/·utils/ 중 하나로 옮기거나 프로파일 ROOT_FILES 에 등재하라

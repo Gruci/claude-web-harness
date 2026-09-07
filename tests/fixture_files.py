@@ -177,6 +177,47 @@ def bypass_ssl_verification():
     return None
 '''
 
+FILES["utils/tc_future.py"] = '''"""픽스처: future annotations 없는 TYPE_CHECKING 블록."""
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+VALUE: "Path | None" = None
+'''
+
+# 81줄 함수 — 파일 400줄 상한이 못 보는 축. 줄들을 서로 다르게 만들어 블록 중복에 안 걸린다.
+FILES["utils/long_func.py"] = (
+    '"""픽스처: 함수 길이 상한 초과."""\n\n\ndef long_calc() -> int:\n'
+    + "".join(f"    value_{i} = {i}\n" for i in range(80))
+    + "    return value_0\n"
+)
+
+FILES["db/reads/col_interp.py"] = '''"""픽스처: 읽기 레이어의 컬럼 식별자 raw 보간."""
+
+
+def series(conn: object, column: str) -> list:
+    sql = f'SELECT "{column}" FROM metric'
+    return conn.execute(sql).fetchall()
+'''
+
+FILES["db/writes/loader.py"] = '''"""픽스처: 적재 직전 반올림 절삭."""
+
+
+def store(conn: object, value: float) -> None:
+    conn.execute("INSERT INTO metric VALUES (?)", (round(value, 2),))
+'''
+
+FILES["batches/report.py"] = '''"""픽스처: 배치 안 직접 SELECT."""
+
+
+def rows(conn: object) -> list:
+    return conn.execute("SELECT value FROM metric").fetchall()
+'''
+
+# 루트 잡파일 — 어느 패키지 소속도 아닌 덤프. 잡파일 게이트만 잡는다(.py 가 아니라 배치 게이트 밖).
+FILES["notes_dump.txt"] = "임시 조사 메모 덤프\n"
+
 
 # ── 도메인 · 프론트 · 테스트 ───────────────────────────────────────────────────
 
@@ -220,6 +261,25 @@ FILES["frontend/src/Storage.tsx"] = '''export const saved = localStorage.getItem
 # 브라우저 API 래퍼 정본 — 자기 자신은 검사 대상이 아니다(프로파일 ui_platform 등재)
 FILES["frontend/src/platform.ts"] = '''export const read = (key: string) => window.localStorage.getItem(key);
 '''
+
+# ── 프론트 신설 게이트 픽스처 ──────────────────────────────────────────────────
+#
+# 테스트 짝 게이트의 지정 위반은 Label.tsx(컴포넌트)와 calcShare.ts(로직) 둘뿐이다.
+# 나머지 화면 픽스처는 동명 .test 스텁을 두어 "게이트마다 위반 1건" 원칙을 지킨다.
+
+FILES["frontend/src/calcShare.ts"] = '''export function share(part: number, total: number): number {
+  return total === 0 ? 0 : part / total;
+}
+'''
+
+FILES["frontend/src/HashNav.tsx"] = '''export const go = (theme: string) => {
+  history.pushState(null, "", "#" + theme);
+};
+'''
+
+for _stub in ("Consumer", "RawFetch", "Hex", "Fixed", "Storage", "HashNav"):
+    FILES[f"frontend/src/{_stub}.test.tsx"] = "export {};\n"
+FILES["frontend/src/platform.test.ts"] = "export {};\n"
 
 # 시크릿 — AWS 공개 문서의 예시 키 형태. 이 빌더 자신이 게이트에 걸리지 않도록
 # 리터럴을 쪼개 조립한다. 생성된 픽스처 파일에는 온전한 형태로 들어간다.
@@ -265,7 +325,9 @@ VOCAB = {
 }
 ALLOWLIST = {"py_any": (), "ui_hex": (), "ui_fetch": (), "ui_fetch_wrappers": (),
              "env_access": (), "ui_platform": ("frontend/src/platform.ts",)}
-ROOT_FILES = ("settings.py", "batch_runner.py")
+# 루트 잡파일 게이트가 확장자 불문 루트 전부를 대조한다 — 정본 MD 도 등재. notes_dump.txt 가 위반 1건.
+ROOT_FILES = ("settings.py", "batch_runner.py", "CLAUDE.md", "README.md", "AGENTS.md",
+              "DESIGN_GUIDE.md", "DEVGUIDE.md", "HARNESS.md")
 LESSONS_DOC = "dev/LESSONS.md"
 AGENT_MODEL_POLICY = {"auditor": ("opus", "high")}
 MD = {

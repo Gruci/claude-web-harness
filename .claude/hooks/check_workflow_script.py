@@ -53,11 +53,14 @@ try:
 except Exception:
     def record(*_args: object, **_kwargs: object) -> None: ...
 
-CALL = re.compile(r"\bagent\s*\(")
-MODEL_KEY = re.compile(r"\bmodel\s*:")
+# `foo.agent(` 는 다른 객체의 메서드다 — 앞이 단어·점이면 호출로 세지 않는다.
+CALL = re.compile(r"(?<![\w.])agent\s*\(")
+# `agentType:` 은 model 과 동치다 — 에이전트 정의 frontmatter 가 모델의 정본이라서다.
+MODEL_KEY = re.compile(r"\b(?:model|agentType)\s*:")
 # `...opts` 나 `{...spec}` 처럼 통째로 넘기는 형태는 여기서 판정할 수 없다 — 전개 대상이
-# 런타임 값이라 본문에 model 이 안 보인다. 정적 검사의 한계라 통과시킨다(오탐 0 우선).
+# 런타임 값이라 본문에 model 이 안 보인다. 정적 검사의 한계라 판정 불능(경고)으로 넘긴다.
 SPREAD = re.compile(r"\.\.\.\s*\w+")
+IDENTIFIER = re.compile(r"[A-Za-z_$][\w$]*")
 
 
 def strip_noncode(source: str) -> str:
@@ -129,10 +132,74 @@ def agent_calls(source: str) -> list[tuple[int, str]]:
     return found
 
 
+def _last_top_level_arg(body: str) -> str:
+    """호출 인자 본문의 마지막 최상위 인자 — 중첩 괄호 안 쉼표는 무시한다.
+
+    stripped 소스 위라 문자열 안 쉼표는 이미 공백이다.
+    """
+    depth = 0
+    start = 0
+    parts: list[str] = []
+    for index, char in enumerate(body):
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+        elif char == "," and depth == 0:
+            parts.append(body[start:index])
+            start = index + 1
+    parts.append(body[start:])
+    return parts[-1].strip()
+
+
+def _identifier_defines_model(code: str, ident: str) -> bool | None:
+    """`ident = {...}` 정의부에 model/agentType 키가 있나. 정의를 못 찾으면 None(판정 불능)."""
+    found = re.search(rf"\b{re.escape(ident)}\s*=\s*\{{", code)
+    if found is None:
+        return None
+    depth = 1
+    index = found.end()
+    while index < len(code) and depth:
+        if code[index] == "{":
+            depth += 1
+        elif code[index] == "}":
+            depth -= 1
+        index += 1
+    if depth:
+        return None
+    return bool(MODEL_KEY.search(code[found.end():index - 1]))
+
+
+def classify_calls(source: str) -> tuple[list[int], list[int]]:
+    """(model 없는 호출의 줄번호, 판정 불능 호출의 줄번호).
+
+    opts 가 객체 리터럴이면 본문 검색, 식별자면 정의부에서 같은 키를 찾는다. 전개·미발견
+    정의·비정형 opts 는 판정 불능이다 — 틀릴 수 있는 판정에는 차단 권한을 주지 않는다.
+    """
+    code = strip_noncode(source)
+    missing: list[int] = []
+    unknown: list[int] = []
+    for line, body in agent_calls(source):
+        if MODEL_KEY.search(body):
+            continue
+        if SPREAD.search(body):
+            unknown.append(line)
+            continue
+        opts = _last_top_level_arg(body)
+        if IDENTIFIER.fullmatch(opts):
+            verdict = _identifier_defines_model(code, opts)
+            if verdict is None:
+                unknown.append(line)
+            elif not verdict:
+                missing.append(line)
+            continue
+        missing.append(line)
+    return missing, unknown
+
+
 def missing_model(source: str) -> list[int]:
-    """model 을 안 준 `agent()` 호출의 줄번호."""
-    return [line for line, body in agent_calls(source)
-            if not MODEL_KEY.search(body) and not SPREAD.search(body)]
+    """model 을 안 준 `agent()` 호출의 줄번호 — 판정 불능은 세지 않는다."""
+    return classify_calls(source)[0]
 
 
 def script_source(tool_input: dict) -> str | None:
@@ -167,23 +234,29 @@ def main() -> None:
     if source is None:
         sys.exit(0)
 
-    lines = missing_model(source)
-    if not lines:
-        sys.exit(0)
-
+    lines, unknown = classify_calls(source)
     sid = str(payload.get("session_id") or "")
-    record("check_workflow_script", "workflow_model", sid=sid,
-           msg=f"model 미지정 agent() {len(lines)}건 — 줄 {lines}")
-    print(
-        f"[WORKFLOW GATE] model 을 안 준 `agent()` 호출 {len(lines)}건 — "
-        f"줄 {', '.join(str(n) for n in lines)}.\n"
-        "미지정은 메인 루프 모델을 상속한다. 메인이 Fable 이면 워커 전원이 Fable 단가에\n"
-        "Fable 전용 거부 정책까지 함께 상속하고, 거부는 result 행을 안 남겨 pipeline 이 영원히 기다린다.\n"
-        "구현·검수는 `model: 'opus'`, 기계적 팬아웃은 `model: 'sonnet'` 을 명시하라.\n"
-        "(정본: .claude/agents/orchestrator.md §4-1 Workflow 스폰 계약)",
-        file=sys.stderr,
-    )
-    sys.exit(2)
+    if lines:
+        record("check_workflow_script", "workflow_model", sid=sid,
+               msg=f"model 미지정 agent() {len(lines)}건 — 줄 {lines}")
+        print(
+            f"[WORKFLOW GATE] model 을 안 준 `agent()` 호출 {len(lines)}건 — "
+            f"줄 {', '.join(str(n) for n in lines)}.\n"
+            "미지정은 메인 루프 모델을 상속한다. 메인이 Fable 이면 워커 전원이 Fable 단가에\n"
+            "Fable 전용 거부 정책까지 함께 상속하고, 거부는 result 행을 안 남겨 pipeline 이 영원히 기다린다.\n"
+            "구현·검수는 `model: 'opus'`, 기계적 팬아웃은 `model: 'sonnet'` 을 명시하라.\n"
+            "`agentType:` 지정도 통과다 — 에이전트 정의 frontmatter 가 모델의 정본이다.\n"
+            "(정본: .claude/agents/orchestrator.md §4-1 Workflow 스폰 계약)",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    if unknown:
+        # 판정 불능은 경고다 — 전개·런타임 opts 를 차단하면 정상 스크립트가 막힌다.
+        print(f"[WORKFLOW GATE] `agent()` 호출 {len(unknown)}건은 opts 를 판정하지 못했다 — "
+              f"줄 {', '.join(str(n) for n in unknown)}. model(또는 agentType)이 실제로 "
+              f"명시되는지 직접 확인하라.", file=sys.stderr)
+        sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

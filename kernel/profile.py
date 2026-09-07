@@ -28,7 +28,7 @@ _FILE_KEYS = ("settings", "ssl_util")
 _SYMBOL_KEYS = ("db_accessor", "db_accessor_module", "ssl_bypass", "error_response")
 _VOCAB_KEYS = ("ui_denylist", "abbrev_prefixes", "abbrev_names")
 _ALLOWLIST_KEYS = ("py_any", "ui_hex", "ui_fetch", "ui_fetch_wrappers", "env_access",
-                   "ui_platform")
+                   "ui_platform", "sql_ident")
 _MD_KEYS = ("doc_exclude", "ref_exclude", "style_exclude", "date_exempt")
 
 
@@ -154,6 +154,13 @@ AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = (
 MAINTENANCE: dict[str, dict[str, int]] = (
     dict(getattr(_MOD, "MAINTENANCE", {})) if _MOD else {}
 )
+# 헤더 `V<major>.<minor>` 버전 범프를 강제할 LLM 프롬프트 파일 목록. 비면 그 게이트는 [SKIP].
+VERSIONED_PROMPTS: tuple[str, ...] = (
+    tuple(getattr(_MOD, "VERSIONED_PROMPTS", ())) if _MOD else ()
+)
+# UI 카피 LLM 감수 훅의 도메인 주입 — "context"(업종·제품 한 줄)와 "product_terms"(위반이
+# 아닌 도메인 필수 용어). 훅의 판정 기준 자체는 범용이라 커널이 갖고, 여기는 맥락만 준다.
+UI_COPY: dict[str, Any] = dict(getattr(_MOD, "UI_COPY", {})) if _MOD else {}
 
 
 def layer(name: str) -> str | None:

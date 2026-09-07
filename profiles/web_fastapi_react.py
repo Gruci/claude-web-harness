@@ -92,7 +92,10 @@ ALLOWLIST: dict[str, tuple[str, ...]] = {
     "ui_platform":       ("frontend/src/utils/platform.ts",),
 }
 
-ROOT_FILES: tuple[str, ...] = ("settings.py", "batch_runner.py")
+# 루트 잡파일 게이트가 확장자 불문 루트 전부를 이 목록과 대조한다 — 정본 MD 도 등재 대상이다.
+ROOT_FILES: tuple[str, ...] = ("settings.py", "batch_runner.py", "README.md", "CLAUDE.md",
+                               "AGENTS.md", "PROJECT.md", "DEVGUIDE.md", "DESIGN_GUIDE.md",
+                               "HARNESS.md", "EDITING.md")
 
 
 DOC_SYNC: list[dict[str, object]] = [

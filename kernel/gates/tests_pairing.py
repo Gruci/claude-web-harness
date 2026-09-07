@@ -11,6 +11,7 @@ exemplar: tests/unit/test_institution_sources_parsers.py (실HTML 픽스처 + HT
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from kernel import profile
@@ -54,4 +55,41 @@ def check_module_test_pairing(py_files: list[Path]) -> list[str]:
             f"{rel}: 대응 행동 테스트 없음 — {tests}test_{f.stem}.py 작성 "
             f"또는 사유와 함께 {BASELINE_FILE.name} 등재"
         )
+    return bad
+
+
+# ── 프론트 테스트 짝 ───────────────────────────────────────────────────────────
+#
+# `tsc`·`vitest`·`vite build` 셋 다 **값이 틀린 것을 못 잡는다.** 타입이 맞고 빌드가 되는 한
+# 환산이 틀려도 초록불이다. 로직(.ts)과 컴포넌트(.tsx)는 성격도 상환 방법도 달라(순수 함수
+# 단언 vs 렌더 테스트) 검사를 갈랐다. 매칭은 같은 자리 동명 `<이름>.test.ts(x)` 다.
+# 소급분은 설치 시점 harness_baseline.txt 동결이 흡수한다.
+
+# export 함수가 있으면 로직 파일이다. 상수·타입 전용 .ts 는 단언할 행동이 없어 대상이 아니다.
+_EXPORT_FN = re.compile(r"^export (?:function|const \w+ = [(<])", re.M)
+
+
+def check_ui_logic_test_pairing(ui_files: list[Path]) -> list[str]:
+    """export 함수가 있는 .ts 에 같은 자리 동명 행동 테스트가 없으면 위반."""
+    bad: list[str] = []
+    for f in ui_files:
+        rel = _rel(f)
+        if f.suffix != ".ts" or rel.endswith((".d.ts", ".test.ts")):
+            continue
+        if not _EXPORT_FN.search(f.read_text(encoding=READ_ENC)):
+            continue
+        if not f.with_name(f"{f.stem}.test.ts").exists():
+            bad.append(f"{rel}: 대응 행동 테스트 없음 — {f.stem}.test.ts 를 같은 자리에 작성")
+    return bad
+
+
+def check_ui_component_test_pairing(ui_files: list[Path]) -> list[str]:
+    """모든 .tsx 에 같은 자리 동명 렌더 테스트가 없으면 위반."""
+    bad: list[str] = []
+    for f in ui_files:
+        rel = _rel(f)
+        if f.suffix != ".tsx" or rel.endswith(".test.tsx"):
+            continue
+        if not f.with_name(f"{f.stem}.test.tsx").exists():
+            bad.append(f"{rel}: 대응 렌더 테스트 없음 — {f.stem}.test.tsx 를 같은 자리에 작성")
     return bad

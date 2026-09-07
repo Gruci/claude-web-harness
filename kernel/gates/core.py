@@ -25,6 +25,7 @@ from kernel import profile
 from kernel.context import READ_ENC, ROOT, _rel
 
 MAX_LINES = 400
+MAX_FUNC_LINES = 80   # 파일 400줄 상한이 못 보는 축 — "한 파일에 400줄 함수 하나"를 막는다
 
 ANY_HINT = re.compile(r"[:\[,]\s*Any\b|->\s*Any\b")
 TS_ANY = re.compile(r":\s*any\b|\bas\s+any\b|<\s*any\b")
@@ -110,6 +111,43 @@ def check_closures(files: list[Path]) -> list[str]:
             continue
         for pair in _nested_defs(tree):
             bad.append(f"{rel}: 중첩 def {pair}")
+    return bad
+
+
+def check_func_length(files: list[Path]) -> list[str]:
+    """함수·메서드 길이 상한. 일회성 스크립트와 테스트만 제외한다."""
+    tests = profile.layer("tests")
+    exempt = profile.scratch() + ((tests,) if tests else ())
+    bad: list[str] = []
+    for f in files:
+        rel = _rel(f)
+        if exempt and rel.startswith(exempt):
+            continue
+        try:
+            tree = ast.parse(f.read_text(encoding=READ_ENC))
+        except SyntaxError:
+            continue                     # 파싱 실패는 중첩 def 게이트가 이미 보고한다
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            span = (node.end_lineno or node.lineno) - node.lineno + 1
+            if span > MAX_FUNC_LINES:
+                bad.append(f"{rel}:{node.lineno}: {node.name} {span}줄 (>{MAX_FUNC_LINES})")
+    return bad
+
+
+def check_type_checking_future(files: list[Path]) -> list[str]:
+    """`if TYPE_CHECKING:` 은 `from __future__ import annotations` 와 함께여야 한다.
+
+    3.11 은 어노테이션을 즉시 평가해 NameError 를 내는데 3.12+ 로컬에서는 통과한다 —
+    로컬 초록·CI 파열형 함정이라 검사만이 발견 수단이다.
+    """
+    bad: list[str] = []
+    for f in files:
+        text = f.read_text(encoding=READ_ENC)
+        if "if TYPE_CHECKING:" in text and "from __future__ import annotations" not in text:
+            bad.append(f"{_rel(f)}: TYPE_CHECKING 블록이 있는데 `from __future__ import "
+                       f"annotations` 가 없다 — 3.11 은 어노테이션을 즉시 평가해 NameError")
     return bad
 
 

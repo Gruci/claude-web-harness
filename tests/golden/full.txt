@@ -10,8 +10,23 @@ exit=1
 [FAIL] 중첩 def(클로저) (closures) — 1건
    - utils/closure.py: 중첩 def outer > inner
 
+[FAIL] 함수 길이 상한 (func_limit) — 1건
+   - utils/long_func.py:4: long_calc 82줄 (>80)
+
+[FAIL] TYPE_CHECKING↔future annotations 짝 (type_checking_future) — 1건
+   - utils/tc_future.py: TYPE_CHECKING 블록이 있는데 `from __future__ import annotations` 가 없다 — 3.11 은 어노테이션을 즉시 평가해 NameError
+
 [FAIL] 읽기 레이어의 쓰기 SQL·commit (reads_writes) — 1건
    - db/reads/bad_write.py:5: 쓰기 SQL — conn.execute("DELETE FROM cache")
+
+[FAIL] 읽기 레이어 컬럼 식별자 raw 보간 (reads_col_interp) — 1건
+   - db/reads/col_interp.py:5: 컬럼 식별자 raw 보간 — 바인딩 불가 자리라 새면 SQLi 다. 화이트리스트 헬퍼(quote_col 류) 경유, 헬퍼 정의 파일은 ALLOWLIST['sql_ident'] 등재 — sql = f'SELECT "{column}" FROM metric'
+
+[FAIL] 쓰기 레이어 round() 절삭 (writes_round) — 1건
+   - db/writes/loader.py:5: 적재 값 round() 절삭 — 저장은 원 정밀도, 반올림은 표시 레이어에서 — conn.execute("INSERT INTO metric VALUES (?)", (round(value, 
+
+[FAIL] 배치 직접 SELECT (batch_select) — 1건
+   - batches/report.py: 배치 안 직접 SELECT — 조회는 db/reads/ 경유
 
 [FAIL] 축약 이름 단독 대입 (abbrev_names) — 1건
    - utils/abbrev.py:3: 축약어 변수 net — net = 0
@@ -72,6 +87,19 @@ exit=1
 [FAIL] 브라우저 API 직접 호출 (browser_api) — 1건
    - frontend/src/Storage.tsx:1: 브라우저 API 직접 호출 — frontend/src/platform.ts 래퍼 경유 (불가피하면 `// web-ok: 사유`)
 
+[FAIL] 해시 네비게이션 단일 기전 (hash_nav) — 1건
+   - frontend/src/HashNav.tsx:2: history.pushState — 깊이 한 칸 추가는 `location.hash = …` 대입이다. pushState 는 hashchange 를 안 내 복원 리스너가 안 깨어난다
+
+[FAIL] 프론트 로직 테스트 짝 (ui_logic_tests) — 1건
+   - frontend/src/calcShare.ts: 대응 행동 테스트 없음 — calcShare.test.ts 를 같은 자리에 작성
+
+[FAIL] 프론트 컴포넌트 테스트 짝 (ui_component_tests) — 1건
+   - frontend/src/Label.tsx: 대응 렌더 테스트 없음 — Label.test.tsx 를 같은 자리에 작성
+
+[FAIL] 루트 직속 잡파일 (root_litter) — 1건
+   - notes_dump.txt: 루트 직속 파일 금지 — 읽는 코드의 패키지 안에 두고, 루트가 맞으면 사유와 함께 프로파일 ROOT_FILES 에 등재하라
+[SKIP] 프롬프트 버전 범프 — 설정에 버전 관리 프롬프트 목록을 안 적었음
+
 [FAIL] 앱 코드 배치 (file_placement) — 2건
    - kofia/: 도메인 패키지에 __init__.py 없음 — 생성하라
    - kofia/: 도메인 정본 MD 없음 — kofia/KOFIA.md 를 만들고 허브에서 링크하라 (고아 MD 게이트가 도달성을 본다)
@@ -125,4 +153,4 @@ exit=1
    - settings.py 가 읽는 'ALPHA_KEY' 가 DEVGUIDE.md 목록에 없음
    - DEVGUIDE.md 의 'BETA_KEY' 를 settings.py 가 읽지 않음(타 모듈 로드 가능 — 확인)
 
-총 50건 위반.
+총 59건 위반.

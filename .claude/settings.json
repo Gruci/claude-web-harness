@@ -191,6 +191,12 @@
             "type": "command",
             "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/check_task_residue.py\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/.claude/hooks/check_ui_copy.py\"",
+            "timeout": 120,
+            "statusMessage": "UI copy gate (Haiku)"
           }
         ]
       }

@@ -36,10 +36,12 @@ def main() -> None:
     try:
         payload = read_hook_payload()
     except Exception as e:
-        # fail-closed: 페이로드를 못 읽으면 검사 대상도 모른다 — 조용히 통과시키지 않는다
+        # 비차단 경고 — 훅 오작동과 규칙 위반은 다른 사건이다. 여기서 exit 2 면 Edit 이 전면
+        # 차단되는데 이 훅을 고칠 수단도 Edit 이라 복구 경로가 자기 자신을 지난다. Stop 훅
+        # check_coding_rules 가 세션 끝에 전량 재검사하므로(이중 게이트) 비차단이 구멍이 아니다.
         record("check_file_rules", "gate_error", msg=f"페이로드 파싱 실패({e.__class__.__name__})")
-        print(f"[WRITE-TIME GATE] 훅 페이로드 파싱 실패({e.__class__.__name__}) — 검사 불능. 원인 확인 전 통과 없음.", file=sys.stderr)
-        sys.exit(2)
+        print(f"[WRITE-TIME GATE] 훅 페이로드 파싱 실패({e.__class__.__name__}) — 작성 시점 검사가 쉬고 있다. 훅을 점검하라(Stop 훅이 전량 재검사한다).", file=sys.stderr)
+        sys.exit(1)
 
     sid = str(payload.get("session_id") or "")
     file_path = (payload.get("tool_input") or {}).get("file_path") or ""
@@ -78,9 +80,10 @@ def main() -> None:
             timeout=30,
         )
     except subprocess.TimeoutExpired:
+        # 검사기가 느린 것과 코드가 틀린 것은 다른 사건이다 — 비차단 경고(위 파싱 실패와 동일 방향).
         record("check_file_rules", "gate_error", sid=sid, file=rel, msg="게이트 30초 타임아웃")
-        print("[WRITE-TIME GATE] 게이트가 30초 내 응답 없음 — 검사 불능, 원인을 확인하라.", file=sys.stderr)
-        sys.exit(2)
+        print("[WRITE-TIME GATE] 게이트가 30초 내 응답 없음 — 작성 시점 검사가 쉬고 있다. 원인을 확인하라(Stop 훅이 전량 재검사한다).", file=sys.stderr)
+        sys.exit(1)
     if result.returncode != 0:
         record_runner_output("check_file_rules", sid, result.stdout)
         # exit 2 + stderr → Claude 에게 즉시 피드백 (작성한 그 턴 안에 수정)
