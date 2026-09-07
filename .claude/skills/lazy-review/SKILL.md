@@ -10,6 +10,8 @@ description: >
   hunts complexity.
 ---
 
+> 담는 것: diff 단위 과잉설계 검토 기준. 담지 않는 것: 레포 전체 감사(→ lazy-audit)·정확성 리뷰(→ /code-review). 읽는 시점: 구현 완료 직후 자동 실행 시.
+
 Review diffs for unnecessary complexity. One line per finding: location, what
 to cut, what replaces it. The diff's best outcome is getting shorter.
 

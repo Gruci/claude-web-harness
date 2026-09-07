@@ -103,7 +103,7 @@ AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
     "executor":         ("fable", "high"),
     "orchestrator":     ("fable", "high"),
     "backend":          ("opus", "high"),
-    "qa":               ("sonnet", "medium"),
+    "qa":               ("opus", "high"),
     "product-reviewer": ("opus", "high"),
 }
 

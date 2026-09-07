@@ -84,7 +84,7 @@ AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = {
     "orchestrator":     ("fable", "high"),
     "backend":          ("opus", "high"),
     "frontend":         ("opus", "high"),
-    "qa":               ("sonnet", "medium"),
+    "qa":               ("opus", "high"),     # 경계면 shape 대조는 팬아웃이 아니라 판단이다
     "product-reviewer": ("opus", "high"),
 }
 

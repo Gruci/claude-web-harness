@@ -9,6 +9,8 @@ description: >
   not apply fixes.
 ---
 
+> 담는 것: 레포 전체 과잉설계 감사 절차. 담지 않는 것: diff 단위 검토(→ lazy-review)·부채 수확(→ lazy-debt). 읽는 시점: 전체 감사 요청 또는 [정비] 알림 시.
+
 lazy-review, repo-wide. Scan the whole tree instead of a diff. Rank
 findings biggest cut first.
 

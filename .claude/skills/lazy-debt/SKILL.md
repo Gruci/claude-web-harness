@@ -8,6 +8,8 @@ description: >
   ledger", or "what did we mark to do later". One-shot report, changes nothing.
 ---
 
+> 담는 것: `lazy:` 부채 수확과 원장 서식. 담지 않는 것: 과잉설계 탐지(→ lazy-review·lazy-audit). 읽는 시점: 월 1회 부채 수확 또는 [정비] 알림 시.
+
 Every deliberate lazy-mode shortcut is marked with a `lazy:` comment naming
 its ceiling and upgrade path. This collects them into one ledger so a deferral
 can't quietly become permanent.
