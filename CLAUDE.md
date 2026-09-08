@@ -116,7 +116,7 @@
 
 **구현(3단계)** — plan Todo를 순서대로 실행하고 완료마다 체크한다. 모든 Todo가 끝날 때까지 멈추지 않는다. 타입체크와 테스트를 지속적으로 돌린다.
 
-**단순성 우선** — Lazy Ladder와 근본 원인 수정과 비타협 안전의 전문은 `.claude/hooks/lazy-persona.md`가 SessionStart에 주입한다. 요청 범위를 넘는 기능과 단일 사용 추상화와 불가능한 시나리오의 에러 핸들링은 만들지 않는다. `lazy:` 부채는 월 1회 `/lazy-debt`로 수확한다.
+**단순성 우선** — Code Ladder와 근본 원인 수정과 비타협 안전의 전문은 `.claude/hooks/code-master.md`가 SessionStart에 주입한다. 요청 범위를 넘는 기능과 단일 사용 추상화와 불가능한 시나리오의 에러 핸들링은 만들지 않는다. `debt:` 부채는 월 1회 `/code-debt`로 수확한다.
 
 **외과적 변경** — 인접 코드와 주석과 포맷을 "개선"하지 않는다. 고장나지 않은 것은 리팩터하지 않는다. 내 스타일과 달라도 기존 스타일에 맞춘다. 관련 없는 dead code는 언급만 하고 삭제하지 않는다. 기준은 **변경된 모든 줄이 사용자 요청으로 직접 추적 가능한가**다.
 
@@ -186,7 +186,7 @@
 
 ## 정비 — 하네스가 때를 알린다
 
-월간 감사류(`md-audit`·`lazy-audit`·`lazy-debt`·`impeccable critique`·`review-loop`)는 사용자가 시켜서 도는 게 아니다. SessionStart 훅이 레포 실물에서 임계치를 재고(마지막 실행 후 커밋 수·경과일·바뀐 화면 파일·남은 `lazy:` 표시) 넘으면 `[정비]` 로 알린다. 판정 정본은 `kernel/maintenance.py`이고 임계치는 프로파일의 `MAINTENANCE`가 조정한다.
+월간 감사류(`md-audit`·`code-audit`·`code-debt`·`impeccable critique`·`review-loop`)는 사용자가 시켜서 도는 게 아니다. SessionStart 훅이 레포 실물에서 임계치를 재고(마지막 실행 후 커밋 수·경과일·바뀐 화면 파일·남은 `debt:` 표시) 넘으면 `[정비]` 로 알린다. 판정 정본은 `kernel/maintenance.py`이고 임계치는 프로파일의 `MAINTENANCE`가 조정한다.
 
 **알림이 뜨면 묻지 말고 실행한다.** 다만 현재 요청을 먼저 끝내고, 그다음 같은 세션에서 돌린다. 전부 보고서만 내고 코드는 고치지 않으므로 승인이 필요 없다. 끝나면 `python -X utf8 -m kernel.maintenance --stamp <이름>`으로 기록하고 `harness_maintenance.json`을 커밋한다 — 기록이 공유돼야 주기가 성립한다.
 

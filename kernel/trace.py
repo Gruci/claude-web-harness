@@ -72,7 +72,7 @@ def record(hook: str, kind: str, sid: str = "", gate: str = "",
             "file": file,
             "msg": msg[:MAX_MSG_CHARS],
         }
-        # lazy: 매 append 마다 전문을 읽어 중복을 본다. 관찰은 드물고 파일은 작아서 지금은
+        # debt:매 append 마다 전문을 읽어 중복을 본다. 관찰은 드물고 파일은 작아서 지금은
         # 이게 제일 싸다. 수천 줄이 되면 마지막 N줄만 읽는 것으로 바꾼다.
         if _key(item) in {_key(old) for old in records()}:
             return

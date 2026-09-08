@@ -1,16 +1,16 @@
 ---
-name: lazy-review
+name: code-trim
 description: >
   Code review focused exclusively on over-engineering. Finds what to delete:
   reinvented standard library, unneeded dependencies, speculative abstractions,
   dead flexibility. One line per finding: location, what to cut, what replaces
   it. Use when the user says "review for over-engineering", "what can we
   delete", "is this over-engineered", "simplify review", or invokes
-  /lazy-review. Complements correctness-focused review, this one only
+  /code-trim. Complements correctness-focused review, this one only
   hunts complexity.
 ---
 
-> 담는 것: diff 단위 과잉설계 검토 기준. 담지 않는 것: 레포 전체 감사(→ lazy-audit)·정확성 리뷰(→ /code-review). 읽는 시점: 구현 완료 직후 자동 실행 시.
+> 담는 것: diff 단위 과잉설계 검토 기준. 담지 않는 것: 레포 전체 감사(→ code-audit)·정확성 리뷰(→ /code-review). 읽는 시점: 구현 완료 직후 자동 실행 시.
 
 Review diffs for unnecessary complexity. One line per finding: location, what
 to cut, what replaces it. The diff's best outcome is getting shorter.
@@ -54,6 +54,6 @@ If there is nothing to cut, say `Lean already. Ship.` and stop.
 Scope: over-engineering and complexity only. Correctness bugs, security holes,
 and performance are explicitly out of scope. Route them to a normal review
 pass, not this one. A single smoke test or `assert`-based
-self-check is the lazy minimum, not bloat, never flag it for deletion.
+self-check is the code minimum, not bloat, never flag it for deletion.
 Does not apply the fixes, only lists them.
-"stop lazy-review" or "normal mode": revert to verbose review style.
+"stop code-trim" or "normal mode": revert to verbose review style.

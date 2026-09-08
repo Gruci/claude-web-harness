@@ -1,22 +1,22 @@
 ---
-name: lazy-audit
+name: code-audit
 description: >
-  Whole-repo audit for over-engineering. Like lazy-review, but scans the
+  Whole-repo audit for over-engineering. Like code-trim, but scans the
   entire codebase instead of a diff: a ranked list of what to delete, simplify,
   or replace with stdlib/native equivalents. Use when the user says "audit this
   codebase", "audit for over-engineering", "what can I delete from this repo",
-  "find bloat", "lazy-audit", or "/lazy-audit". One-shot report, does
+  "find bloat", "code-audit", or "/code-audit". One-shot report, does
   not apply fixes.
 ---
 
-> 담는 것: 레포 전체 과잉설계 감사 절차. 담지 않는 것: diff 단위 검토(→ lazy-review)·부채 수확(→ lazy-debt). 읽는 시점: 전체 감사 요청 또는 [정비] 알림 시.
+> 담는 것: 레포 전체 과잉설계 감사 절차. 담지 않는 것: diff 단위 검토(→ code-trim)·부채 수확(→ code-debt). 읽는 시점: 전체 감사 요청 또는 [정비] 알림 시.
 
-lazy-review, repo-wide. Scan the whole tree instead of a diff. Rank
+code-trim, repo-wide. Scan the whole tree instead of a diff. Rank
 findings biggest cut first.
 
 ## Tags
 
-Same as lazy-review:
+Same as code-trim:
 
 - `delete:` dead code, unused flexibility, speculative feature. Replacement: nothing.
 - `stdlib:` hand-rolled thing the standard library ships. Name the function.
@@ -40,8 +40,8 @@ End with `net: -<N> lines, -<M> deps possible.` Nothing to cut: `Lean already. S
 Scope: over-engineering and complexity only. Correctness bugs, security holes,
 and performance are explicitly out of scope. Route them to a normal review
 pass. Lists findings, applies nothing. One-shot.
-"stop lazy-audit" or "normal mode" to revert.
+"stop code-audit" or "normal mode" to revert.
 
 ## 기록
 
-끝나면 `python -X utf8 -m kernel.maintenance --stamp lazy-audit` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.
+끝나면 `python -X utf8 -m kernel.maintenance --stamp code-audit` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.

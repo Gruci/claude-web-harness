@@ -29,8 +29,8 @@ LEDGER = ROOT / "harness_maintenance.json"
 # 기본 임계치. 프로파일의 MAINTENANCE 가 항목별로 덮어쓴다.
 DEFAULTS: dict[str, dict[str, int]] = {
     "md-audit":            {"commits": 80, "days": 30},
-    "lazy-audit":          {"commits": 150, "days": 60},
-    "lazy-debt":           {"markers": 12},
+    "code-audit":          {"commits": 150, "days": 60},
+    "code-debt":           {"markers": 12},
     "impeccable critique": {"ui_changes": 20, "days": 45},
     "review-loop":         {"ui_changes": 12},
     # 임계 25 의 근거: 초반엔 하루에도 여러 번 걸리므로 10 이면 상시 알림이 되고, 100 이면
@@ -40,14 +40,14 @@ DEFAULTS: dict[str, dict[str, int]] = {
 
 WHY: dict[str, str] = {
     "md-audit":            "문서와 코드가 어긋난 곳 찾기",
-    "lazy-audit":          "필요 이상으로 복잡해진 코드 찾기",
-    "lazy-debt":           "미뤄둔 것들 수확",
+    "code-audit":          "필요 이상으로 복잡해진 코드 찾기",
+    "code-debt":           "미뤄둔 것들 수확",
     "impeccable critique": "화면 사용성 점검",
     "review-loop":         "실제 사용자 관점에서 지표와 문구 검수",
     "harness-retro":       "훅이 막은 기록을 읽고 규칙과 게이트를 손볼지 판정",
 }
 
-DEBT_MARKER = "lazy:"
+DEBT_MARKER = "debt:"
 
 
 def _git(*args: str) -> str:
@@ -114,7 +114,7 @@ def _sources() -> list[Path]:
 
 
 def count_debt_markers() -> int:
-    """소스에 남은 `lazy:` 표시 수 — 미뤄둔 것의 재고."""
+    """소스에 남은 `debt:` 표시 수 — 미뤄둔 것의 재고."""
     total = 0
     for f in _sources():
         try:
@@ -134,7 +134,7 @@ def _never_ran_reason(name: str) -> str:
 
 def _due_for(name: str, entry: dict[str, str]) -> str:
     """이 항목이 밀렸는지와 그 사유. 안 밀렸으면 빈 문자열."""
-    if name == "lazy-debt":
+    if name == "code-debt":
         markers = count_debt_markers()
         limit = _threshold(name, "markers")
         return f"미뤄둔 표시가 {markers}개 쌓였다 (임계 {limit})" if markers >= limit else ""

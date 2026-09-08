@@ -37,7 +37,7 @@ harness_gates/     이 레포 전용 게이트 (선택)
 
 | # | 이벤트 | 훅 | 조건 | 결과 |
 |---|--------|----|------|------|
-| ① | SessionStart | `lazy-persona.md` 주입 | 항상 | 통과 |
+| ① | SessionStart | `code-master.md` 주입 — 코딩 페르소나(단순성 우선·근본 원인·비타협 안전) | 항상 | 통과 |
 | ② | SessionStart | git·origin 검사 | 저장소 아님 또는 origin 미설정 | 경고 문자열 |
 | ③ | SessionStart | 프로파일 검사 | `harness_profile.py` 없음, 또는 `PROFILE_SCHEMA` 가 커널 요구치보다 낮음(새 항목 목록 고지) | 경고 문자열 |
 | ④ | SessionStart | 인터프리터 검사 | python 또는 node 실행 불가 | 경고 문자열 |
@@ -328,9 +328,9 @@ Go 픽스처(`tests/fixtures/goproj`)가 동작을 동결한다.
 | `feature-workflow` | 기능 추가·수정·버그 수정 |
 | `full-feature` | 서버와 화면을 같이 만들 때 |
 | `impeccable` | UI 품질 — 비평·감사·다듬기 |
-| `lazy-audit` | 레포 전체 과설계 감사 |
-| `lazy-debt` | `lazy:` 부채 수확 |
-| `lazy-review` | 변경분 과설계 리뷰 |
+| `code-audit` | 레포 전체 과설계 감사 |
+| `code-debt` | `debt:` 부채 수확 |
+| `code-trim` | 변경분 과설계 리뷰 |
 | `md-audit` | 문서와 코드의 어긋남 감사 |
 | `review-loop` | 리뷰 반복 |
 | `test` | 테스트 작성 |
@@ -345,8 +345,8 @@ Go 픽스처(`tests/fixtures/goproj`)가 동작을 동결한다.
 | 정비 | 무엇을 보나 | 기본 임계치 |
 |------|-------------|-------------|
 | `md-audit` | 문서와 코드가 어긋난 곳 | 커밋 80개 또는 30일 |
-| `lazy-audit` | 필요 이상으로 복잡해진 코드 | 커밋 150개 또는 60일 |
-| `lazy-debt` | 미뤄둔 `lazy:` 표시의 재고 | 표시 12개 |
+| `code-audit` | 필요 이상으로 복잡해진 코드 | 커밋 150개 또는 60일 |
+| `code-debt` | 미뤄둔 `debt:` 표시의 재고 | 표시 12개 |
 | `impeccable critique` | 화면 사용성 | 화면 파일 20개 변경 또는 45일 |
 | `review-loop` | 사용자 관점의 지표·문구 | 화면 파일 12개 변경 |
 | `harness-retro` | 훅이 막은 기록의 패턴 | 관찰 25건 |

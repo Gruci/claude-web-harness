@@ -69,7 +69,7 @@ plan의 트랙 후보는 작성 시점 추정이라 실제 파일 집합보다 �
 | `run_in_background:false` | 내가 백그라운드 워커를 남긴 채 반환하고 SubagentStop이 떠 버린다 |
 | 배정 파일 목록 | 겹침 쓰기가 조용히 덮어쓴다 |
 | 금지 파일 목록 — 공유·금지 분류 전량 | 워커가 공유 파일을 직접 고친다 |
-| `.claude/hooks/lazy-persona.md` 를 먼저 Read 하라는 지시 | SessionStart 훅이 서브에이전트에 발화하지 않아 워커가 Lazy Ladder 없이 과설계한다 |
+| `.claude/hooks/code-master.md` 를 먼저 Read 하라는 지시 | SessionStart 훅이 서브에이전트에 발화하지 않아 워커가 Code Ladder 없이 과설계한다 |
 | 서브에이전트 스폰 금지 | 워커도 Agent 툴을 갖는다. 깊이 3 이상은 실측되지 않았다 |
 | git 쓰기 금지 | 메인의 커밋 전담 계약이 깨진다 |
 | 검증 실행 금지 | 같은 worktree에서 테스트는 로컬 DB를, 빌드는 산출물 디렉토리를 공유해 서로 간섭한다 |

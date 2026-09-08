@@ -92,7 +92,7 @@ def _tokens(command: str) -> list[str]:
     리다이렉트가 아닌데 정규식은 구분하지 못해 과차단한다. `punctuation_chars` 가 `>`·`|` 를
     독립 토큰으로 떼주므로 연산자와 인자를 그대로 읽을 수 있다.
 
-    lazy: 따옴표가 안 맞아 파싱이 깨지면 빈 목록(=통과)이다. 그런 명령은 셸도 못 돌린다.
+    debt:따옴표가 안 맞아 파싱이 깨지면 빈 목록(=통과)이다. 그런 명령은 셸도 못 돌린다.
     """
     lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
@@ -120,7 +120,7 @@ def _repo_source(target: str) -> str | None:
 def _write_candidates(tokens: list[str]) -> list[str]:
     """쓰기 대상이 될 수 있는 토큰들 — 리다이렉트 타깃 · `tee` 인자 · `sed -i` 대상 파일.
 
-    lazy: 이 셋만 본다. `python -c "open('x.py','w')"`·`mv`·`cp` 로 제자리에 넣는 경로는 안
+    debt:이 셋만 본다. `python -c "open('x.py','w')"`·`mv`·`cp` 로 제자리에 넣는 경로는 안
     잡는다 — 셸 의미론 전체를 재현하는 일반해는 없고, 실제로 쓰이는 우회는 이 셋이다.
     새 우회가 관측되면 여기 절을 추가한다.
     """

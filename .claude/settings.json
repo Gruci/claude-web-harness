@@ -29,9 +29,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat \"$(git rev-parse --show-toplevel)/.claude/hooks/lazy-persona.md\"",
+            "command": "cat \"$(git rev-parse --show-toplevel)/.claude/hooks/code-master.md\"",
             "timeout": 5,
-            "statusMessage": "Loading lazy mode"
+            "statusMessage": "Loading code master"
           },
           {
             "type": "command",
