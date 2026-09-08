@@ -1,8 +1,8 @@
 """tests/test_harness_self.py — 하네스 자체의 설치·저하·체크아웃·메타데이터 테스트.
 
 `test_hooks.py` 는 사고 뒤에 심은 회귀 방어다. 여기는 **사고를 기다리지 않는** 쪽이다 —
-archify 가 이미 막아둔 실패 경로 중 하네스에도 성립하는 것을 사고 전에 이식했다.
-괄호는 archify 쪽 원본 테스트다.
+다른 에이전트 도구가 이미 막아둔 실패 경로 중 하네스에도 성립하는 것을 사고 전에 이식했다.
+괄호는 그쪽 원본 테스트 이름이다.
 
   fresh 설치     clone 직후 install 두 번이 초록불로 끝나고 남의 상태 파일이 안 남는가
                  (package smoke rejects repository-only artifacts)
@@ -132,7 +132,7 @@ def test_diagram_engine_delivers_harness_architecture() -> None:
         validation = engine.get("validation") or {}
         assert engine.get("ok") and validation.get("checksPassed") == validation.get("checkCount"), (
             "\n".join(diagram.diagnostics_lines(engine)))
-        assert "archify-source-evidence-data" in out.read_text(encoding="utf-8"), "소스 증거가 HTML 에 안 실렸다"
+        assert "harness-source-evidence-data" in out.read_text(encoding="utf-8"), "소스 증거가 HTML 에 안 실렸다"
 
 
 def test_runner_leaves_tree_clean() -> None:

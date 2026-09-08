@@ -12,7 +12,7 @@
 | 상자마다 코드 위치가 증명된다 | 노드의 `sources` 가 파일·행 범위를 가리키고, 엔진이 커밋 기준으로 blob 과 행 수를 검증한다 |
 | 어긋나면 기계가 잡는다 | 검사 48 — 이름을 바꾸고 그림을 안 고치면 세션이 안 끝난다 |
 
-엔진은 archify(MIT)를 뜯어 재조립한 `kernel/diagram/engine/` 이고, 노출은 `python -X utf8 -m kernel.diagram` 이다. 원류·변경 내역은 그 디렉토리의 THIRD_PARTY_NOTICES 가 정본이다.
+엔진은 `kernel/diagram/engine/`(MIT 재조립본) 이고, 노출은 `python -X utf8 -m kernel.diagram` 이다. 원류·변경 내역은 그 디렉토리의 THIRD_PARTY_NOTICES 가 정본이다 — 하네스 문서는 원류 이름을 쓰지 않는다.
 
 ## 타입 5종 — 언제 무엇을
 

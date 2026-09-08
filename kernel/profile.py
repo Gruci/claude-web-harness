@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from typing import Any
 
 from kernel import arch, lang
@@ -58,7 +59,7 @@ _KNOWN_NAMES = frozenset({
     "HUB_DOMAIN_MD_IMPLICIT", "DOC_SYNC", "BEHAVIOR_TESTED_ROOTS", "LOCAL_GATES", "HARNESS_MAP",
     "ROOT_FILES", "LEGACY_PATHS", "LESSONS_DOC", "AGENT_MODEL_POLICY", "MAINTENANCE",
     "VERSIONED_PROMPTS", "UI_COPY", "HARNESS_SELF", "HARNESS_ASSETS", "PRESET_SUMMARY",
-    "PRESET_FITS",
+    "PRESET_FITS", "PROFILE_SCHEMA",
 })
 _STR_NAMES = ("STAGE", "LANG", "ARCH", "SYNTAX", "HARNESS_MAP", "LESSONS_DOC")
 _DICT_NAMES = ("LAYERS", "FILES", "SYMBOLS", "VOCAB", "ALLOWLIST", "MD", "SCOPE", "PATTERNS",
@@ -90,6 +91,9 @@ def _shape_errors(mod: Any) -> list[str]:
         value = getattr(mod, name, None)
         if value is not None and not isinstance(value, str):
             found.append(f"{PROFILE_FILE}: {name} 은 문자열이어야 한다 — {type(value).__name__}")
+    schema = getattr(mod, "PROFILE_SCHEMA", None)
+    if schema is not None and (isinstance(schema, bool) or not isinstance(schema, int)):
+        found.append(f"{PROFILE_FILE}: PROFILE_SCHEMA 는 정수여야 한다 — {type(schema).__name__}")
     for name in _DICT_NAMES:
         value = getattr(mod, name, None)
         if value is not None and not isinstance(value, dict):
@@ -134,6 +138,10 @@ def _mapping(name: str, keys: tuple[str, ...], empty: object) -> dict[str, Any]:
 
 STAGE: str = getattr(_MOD, "STAGE", "greenfield") if _MOD else "greenfield"
 LOADED: bool = _MOD is not None
+# 프로파일이 선언한 서식 세대. 0 = 미선언(PROFILE_SCHEMA 도입 전 프로파일).
+PROFILE_SCHEMA: int = (
+    getattr(_MOD, "PROFILE_SCHEMA", 0) if _MOD and isinstance(getattr(_MOD, "PROFILE_SCHEMA", 0), int) else 0
+)
 
 # 하네스 레포 자신의 프로파일인가. clone 해 간 프로젝트에서 이게 참이면 아직 설정 전이다 —
 # 설치 스크립트가 프리셋으로 덮어쓴다.
@@ -254,3 +262,31 @@ def symbol(name: str) -> str | None:
 
 def scratch() -> tuple[str, ...]:
     return SCOPE["exclude_scratch"]
+
+
+_TEMPLATE_NAME = re.compile(r"^([A-Z][A-Z_]+)\s*[:=]", re.M)
+
+
+def outdated_notice() -> str:
+    """프로파일이 커널 서식보다 오래됐으면 고지문, 아니면 빈 문자열.
+
+    새 키는 `getattr` 기본값으로 조용히 [SKIP] 이 된다. "설정을 안 적었다"와 "이 프로파일이 커널보다
+    오래됐다"는 사람이 할 일이 다르므로 후자는 세션 시작에 따로 말한다. 새 항목 목록은 서식
+    정본(`profiles/_template.py`)의 대문자 이름에서 프로파일에 없는 것을 뽑는다 — 표를 따로 두지 않는다.
+    """
+    from kernel import PROFILE_SCHEMA as required
+
+    if _MOD is None or PROFILE_SCHEMA >= required:
+        return ""
+    template = ROOT / "profiles" / "_template.py"
+    names = set(_TEMPLATE_NAME.findall(template.read_text(encoding="utf-8"))) if template.exists() else set()
+    missing = sorted(n for n in names - set(vars(_MOD)) if n not in ("PRESET_SUMMARY", "PRESET_FITS"))
+    return (f"[PROFILE SCHEMA] {PROFILE_FILE} 서식 {PROFILE_SCHEMA} < 커널 {required} — "
+            f"채울 수 있는 새 항목: {' '.join(missing) or '없음'}. profiles/_template.py 의 설명을 보고 "
+            f"채운 뒤 PROFILE_SCHEMA = {required} 로 올려라. 안 채운 항목은 [SKIP] 으로 돈다.")
+
+
+if __name__ == "__main__":
+    notice = outdated_notice()
+    if notice:
+        print(notice)

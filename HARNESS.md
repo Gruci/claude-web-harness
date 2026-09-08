@@ -38,7 +38,7 @@ harness_gates/     이 레포 전용 게이트 (선택)
 |---|--------|----|------|------|
 | ① | SessionStart | `lazy-persona.md` 주입 | 항상 | 통과 |
 | ② | SessionStart | git·origin 검사 | 저장소 아님 또는 origin 미설정 | 경고 문자열 |
-| ③ | SessionStart | 프로파일 검사 | `harness_profile.py` 없음 | 경고 문자열 |
+| ③ | SessionStart | 프로파일 검사 | `harness_profile.py` 없음, 또는 `PROFILE_SCHEMA` 가 커널 요구치보다 낮음(새 항목 목록 고지) | 경고 문자열 |
 | ④ | SessionStart | 인터프리터 검사 | python 또는 node 실행 불가 | 경고 문자열 |
 | ⑤ | SessionStart | `git_staleness.py` | 기본 브랜치가 origin 보다 뒤 (**startup 한정**) | ff-only 자동 정렬 |
 | ⑥ | SessionStart | `check_maintenance.py` | 정비 임계치 초과 (**startup 한정**) | 밀린 정비 목록 |
@@ -211,7 +211,7 @@ harness_gates/     이 레포 전용 게이트 (선택)
 21 번이 나머지의 전제다. 배치가 자유로우면 첫 실코드가 선언 밖에 지어지는 순간 3·11~16 이
 대상 0건으로 조용히 죽는다.
 
-47 번은 21 번보다 한 겹 더 앞이다. 프로파일은 파이썬 모듈이라 오타가 예외를 안 낸다 — `LAYER = {...}` 는 무시되고, 튜플 자리에 문자열 하나를 적으면 글자 단위로 쪼개져 소스 대부분이 스코프에서 빠진다. 둘 다 화면엔 `[SKIP]` 조차 안 뜬다. 그래서 러너 출력의 첫 줄이 이것이다. archify 의 "field as a string fails friendly · rejects unknown fields" 테스트를 사고 전에 이식한 것이다.
+47 번은 21 번보다 한 겹 더 앞이다. 프로파일은 파이썬 모듈이라 오타가 예외를 안 낸다 — `LAYER = {...}` 는 무시되고, 튜플 자리에 문자열 하나를 적으면 글자 단위로 쪼개져 소스 대부분이 스코프에서 빠진다. 둘 다 화면엔 `[SKIP]` 조차 안 뜬다. 그래서 러너 출력의 첫 줄이 이것이다. 사고가 나기 전에 넣은 몇 안 되는 게이트다 — 다른 에이전트 도구가 "문자열 자리·모르는 필드"를 거절하는 테스트를 이미 갖고 있었고, 같은 실패 경로가 여기에도 있었다.
 
 34·35 는 **전량 모드 전용**이다. 파일 간 교차 비교라 작성 시점 `--file` 에는 비교할 상대가 없다.
 동결본은 `dup_decl_baseline.txt`·`dup_block_baseline.txt` 이고 다른 래칫과 같이 감소만 허용한다.

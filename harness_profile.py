@@ -21,6 +21,7 @@ from __future__ import annotations
 HARNESS_SELF = True
 
 STAGE = "greenfield"
+PROFILE_SCHEMA = 1
 
 # 하네스는 웹도 화면도 없는 CLI 도구다 — 화면·웹 검사 9종은 설정 누락이 아니라 해당 없음.
 ARCH = "headless"

@@ -13,6 +13,7 @@ PRESET_SUMMARY = "화면 없이 API 만 — FastAPI · PostgreSQL"
 PRESET_FITS = "다른 서비스나 앱이 호출할 API 만 만들 때. 화면은 나중에 붙여도 되고 안 붙여도 된다"
 
 STAGE = "greenfield"
+PROFILE_SCHEMA = 1
 
 # 서버는 있고 화면이 없다 — 화면 검사 7종이 [SKIP] 이 아니라 [N/A] 로 찍힌다.
 ARCH = "backend_only"

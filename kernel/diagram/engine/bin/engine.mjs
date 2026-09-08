@@ -13,13 +13,13 @@ const skillRoot = path.resolve(__dirname, '..');
 const TYPES = new Set(['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle']);
 
 function usage() {
-  return `Usage (harness diagram engine — reassembled from archify, MIT):
-  archify render <type> <input.json> [output.html] [--quality standard|showcase] [--repo-root path]
-  archify compare architecture <base.json> <head.json> [output.html] [--receipt path] [--json] [--quality standard|showcase] [--repo-root path]
-  archify deliver <type> <input.json> [output.html] [--json] [--quality standard|showcase] [--repo-root path]
-  archify validate <type> <input.json> [--json] [--layout-json] [--quality standard|showcase] [--repo-root path]
-  archify inspect <type> <input.json>
-  archify check <output.html>
+  return `Usage (harness diagram engine — provenance in THIRD_PARTY_NOTICES.txt):
+  engine render <type> <input.json> [output.html] [--quality standard|showcase] [--repo-root path]
+  engine compare architecture <base.json> <head.json> [output.html] [--receipt path] [--json] [--quality standard|showcase] [--repo-root path]
+  engine deliver <type> <input.json> [output.html] [--json] [--quality standard|showcase] [--repo-root path]
+  engine validate <type> <input.json> [--json] [--layout-json] [--quality standard|showcase] [--repo-root path]
+  engine inspect <type> <input.json>
+  engine check <output.html>
 
 Source evidence (--repo-root) is verified for every type. Removed on purpose:
 preview, visual-check, migrate, guide, brands, examples, doctor, demo.
@@ -794,7 +794,7 @@ function reportArtifactArgumentFailure(command, error) {
 
 function sourceEvidenceFromArtifact(artifact) {
   const html = artifact.toString('utf8');
-  const match = html.match(/<script id="archify-source-evidence-data" type="application\/json">([\s\S]*?)<\/script>/);
+  const match = html.match(/<script id="harness-source-evidence-data" type="application\/json">([\s\S]*?)<\/script>/);
   if (!match) return null;
   const evidence = JSON.parse(match[1]);
   if (evidence?.verified !== true || !evidence.repository?.url || !evidence.repository?.revision || !Number.isInteger(evidence.referenceCount)) {

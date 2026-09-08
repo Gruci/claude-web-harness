@@ -376,7 +376,7 @@
           "label": "deliver"
         },
         {
-          "path": "kernel/diagram/engine/bin/archify.mjs",
+          "path": "kernel/diagram/engine/bin/engine.mjs",
           "label": "엔진 CLI"
         },
         {

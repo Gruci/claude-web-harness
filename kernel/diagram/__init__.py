@@ -1,4 +1,4 @@
-"""kernel/diagram — 다이어그램 엔진 호출부. 엔진은 `engine/`(archify 재조립본, MIT), 노출은 여기다.
+"""kernel/diagram — 다이어그램 엔진 호출부. 엔진은 `engine/`(MIT 재조립본 — 원류는 그 안의 THIRD_PARTY_NOTICES), 노출은 여기다.
 
 정본은 `docs/architecture/<이름>.<타입>.json` 이고 노드마다 `sources` 로 실제 파일·행 범위를
 가리킨다. 엔진이 그 증거를 커밋 기준으로 검증하고 뷰어에 SRC 마커로 박는다 — 검증 없는 그림은
@@ -28,7 +28,7 @@ from pathlib import Path
 from kernel.context import ROOT
 
 ENGINE = Path(__file__).resolve().parent / "engine"
-CLI = ENGINE / "bin" / "archify.mjs"
+CLI = ENGINE / "bin" / "engine.mjs"
 DIAGRAM_DIR = "docs/architecture"
 TYPES = ("architecture", "workflow", "sequence", "dataflow", "lifecycle")
 NODE_KEY = {"architecture": "components", "workflow": "nodes", "sequence": "participants",
@@ -152,7 +152,7 @@ def compare(base: Path, head: Path, output: Path) -> dict[str, object]:
 
 
 def doctor() -> dict[str, object]:
-    required = ("bin/archify.mjs", "assets/template.html", "renderers/shared/generated-validators.mjs",
+    required = ("bin/engine.mjs", "assets/template.html", "renderers/shared/generated-validators.mjs",
                 "delta/architecture-delta.mjs", "scripts/check-render-output.mjs")
     missing = [rel for rel in required if not (ENGINE / rel).exists()]
     node = node_path()

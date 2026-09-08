@@ -4,7 +4,7 @@
 
 **A guardrail that keeps AI from wrecking your code**
 
-Harness v3.4.0
+Harness v3.5.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -180,6 +180,9 @@ Edit the matching entry in `harness_profile.py`. Adding screens to a project tha
 
 **Can I turn off a check that doesn't fit my project?**
 Empty its configuration entry and it moves to `[SKIP]`. The resting state is printed with its reason on every run, though — no setting hides that, on purpose.
+
+**How do I update the harness itself?**
+`python -X utf8 harness_install.py --check-update` compares your copy with the upstream version and only tells you; nothing is changed. When you decide to move, `--upgrade` replaces only the check engine (`kernel/`), the hooks (`.claude/hooks/`), and the presets. Your configuration file, documents, repository-specific checks, and diagrams belong to the project and are never touched. If the new version added configuration entries, the next session start lists them as "new entries you can fill in".
 
 **What do I have to write myself?**
 At install time, nothing. Folder names and framework function names are handled by onboarding. What only you know is your service's domain knowledge, which accumulates in `PROJECT.md` as development progresses.
@@ -416,10 +419,22 @@ Any line differing from the answer file is reported. Passing this comparison is 
 
 ---
 
+### Architecture diagrams — a diagram counts only if it is verified
+
+`docs/architecture/` holds the source of truth (JSON) and the rendered HTML for structure, workflow, and sequence diagrams. Every box carries the real source file and line range, and clicking a box in the viewer opens that code. Check 48 compares the diagram against the repository on every save and at session end — rename a file without fixing the diagram and the session will not end. Design documents that change the structure attach a before/after diagram (delta). The render engine ships inside the repository, so viewers install nothing.
+
+```bash
+python -X utf8 -m kernel.diagram validate architecture docs/architecture/<name>.architecture.json
+python -X utf8 -m kernel.diagram deliver  architecture docs/architecture/<name>.architecture.json
+```
+
+---
+
 ## Changelog
 
 | Version | Changes |
 |:--|:--|
+| **v3.5.0** | Verified architecture diagrams. A five-type diagram engine lives inside the repository; every box carries a source file and line range that check 48 compares against the real code. A self-update path for the harness (`--check-update`, `--upgrade`) and a configuration-schema notice. Also: check 47 catches configuration typos and strings where tuples belong, hooks no longer report a checker crash as a rule violation, the install script rejects mistyped options, a fresh project no longer inherits the harness's own trace and surface files, and nine harness self-tests. |
 | **v3.4.0** | Second back-port from the live production harness. Checks grew from 35 to 46 — SQL injection via column interpolation, an 80-line function limit, frontend test pairing, hash-navigation discipline, root-directory litter, prompt version bumps, and more — plus a session-end AI review of newly added screen copy that catches jargon the static denylist has never seen. Fixed defects the comparison surfaced in the harness itself: a residue-detection hook silently dead from a missing import, a fully implemented check that was never registered with the runner, and a path-handling gap that let files inside working copies bypass save-time checks. Three over-blocking cases relaxed, including a 24-hour grace period for freshly written planning documents. |
 | **v3.3.0** | Lessons from incidents on a live production project. Fixed a misjudgment that told you to delete a working copy created moments earlier, and a case where an unfinished task entry kept a session from ending. **Inferred verdicts now warn instead of blocking.** Five checks added: APIs with no screen, reimplementations renamed, copy-pasted blocks, ghost functions in docs, and constant typos that only surface at runtime. Creating a shortcut from inside a working copy to somewhere outside it is also blocked now (it once emptied the original folder entirely). |
 | **v3.2.0** | You can now run several Claudes on one project at the same time. A collaboration protocol — one isolated working copy per session — ships built in, and it's kept by five automatic checks rather than by documentation: overwriting each other's work, sneaking edits past the checks, and leaving finished working copies behind are all blocked. Designs with three or more non-overlapping tracks get a dedicated conductor AI driving parallel implementation. Solo use stays exactly as before — everything sleeps until parallelism starts. |

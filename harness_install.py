@@ -7,6 +7,8 @@
   python -X utf8 harness_install.py --dry-run    무엇이 동결될지만 출력
   python -X utf8 harness_install.py --prune      이미 고쳐진 동결 행 제거(래칫 수확)
   python -X utf8 harness_install.py --list       쓸 수 있는 프리셋 목록
+  python -X utf8 harness_install.py --check-update  원류 KERNEL_VERSION 과 대조 — 고지만 한다
+  python -X utf8 harness_install.py --upgrade       kernel/ · .claude/hooks/ · profiles/*.py 만 교체
 
 **하는 일 셋.**
 
@@ -26,12 +28,15 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import urllib.request
 from pathlib import Path
 
-from kernel import profile, runner
+from kernel import KERNEL_VERSION, UPSTREAM, UPSTREAM_BRANCH, profile, runner
 from kernel.context import ROOT
 from kernel.gates import api_types, placement
 
@@ -52,7 +57,78 @@ GATE_BASELINES: tuple[tuple[Path, str], ...] = (
 )
 
 
-KNOWN_FLAGS = frozenset({"--list", "--doctor", "--prune", "--dry-run", "--preset"})
+KNOWN_FLAGS = frozenset({"--list", "--doctor", "--prune", "--dry-run", "--preset",
+                         "--check-update", "--upgrade"})
+
+# ── 하네스 자체 업데이트 ────────────────────────────────────────────────────────
+#
+# clone 해 간 프로젝트는 원류와 git 이 끊겨 있다. 그래서 커널 개선을 받을 길이 "역이식"뿐이었다.
+# `--check-update` 는 원류 기본 브랜치의 KERNEL_VERSION 만 읽어 고지하고, `--upgrade` 는 하네스가
+# 소유한 것만 갈아끼운다 — 프로파일·MD·harness_gates/·docs/ 는 프로젝트 것이라 절대 안 건드린다.
+UPGRADE_DIRS = ("kernel", ".claude/hooks")           # 통째로 교체
+UPGRADE_PRESET_DIR = "profiles"                      # 최상위 프리셋 *.py 만 덮어쓴다 — lang/·arch/ 오버라이드는 남긴다
+_VERSION_RE = re.compile(r'^KERNEL_VERSION\s*=\s*"([^"]+)"', re.M)
+
+
+def _version_tuple(text: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in text.split(".") if part.isdigit())
+
+
+def upstream_version() -> str:
+    """원류 기본 브랜치의 KERNEL_VERSION. 파일 하나만 받는다 — clone 은 --upgrade 때만."""
+    raw = UPSTREAM.replace("https://github.com/", "https://raw.githubusercontent.com/")
+    with urllib.request.urlopen(f"{raw}/{UPSTREAM_BRANCH}/kernel/__init__.py", timeout=10) as response:
+        body = response.read().decode("utf-8", "replace")
+    found = _VERSION_RE.search(body)
+    return found.group(1) if found else ""
+
+
+def check_update() -> int:
+    try:
+        latest = upstream_version()
+    except Exception as exc:                                  # 네트워크·404 — 고지만 하고 끝
+        print(f"[UPDATE] 원류 확인 실패 — {exc.__class__.__name__}: {exc}")
+        return 2
+    if not latest:
+        print("[UPDATE] 원류에서 KERNEL_VERSION 을 못 읽음 — 원류가 아직 버전 상수를 안 실은 판이다")
+        return 2
+    if _version_tuple(latest) > _version_tuple(KERNEL_VERSION):
+        print(f"[UPDATE] 하네스 {KERNEL_VERSION} → {latest} 있음.")
+        print("   python -X utf8 harness_install.py --upgrade 가 kernel/ · .claude/hooks/ · profiles/*.py 만 갈아끼운다.")
+        print("   harness_profile.py · 정본 MD · harness_gates/ · docs/ 는 안 건드린다. 설치본은 지금 그대로다.")
+        return 1
+    print(f"[UPDATE] 최신이다 ({KERNEL_VERSION}).")
+    return 0
+
+
+def upgrade() -> int:
+    """하네스 소유분만 교체. 되돌리기는 git 이 한다 — 그래서 트리가 깨끗해야 시작한다."""
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True,
+                           text=True, encoding="utf-8").stdout.strip()
+    if dirty:
+        print("[UPGRADE] 작업 트리가 깨끗하지 않다 — 커밋하거나 되돌린 뒤 돌려라. 교체는 git 으로 되돌릴 수 있어야 한다.")
+        return 2
+    with tempfile.TemporaryDirectory() as tmp:
+        target = Path(tmp) / "upstream"
+        done = subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", UPSTREAM_BRANCH,
+                               UPSTREAM, str(target)], capture_output=True, text=True, encoding="utf-8")
+        if done.returncode != 0:
+            print(f"[UPGRADE] 원류 clone 실패 — {done.stderr.strip()[:300]}")
+            return 2
+        found = _VERSION_RE.search((target / "kernel" / "__init__.py").read_text(encoding="utf-8"))
+        latest = found.group(1) if found else "?"
+        for rel in UPGRADE_DIRS:
+            shutil.rmtree(ROOT / rel, ignore_errors=True)
+            shutil.copytree(target / rel, ROOT / rel, ignore=shutil.ignore_patterns("__pycache__"))
+            print(f"[UPGRADE] {rel}/ 교체")
+        for preset in sorted((target / UPGRADE_PRESET_DIR).glob("*.py")):
+            shutil.copy2(preset, ROOT / UPGRADE_PRESET_DIR / preset.name)
+        print(f"[UPGRADE] {UPGRADE_PRESET_DIR}/*.py 덮어씀 (lang/·arch/ 오버라이드는 그대로)")
+    print(f"\n[UPGRADE] {KERNEL_VERSION} → {latest}. 다음 순서:")
+    print("   python -X utf8 -m kernel.profile     새 프로파일 항목 고지")
+    print("   python -X utf8 -m kernel.runner      전 게이트 재검증")
+    print("   git diff 를 보고 커밋 — 마음에 안 들면 git checkout -- . 로 되돌린다")
+    return 0
 
 # 목록에 보여줄 순서. 흔한 것부터, 빈 서식은 마지막. 여기 없는 프리셋은 뒤에 이름순으로 붙는다.
 PRESET_ORDER = ("web_fastapi_react", "api_fastapi", "batch_python", DEFAULT_PRESET)
@@ -315,6 +391,12 @@ def main(argv: list[str]) -> int:
     if "--list" in args:
         print_presets()
         return 0
+
+    if "--check-update" in args:
+        return check_update()
+
+    if "--upgrade" in args:
+        return upgrade()
 
     if "--doctor" in args:
         print_language_report()

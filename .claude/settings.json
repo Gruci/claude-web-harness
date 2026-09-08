@@ -41,7 +41,7 @@
           },
           {
             "type": "command",
-            "command": "test -f \"$(git rev-parse --show-toplevel)/harness_profile.py\" || echo '[HARNESS SETUP] harness_profile.py 없음 — 커널이 이 프로젝트를 모르는 상태이고 레이어를 요구하는 게이트가 전부 [SKIP] 으로 꺼져 있다. 코딩 전에 harness-init 스킬로 온보딩을 진행하라. 사용자에게 스택을 고르라고 묻지 말고 무엇을 만드는지 물은 뒤 프리셋을 근거와 함께 추천하는 것이 그 스킬의 요지다.'",
+            "command": "test -f \"$(git rev-parse --show-toplevel)/harness_profile.py\" || echo '[HARNESS SETUP] harness_profile.py 없음 — 커널이 이 프로젝트를 모르는 상태이고 레이어를 요구하는 게이트가 전부 [SKIP] 으로 꺼져 있다. 코딩 전에 harness-init 스킬로 온보딩을 진행하라. 사용자에게 스택을 고르라고 묻지 말고 무엇을 만드는지 물은 뒤 프리셋을 근거와 함께 추천하는 것이 그 스킬의 요지다.'; (cd \"$(git rev-parse --show-toplevel)\" && python -X utf8 -m kernel.profile 2>/dev/null)",
             "timeout": 10,
             "statusMessage": "Checking harness profile"
           },
