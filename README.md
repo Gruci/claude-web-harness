@@ -4,7 +4,7 @@
 
 **AI가 내 코드를 망치지 않게 잡아주는 가드레일**
 
-하네스 v3.5.0
+하네스 v3.6.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -435,6 +435,7 @@ python -X utf8 -m kernel.diagram deliver  architecture docs/architecture/<이름
 
 | 버전 | 변경 내용 |
 |:--|:--|
+| **v3.6.0** | 검사 비용과 소음 절감. 전량 검사 21초 → 3초, 화면 검사 6종 ESLint 위임, AI 문구 감수는 경고로, CLAUDE.md 중복 제거. |
 | **v3.5.0** | 아키텍처 구조도 시스템 도입. |
 | **v3.4.0** | 실운영 2차 역이식. |
 | **v3.3.0** | 초기 공개 버전. |

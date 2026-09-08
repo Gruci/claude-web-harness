@@ -7,3 +7,6 @@ __pycache__/
 # 없으면 `git add -A` 한 번에 다시 추적돼 그 게이트가 매번 걸린다.
 # clone 해 간 프로젝트는 자기 archive 를 커밋하는 게 맞으므로 이 행은 따라가지 않는다.
 docs/tasks/archive/
+
+# 화면 린터 검출 테스트의 npm 의존 — 정본은 package.json·package-lock.json, 실물은 npm ci 가 만든다
+tests/fixtures/uilint/node_modules/

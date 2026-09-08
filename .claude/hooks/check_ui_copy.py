@@ -11,8 +11,10 @@
    실물과 어긋난다).
 3. 문구가 있으면 Haiku 1콜로 감수한다. 같은 문구 집합은 해시 캐시로 재호출하지 않는다
    — Stop 은 턴마다 실행되므로 캐시가 없으면 대기·비용이 턴마다 반복된다.
-4. 위반이 있으면 exit 2 로 종료를 막고 목록을 돌려준다. 인프라 실패(CLI 부재·타임아웃·
-   파싱 실패)와 ui 레이어 미선언·기본 브랜치 미상은 **통과 처리**한다 — 카피 게이트가
+4. 위반이 있으면 exit 1 로 경고한다 — 종료는 막지 않는다. LLM 판정은 직접 관측이 아니라 추론이고
+   추론에는 차단 권한을 주지 않는다(`HARNESS.md` 「단계」). 알려진 조어는 검사 6 이 결정론적으로
+   막고, 여기서 잡힌 신종은 그 명단에 등재해 다음부터 검사 6 이 막게 한다. 인프라 실패(CLI 부재·
+   타임아웃·파싱 실패)와 ui 레이어 미선언·기본 브랜치 미상은 **통과 처리**한다 — 카피 게이트가
    인프라 사정으로 세션을 가두면 안 된다. 단 통과 처리는 stderr 로 알린다(무음 no-op 금지).
 
 판정 기준 5종은 범용이라 이 파일이 정본이고, 업종 맥락과 도메인 필수 용어는 프로파일
@@ -234,13 +236,13 @@ def main() -> None:
 
     if not violations:
         sys.exit(0)
-    print(f"[UI COPY GATE] 새 화면 문구 {len(strings)}건 중 위반 {len(violations)}건 — "
-          "고치고 종료하라. 잡힌 단어는 harness_profile.py VOCAB['ui_denylist'] 에도 등재하라:",
+    print(f"[UI COPY GATE] 새 화면 문구 {len(strings)}건 중 위반 후보 {len(violations)}건 — "
+          "고쳐라. 잡힌 단어는 harness_profile.py VOCAB['ui_denylist'] 에 등재하면 다음부턴 검사 6 이 막는다:",
           file=sys.stderr)
     for v in violations:
         print(f"  - '{v.get('text', '?')}' — {v.get('reason', '')} → {v.get('suggest', '')}",
               file=sys.stderr)
-    sys.exit(2)
+    sys.exit(1)                           # 경고 — LLM 의견으로 세션을 잠그지 않는다
 
 
 if __name__ == "__main__":

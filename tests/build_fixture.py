@@ -21,6 +21,10 @@ from fixture_go import FILES as GO_FILES  # noqa: E402
 HERE = Path(__file__).resolve().parent
 DEST = HERE / "fixtures" / "miniproj"
 DEST_GO = HERE / "fixtures" / "goproj"
+# 화면 린터 검출 테스트의 npm 프로젝트. 위반 파일은 miniproj 의 frontend/src 와 같은 정본에서 나온다 —
+# package.json·package-lock.json 은 여기서 안 만든다(손으로 둔 정본).
+DEST_UILINT = HERE / "fixtures" / "uilint"
+UI_PREFIX = "frontend/src/"
 
 # 파일 길이 상한 게이트용 — 상한을 정확히 1줄 넘긴다
 LONG_FILE = DEST / "utils" / "long_report.py"
@@ -51,6 +55,11 @@ def main() -> int:
     write_all(DEST_GO, GO_FILES)
     print(f"픽스처 생성: {DEST_GO}")
     print(f"  파일 {len(GO_FILES)}개")
+
+    ui_files = {rel[len(UI_PREFIX):]: body for rel, body in FILES.items() if rel.startswith(UI_PREFIX)}
+    write_all(DEST_UILINT / "src", ui_files)
+    print(f"픽스처 생성: {DEST_UILINT / 'src'}")
+    print(f"  파일 {len(ui_files)}개")
     return 0
 
 

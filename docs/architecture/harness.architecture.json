@@ -201,14 +201,14 @@
       "sources": [
         {
           "path": "kernel/runner.py",
-          "line": 372,
-          "end_line": 397,
+          "line": 385,
+          "end_line": 411,
           "label": "main"
         },
         {
           "path": "kernel/runner.py",
-          "line": 129,
-          "end_line": 224,
+          "line": 142,
+          "end_line": 233,
           "label": "게이트 목록"
         }
       ]
@@ -293,8 +293,8 @@
         },
         {
           "path": "kernel/gates/arch_diagram.py",
-          "line": 125,
-          "end_line": 156,
+          "line": 159,
+          "end_line": 193,
           "label": "검사 48"
         }
       ]
@@ -371,8 +371,8 @@
       "sources": [
         {
           "path": "kernel/diagram/__init__.py",
-          "line": 100,
-          "end_line": 139,
+          "line": 119,
+          "end_line": 150,
           "label": "deliver"
         },
         {

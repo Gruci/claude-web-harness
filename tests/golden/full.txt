@@ -54,9 +54,7 @@ exit=1
 
 [FAIL] 시크릿 토큰 하드코딩 (secrets) — 1건
    - batches/leak.py:3: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, 이미 커밋됐다면 키를 회전하라
-
-[FAIL] TS any 타입 (ts_any) — 1건
-   - frontend/src/anyts.ts:1: TS any → 구체 타입 (불가피하면 `// any-ok: 사유`)
+[TOOL] TS any 타입 — frontend/node_modules/.bin/eslint 없음 — 설치: npm i -D eslint @typescript-eslint/parser typescript
 
 [FAIL] 커넥션 블록 내 가공 (conn_processing) — 1건
    - db/conn_loop.py:5: 커넥션 블록 내 중첩 루프 집계 — fetch 후 블록 밖에서 가공하라
@@ -75,21 +73,11 @@ exit=1
 
 [FAIL] 라우트 에러 응답 형식 (routes_error) — 1건
    - web/routes/errors.py:5: 에러를 JSONResponse(status 404) 로 반환 — 예외로 올려라
-
-[FAIL] 공용 래퍼 없는 fetch (raw_fetch) — 1건
-   - frontend/src/RawFetch.tsx:2: 공용 래퍼를 거치지 않는 fetch() — return fetch("/api/board");
-
-[FAIL] 프론트 색 리터럴 (hex_literal) — 1건
-   - frontend/src/Hex.tsx:1: hex 리터럴 #ff0000 — 토큰 정본 또는 CSS 변수 로
-
-[FAIL] 폰을 깨뜨리는 고정 폭 (responsive) — 1건
-   - frontend/src/Fixed.tsx:1: 고정 px 폭 — max-width·%·minmax·clamp 로 (불가피하면 `// px-ok: 사유`)
-
-[FAIL] 브라우저 API 직접 호출 (browser_api) — 1건
-   - frontend/src/Storage.tsx:1: 브라우저 API 직접 호출 — frontend/src/platform.ts 래퍼 경유 (불가피하면 `// web-ok: 사유`)
-
-[FAIL] 해시 네비게이션 단일 기전 (hash_nav) — 1건
-   - frontend/src/HashNav.tsx:2: history.pushState — 깊이 한 칸 추가는 `location.hash = …` 대입이다. pushState 는 hashchange 를 안 내 복원 리스너가 안 깨어난다
+[TOOL] 공용 래퍼 없는 fetch — frontend/node_modules/.bin/eslint 없음 — 설치: npm i -D eslint @typescript-eslint/parser typescript
+[TOOL] 프론트 색 리터럴 — frontend/node_modules/.bin/eslint 없음 — 설치: npm i -D eslint @typescript-eslint/parser typescript
+[TOOL] 폰을 깨뜨리는 고정 폭 — frontend/node_modules/.bin/eslint 없음 — 설치: npm i -D eslint @typescript-eslint/parser typescript
+[TOOL] 브라우저 API 직접 호출 — frontend/node_modules/.bin/eslint 없음 — 설치: npm i -D eslint @typescript-eslint/parser typescript
+[TOOL] 해시 네비게이션 단일 기전 — frontend/node_modules/.bin/eslint 없음 — 설치: npm i -D eslint @typescript-eslint/parser typescript
 
 [FAIL] 프론트 로직 테스트 짝 (ui_logic_tests) — 1건
    - frontend/src/calcShare.ts: 대응 행동 테스트 없음 — calcShare.test.ts 를 같은 자리에 작성
@@ -163,4 +151,4 @@ exit=1
    - settings.py 가 읽는 'ALPHA_KEY' 가 DEVGUIDE.md 목록에 없음
    - DEVGUIDE.md 의 'BETA_KEY' 를 settings.py 가 읽지 않음(타 모듈 로드 가능 — 확인)
 
-총 65건 위반.
+총 59건 위반.

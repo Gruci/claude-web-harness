@@ -5,7 +5,7 @@ KERNEL_VERSION 은 배포 정체다. clone 해 간 프로젝트가 `harness_inst
 프로파일 서식 세대다 — 프로파일의 선언이 이보다 오래됐으면 세션 시작 훅이 새 항목을 고지한다.
 """
 
-KERNEL_VERSION = "3.5.0"
-PROFILE_SCHEMA = 1
+KERNEL_VERSION = "3.6.0"
+PROFILE_SCHEMA = 2
 UPSTREAM = "https://github.com/Gruci/claude-web-harness"
 UPSTREAM_BRANCH = "master"

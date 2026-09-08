@@ -16,18 +16,25 @@
   CRLF           LF·CRLF 체크아웃에서 러너 출력이 같은가 (checkout-line-endings)
   frontmatter    스킬·에이전트 name 이 실물과 같고 description 이 1024자 안인가 (skill-metadata)
   버전 일치      두 README 의 하네스 버전이 같은가 (release-identity)
+  화면 린터      ESLint 설정이 픽스처 위반 6종을 각각 잡고 면제·깨끗한 파일은 안 잡는가 — 골든이
+                 [TOOL] 로 고정돼 잃는 검출 증명의 대체
+  영수증 캐시    영수증 해시가 정본과 같으면 node 없이도 엔진 진단이 OK 인가
+  ⑱ 단계         LLM 판정 훅이 규칙 지도에서 차단(security) 노드가 아닌가
+  --file 무REPORT 정본 MD 하나의 작성 시점 검사에 전역 REPORT 가 섞이지 않는가
 
 실행: `python -X utf8 tests/test_harness_self.py`
 """
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -271,6 +278,66 @@ def test_skill_and_agent_frontmatter() -> None:
         assert fields.get("description"), f"{agent}: description 이 비어 있다"
 
 
+UILINT = REPO / "tests" / "fixtures" / "uilint"
+EXPECTED_UI = {                       # slug → (파일, 행) — fixture_files.py 의 위반 1건씩
+    "ts_any": ("src/anyts.ts", 1), "raw_fetch": ("src/RawFetch.tsx", 2),
+    "hex_literal": ("src/Hex.tsx", 1), "responsive": ("src/Fixed.tsx", 1),
+    "browser_api": ("src/Storage.tsx", 1), "hash_nav": ("src/HashNav.tsx", 2),
+}
+
+
+def _ensure_uilint() -> None:
+    """`node_modules` 가 없으면 `npm ci` — 픽스처 프로파일 자가복구(§18)와 같은 방향. npm 이 없으면 그 사실을 말하고 실패한다."""
+    sys.path.insert(0, str(REPO))
+    from kernel import linters                # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    if linters.ui_eslint_bin(UILINT):
+        return
+    npm = shutil.which("npm")
+    assert npm, "npm 없음 — 화면 린터 검출 테스트는 node 가 있어야 돈다"
+    subprocess.run([npm, "ci", "--no-audit", "--no-fund"], cwd=str(UILINT), check=True,
+                   capture_output=True, timeout=600)
+
+
+def test_ui_lint_detects_fixture_violations() -> None:
+    """설정 파일이 픽스처 위반 6종을 각각 잡고, 래퍼 정본과 깨끗한 파일은 잡지 않는다."""
+    _ensure_uilint()
+    from kernel import linters                # noqa: E402  (_ensure_uilint 가 경로를 넣는다)
+
+    found = linters.eslint_report(UILINT, [UILINT / "src"], {"browser_api": ["src/platform.ts"]}, "토큰")
+    for slug, (path, line) in EXPECTED_UI.items():
+        hits = [v for v in found[slug] if v.startswith(f"tests/fixtures/uilint/{path}:{line}:")]
+        assert hits, f"{slug}: {path}:{line} 을 못 잡았다 — {found[slug]}"
+    assert not any("platform.ts" in v for v in found["browser_api"]), "래퍼 정본이 면제되지 않았다"
+    assert not any("Consumer.tsx" in v for vs in found.values() for v in vs), "깨끗한 파일을 잡았다"
+
+
+def test_engine_skipped_when_receipt_fresh() -> None:
+    """영수증 해시가 정본과 같으면 node 없이도 엔진 진단이 OK 다 — 재호출이 없다는 증명."""
+    sys.path.insert(0, str(REPO))
+    from kernel.gates import arch_diagram     # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    with mock.patch.dict(os.environ, {"HARNESS_DIAGRAM_ENGINE": "off"}):
+        sections = arch_diagram.engine_sections()
+    assert sections and all(skip is None and not found for _s, _t, found, skip in sections), sections
+
+
+def test_ui_copy_is_warning_tier() -> None:
+    """LLM 판정 훅은 차단 노드가 아니다 — 규칙 지도에서 backend(경고) 타입이어야 한다."""
+    sys.path.insert(0, str(REPO))
+    from kernel.diagram import rules          # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    node = next(n for n in rules.build()["nodes"] if n["id"] == "stop-ui_copy")
+    assert node["type"] == "backend", node
+
+
+def test_file_mode_prints_no_global_reports() -> None:
+    """정본 MD 하나의 작성 시점 검사에 전역 REPORT(경로 참조·stale 노드)가 섞이지 않는다."""
+    done = subprocess.run([sys.executable, "-X", "utf8", "-m", "kernel.runner", "--file", "dev/LESSONS.md"],
+                          cwd=str(REPO), capture_output=True, text=True, encoding="utf-8")
+    assert "실존하지 않는 경로 참조" not in done.stdout and "revision 이후 바뀜" not in done.stdout, done.stdout
+
+
 _VERSION = re.compile(r"\b[Hh]arness v(\d+\.\d+\.\d+)|하네스 v(\d+\.\d+\.\d+)")
 
 
@@ -290,6 +357,8 @@ def demo() -> None:
                   test_hooks_do_not_block_on_broken_payload,
                   test_runner_reports_profile_shape, test_diagram_engine_delivers_harness_architecture,
                   test_runner_leaves_tree_clean, test_rules_map_matches_wiring,
+                  test_ui_lint_detects_fixture_violations, test_engine_skipped_when_receipt_fresh,
+                  test_ui_copy_is_warning_tier, test_file_mode_prints_no_global_reports,
                   test_runner_output_same_for_lf_and_crlf, test_fresh_install_is_green):
         check()
         print(f"  [OK] {check.__name__}")

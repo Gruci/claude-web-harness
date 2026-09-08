@@ -7,7 +7,7 @@
   중첩 def         테스트할 수 없는 숨은 로직
   축약 이름·접두   내부 코드가 이름으로 새는 것
   UI 라벨 금칙어   사용자에게 노출되는 조어
-  Any / any        타입으로 게이트 때우기
+  Any              타입으로 게이트 때우기 (TS any 는 화면 린터 — kernel/eslint.harness.mjs)
   타입힌트 누락    공개 함수의 경계면이 문서화되지 않는 것
   시크릿 토큰      실키 하드코딩 — 커밋되면 회전까지가 수습이다
   헤더 경로 주석   파일 이사 후 남은 잘못된 경로 주석
@@ -28,7 +28,6 @@ MAX_LINES = 400
 MAX_FUNC_LINES = 80   # 파일 400줄 상한이 못 보는 축 — "한 파일에 400줄 함수 하나"를 막는다
 
 ANY_HINT = re.compile(r"[:\[,]\s*Any\b|->\s*Any\b")
-TS_ANY = re.compile(r":\s*any\b|\bas\s+any\b|<\s*any\b")
 
 # 공급자별 실키 형태. 문자열이 이 모양이면 그건 예시가 아니라 진짜다.
 SECRET_TOKEN = re.compile(
@@ -281,19 +280,6 @@ def check_secrets(files: list[Path]) -> list[str]:
             if SECRET_TOKEN.search(line):
                 bad.append(f"{rel}:{i}: 시크릿 토큰 하드코딩 — 설정 모듈 경유로 옮기고, "
                            f"이미 커밋됐다면 키를 회전하라")
-    return bad
-
-
-def check_ts_any(files: list[Path]) -> list[str]:
-    """TS `any` 때우기 금지 — 타입체커 strict 도 통과시키는 명시적 any 차단."""
-    bad: list[str] = []
-    for f in files:
-        rel = _rel(f)
-        for i, line in enumerate(f.read_text(encoding=READ_ENC).splitlines(), 1):
-            if "any-ok" in line or line.lstrip().startswith(("//", "*", "/*")):
-                continue
-            if TS_ANY.search(line):
-                bad.append(f"{rel}:{i}: TS any → 구체 타입 (불가피하면 `// any-ok: 사유`)")
     return bad
 
 

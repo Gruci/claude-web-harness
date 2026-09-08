@@ -16,7 +16,7 @@ PRESET_FITS = "로그인·대시보드·관리 화면처럼 사람이 브라우�
 
 # 새 프로젝트는 MD 가 코드보다 먼저 나온다. 뼈대가 서면 "growing" → "mature" 로 올린다.
 STAGE = "greenfield"
-PROFILE_SCHEMA = 1
+PROFILE_SCHEMA = 2
 
 # 화면+서버 풀스택 — 전 게이트가 성립한다. kernel/archs/web_layered.py
 ARCH = "web_layered"

@@ -4,7 +4,7 @@
 
 **A guardrail that keeps AI from wrecking your code**
 
-Harness v3.5.0
+Harness v3.6.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -444,12 +444,13 @@ python -X utf8 -m kernel.diagram deliver  architecture docs/architecture/<name>.
 
 | Version | Changes |
 |:--|:--|
-| **v3.5.0** | Verified architecture diagrams. A five-type diagram engine lives inside the repository; every box carries a source file and line range that check 48 compares against the real code. A self-update path for the harness (`--check-update`, `--upgrade`) and a configuration-schema notice. Also: check 47 catches configuration typos and strings where tuples belong, hooks no longer report a checker crash as a rule violation, the install script rejects mistyped options, a fresh project no longer inherits the harness's own trace and surface files, and nine harness self-tests. |
-| **v3.4.0** | Second back-port from the live production harness. Checks grew from 35 to 46 — SQL injection via column interpolation, an 80-line function limit, frontend test pairing, hash-navigation discipline, root-directory litter, prompt version bumps, and more — plus a session-end AI review of newly added screen copy that catches jargon the static denylist has never seen. Fixed defects the comparison surfaced in the harness itself: a residue-detection hook silently dead from a missing import, a fully implemented check that was never registered with the runner, and a path-handling gap that let files inside working copies bypass save-time checks. Three over-blocking cases relaxed, including a 24-hour grace period for freshly written planning documents. |
-| **v3.3.0** | Lessons from incidents on a live production project. Fixed a misjudgment that told you to delete a working copy created moments earlier, and a case where an unfinished task entry kept a session from ending. **Inferred verdicts now warn instead of blocking.** Five checks added: APIs with no screen, reimplementations renamed, copy-pasted blocks, ghost functions in docs, and constant typos that only surface at runtime. Creating a shortcut from inside a working copy to somewhere outside it is also blocked now (it once emptied the original folder entirely). |
-| **v3.2.0** | You can now run several Claudes on one project at the same time. A collaboration protocol — one isolated working copy per session — ships built in, and it's kept by five automatic checks rather than by documentation: overwriting each other's work, sneaking edits past the checks, and leaving finished working copies behind are all blocked. Designs with three or more non-overlapping tracks get a dedicated conductor AI driving parallel implementation. Solo use stays exactly as before — everything sleeps until parallelism starts. |
-| **v3.1.0** | Introduced the project-shape setting (`ARCH`). In projects without screens or a web server, the corresponding checks are reported as `[N/A]` (not applicable to this project shape) instead of `[SKIP]` (configuration missing). The shape is declared in one line — `web_layered` (screens + server), `backend_only` (server only), or `headless` (no web, no screens) — and works the same way as the language setting (`LANG`). Undeclared, behavior is unchanged. |
-| **v3.0.1** | Reworked hook stdin reading to no longer depend on EOF. Windows Claude Code does not send EOF to the `UserPromptSubmit` hook's stdin, so `json.load(sys.stdin)` blocked waiting for EOF and was killed by the 10s hook timeout (output discarded). Every hook now reads through a shared reader (`.claude/hooks/_hookio.py`) that returns as soon as a complete JSON object parses, without waiting for EOF. As a side effect, stdin is now decoded as UTF-8 explicitly, removing potential corruption of non-ASCII payloads under the previous cp949 default decode. Each hook's fail-open / fail-closed policy and the gate decision logic are unchanged. |
+| **v3.6.0** | Less check cost and noise. Full check 21 s → 3 s, six frontend checks delegated to ESLint, AI copy review downgraded to a warning, CLAUDE.md deduplicated. |
+| **v3.5.0** | Verified architecture diagrams. Built-in diagram engine and check 48, self-update path, profile-shape check 47, nine self-tests. |
+| **v3.4.0** | Second production back-port. Checks 35 → 46, session-end AI copy review, three harness defects fixed, three over-blocking cases relaxed. |
+| **v3.3.0** | Production lessons. Inferred verdicts warn instead of block, five checks added, out-of-tree links blocked. |
+| **v3.2.0** | Parallel sessions. One working copy per session, five checks enforcing it, a conductor AI for three or more tracks. |
+| **v3.1.0** | Project-shape setting (`ARCH`). Screen and web checks report `[N/A]` where the shape has none. |
+| **v3.0.1** | Hook stdin no longer waits for EOF (Windows timeout fix), UTF-8 payload decoding. |
 | **v3.0.0** | Initial public release. |
 
 ---

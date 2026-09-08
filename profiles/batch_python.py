@@ -18,7 +18,7 @@ PRESET_SUMMARY = "정기적으로 도는 수집·가공 스크립트 — Python 
 PRESET_FITS = "크롤러·배치·리포트 생성처럼 사람이 화면으로 쓰는 게 아니라 시간표대로 도는 것을 만들 때"
 
 STAGE = "greenfield"
-PROFILE_SCHEMA = 1
+PROFILE_SCHEMA = 2
 
 # 웹도 화면도 없다 — 화면·웹 검사 9종이 [SKIP] 이 아니라 [N/A] 로 찍힌다.
 ARCH = "headless"

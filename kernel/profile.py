@@ -59,9 +59,9 @@ _KNOWN_NAMES = frozenset({
     "HUB_DOMAIN_MD_IMPLICIT", "DOC_SYNC", "BEHAVIOR_TESTED_ROOTS", "LOCAL_GATES", "HARNESS_MAP",
     "ROOT_FILES", "LEGACY_PATHS", "LESSONS_DOC", "AGENT_MODEL_POLICY", "MAINTENANCE",
     "VERSIONED_PROMPTS", "UI_COPY", "HARNESS_SELF", "HARNESS_ASSETS", "PRESET_SUMMARY",
-    "PRESET_FITS", "PROFILE_SCHEMA",
+    "PRESET_FITS", "PROFILE_SCHEMA", "UI_NPM_DIR",
 })
-_STR_NAMES = ("STAGE", "LANG", "ARCH", "SYNTAX", "HARNESS_MAP", "LESSONS_DOC")
+_STR_NAMES = ("STAGE", "LANG", "ARCH", "SYNTAX", "HARNESS_MAP", "LESSONS_DOC", "UI_NPM_DIR")
 _DICT_NAMES = ("LAYERS", "FILES", "SYMBOLS", "VOCAB", "ALLOWLIST", "MD", "SCOPE", "PATTERNS",
                "NOT_APPLICABLE", "AGENT_MODEL_POLICY", "MAINTENANCE", "UI_COPY")
 _SEQ_NAMES = ("HUBS", "DOC_SYNC", "BEHAVIOR_TESTED_ROOTS", "LOCAL_GATES", "ROOT_FILES",
@@ -262,6 +262,10 @@ def symbol(name: str) -> str | None:
 
 def scratch() -> tuple[str, ...]:
     return SCOPE["exclude_scratch"]
+
+
+# 화면 린터(검사 10·17~20·42)가 도는 npm 프로젝트 — node_modules 의 부모. 없으면 ui 레이어의 첫 세그먼트.
+UI_NPM_DIR: str | None = getattr(_MOD, "UI_NPM_DIR", None) if _MOD else None
 
 
 _TEMPLATE_NAME = re.compile(r"^([A-Z][A-Z_]+)\s*[:=]", re.M)

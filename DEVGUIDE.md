@@ -54,6 +54,7 @@ npm run typecheck  # tsc --noEmit (strict)
 npm run dev        # dev 서버, /api·/static → FastAPI 프록시
 ```
 - 빌드 산출물(`web/static/`)의 커밋 여부는 배포 방식 확정 시 결정 → 결정되면 여기 기록.
+- 하네스 화면 검사 6종은 `frontend/node_modules/.bin/eslint` 로 돈다 — Vite React TS 템플릿의 devDependencies(eslint·@typescript-eslint/parser)로 충분하다. 없으면 여섯이 `[TOOL]` 이다.
 
 **라우팅** (React Router): 경로↔페이지 매핑의 **정본은 `frontend/src/App.tsx`** (손사본 표는 상시 drift하므로 만들지 않는다). FastAPI 측 페이지 라우트는 전부 `_serve_spa()`(index.html 반환).
 

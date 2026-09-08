@@ -184,8 +184,8 @@
         },
         {
           "path": "kernel/runner.py",
-          "line": 372,
-          "end_line": 397,
+          "line": 385,
+          "end_line": 411,
           "label": "러너"
         }
       ]
@@ -272,9 +272,9 @@
         },
         {
           "path": ".claude/hooks/check_ui_copy.py",
-          "line": 200,
-          "end_line": 247,
-          "label": "⑱ UI 카피"
+          "line": 202,
+          "end_line": 249,
+          "label": "⑱ UI 카피 (경고)"
         }
       ]
     }
@@ -345,8 +345,8 @@
       "dot": "amber",
       "title": "경고 (exit 1)",
       "items": [
-        "추론 — git 상태로 '끝났을 것'을 추측한다",
-        "⑫ ⑫-1 ⑮"
+        "추론 — git 상태로 '끝났을 것'을 추측하거나 LLM 이 문구를 판정한다",
+        "⑫ ⑫-1 ⑮ ⑱"
       ]
     },
     {

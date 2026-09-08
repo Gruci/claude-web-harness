@@ -24,7 +24,7 @@ STAGE = "greenfield"
 # ── 서식 세대 ──────────────────────────────────────────────────────────────────
 # 커널이 요구하는 세대는 `kernel/__init__.py` 의 PROFILE_SCHEMA 다. 여기가 그보다 낮으면 세션
 # 시작 훅이 "채울 수 있는 새 항목"을 고지한다. 새 항목을 훑어 채운(또는 안 채우기로 한) 뒤 올린다.
-PROFILE_SCHEMA = 1
+PROFILE_SCHEMA = 2
 
 
 # ── 언어 ───────────────────────────────────────────────────────────────────────
@@ -38,6 +38,12 @@ LANG: str | None = "python"          # 쓸 수 있는 것: python · go · types
 # SOURCE_EXT: tuple[str, ...] = ("*.py",)
 # UI_EXT: tuple[str, ...] = ("*.tsx", "*.ts")
 # SYNTAX: str | None = "python"     # "python" 일 때만 구문 분석 검사 5종이 돈다
+
+# 화면 검사 6종(10·17~20·42)은 ESLint 에 위임한다 — 정본은 kernel/eslint.harness.mjs, 파서는 프로젝트의
+# @typescript-eslint/parser 다(Vite React TS 템플릿의 devDependencies 로 충분). 여기는 그 npm 프로젝트,
+# 즉 `node_modules/.bin/eslint` 가 있는 디렉토리다. 비우면 ui 레이어의 첫 세그먼트("frontend/src" → "frontend").
+# 실행 파일이 없으면 여섯이 [TOOL] 이다 — 통과가 아니다.
+UI_NPM_DIR: str | None = None
 
 
 # ── 아키텍처 ───────────────────────────────────────────────────────────────────

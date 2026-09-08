@@ -52,7 +52,7 @@ docs/architecture/
 - `meta.repository` 에 `url`(origin) 과 `revision`(40자 커밋) 을 적는다. 엔진이 그 커밋의 blob 과 행 수로 검증하므로 **아직 커밋 안 된 파일은 가리킬 수 없다.** 순서는 코드 커밋 → deliver → 그림 커밋이다.
 - `sources` 는 노드당 최대 3개다. 하나는 "이 상자가 곧 이 코드"이고, 나머지는 진입점이나 **샘플 데이터** 다 — 픽스처·응답 예시 파일을 `label: "샘플"` 로 가리키면 뷰어의 패스포트에서 바로 연다.
 - `type: external` 노드(사람·외부 시스템)와 `lifecycle` 의 상태는 코드 대응물이 없어 면제다. 나머지는 전부 있어야 한다.
-- `revision` 은 deliver 가 찍는다. 이후 커밋이 쌓이면 검사 48 이 "원류가 바뀜" 을 REPORT 로 말하고, 그림을 손볼 때 deliver 가 다시 찍는다.
+- `revision` 은 deliver 가 찍는다. 이후 커밋이 쌓이면 검사 48 이 "원류가 바뀜" 을 REPORT 로 말하고, 그림을 손볼 때 deliver 가 다시 찍는다. 작성 시점(`--file`)엔 검사 48 이 돌지 않는다 — 전량 대조라 비교 상대가 없다.
 
 뷰어에서는 노드를 누르면 패스포트가 열리고 SRC 마커가 revision 고정 링크로 파일·행을 연다. 원류가 GitHub 이면 웹 링크, 아니면 `link_mode: local-only` 로 경로만 검색된다.
 
@@ -65,8 +65,8 @@ docs/architecture/
 | 모든 `path` 가 작업 트리에 실존, 행 범위가 파일 안 | 이름 바꾸고 안 고침 | FAIL |
 | `revision` 이 이 레포의 커밋 | 남의 커밋 | FAIL |
 | 영수증 해시 = 현재 정본, HTML 실존 | 렌더 안 한 정본 | FAIL |
-| `revision` 이후 원류가 바뀐 노드 | 재검토 신호 — 오탐 여지가 있어 합산 안 함 | REPORT |
-| 엔진 `validate --repo-root` 의 diagnostics | 스키마·배치·증거의 정본 판정. node 없으면 `[TOOL]` | FAIL / TOOL |
+| `revision` 이후 원류가 바뀐 노드 — `label: 샘플` 은 데이터라 제외 | 재검토 신호 — 오탐 여지가 있어 합산 안 함 | REPORT |
+| 엔진 `validate --repo-root` 의 diagnostics | 스키마·배치·증거의 정본 판정. 영수증 해시가 정본과 같으면 deliver 가 이미 통과시킨 것이라 재호출하지 않는다. 그 외엔 node 없으면 `[TOOL]` | FAIL / TOOL |
 
 greenfield 에서 그림이 없으면 `[SKIP] 아직 없음` 이다. growing 이상에서 없으면 그 자체가 위반이다 — 코드가 자란 프로젝트에 그림이 없는 건 손실이다.
 

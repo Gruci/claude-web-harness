@@ -8,7 +8,8 @@
   [OK]     검사했고 위반 0건
   [SKIP]   **검사할 대상이 없었다.** 프로파일에 레이어·어휘 선언이 없으면 여기로 온다
   [FAIL]   강제 위반 — 총계에 합산되고 exit 1 을 만든다
-  [REPORT] 연성 신호 — 오탐 여지가 있어 합산하지 않는다
+  [REPORT] 연성 신호 — 오탐 여지가 있어 합산하지 않는다. 전역 신호(경로 참조·stale 노드)는
+           전량 모드에서만 찍는다 — 작성 시점엔 편집한 파일과 무관한 소음이라 모델이 출력을 안 읽게 된다
 
 [OK] 와 [SKIP] 을 가르는 것이 이 러너의 핵심이다. 이전 하네스는 레이어 이름이 안 맞아 대상이
 0개인데도 [OK] 로 찍어, 지켜주지 않는 게이트를 지켜준다고 믿게 만들었다.
@@ -28,9 +29,9 @@ from kernel import diagram, linters, profile
 from kernel.baseline import (BASELINE_FILE, apply_baseline as _apply_baseline,  # noqa: F401
                              load_baseline, violation_path)
 from kernel.context import READ_ENC, ROOT, _rel, app_code, is_harness_own, tracked
-from kernel.gates import (api_types, arch_diagram, core, duplication, frontend, harness_self,
-                          layers, md_graph, md_style, orphan_api, placement, prompt_version,
-                          schema, tests_pairing)
+from kernel.gates import (api_types, arch_diagram, core, duplication, harness_self, layers,
+                          md_graph, md_style, orphan_api, placement, prompt_version, schema,
+                          tests_pairing)
 
 # (slug, 제목, 위반 목록, 건너뜀). 건너뜀은 (등급, 사유) 이고 None 이면 실제로 검사한 것이다.
 #
@@ -110,6 +111,18 @@ def _syntax_section(slug: str, title: str, check: object, args: tuple,
     return _entry(slug, title, check(*args), ok, need)   # type: ignore[operator]
 
 
+def _ui_entry(slug: str, title: str, lint: linters.UiLint, ok: object, need: str) -> Section:
+    """화면 린터(ESLint 위임) 결과의 한 slug. 순서는 N/A → SKIP(대상·설정 없음) → TOOL(eslint 없음) → 판정이다."""
+    unneeded = profile.not_applicable(slug)
+    if unneeded:
+        return (slug, title, [], ("N/A", unneeded))
+    if not ok:
+        return (slug, title, [], ("SKIP", need))
+    if lint.missing:
+        return (slug, title, [], ("TOOL", lint.missing))
+    return (slug, title, lint.found.get(slug, []), None)
+
+
 def _linter_sections() -> list[Section]:
     """언어팩이 선언한 표준 도구에 위임한 결과."""
     found: list[Section] = []
@@ -132,6 +145,8 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
     writes, batch = _under(files, "write"), _under(files, "batch")
     vocab = profile.VOCAB
     settings = profile.FILES.get("settings")
+    # 화면 6종(10·17~20·42)은 ESLint 한 번에서 나온다 — 정본은 kernel/eslint.harness.mjs
+    lint = linters.run_ui_lint(ui_files) if ui_files else linters.UiLint({}, "")
 
     return [
         # 맨 앞이다 — 프로파일 모양이 틀리면 아래 전부가 대상 0건으로 조용히 초록불이 된다.
@@ -160,7 +175,7 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
         _entry("py_any", "Any 타입힌트", core.check_py_any(files), files, NO_PY),
         _syntax_section("type_hints", "공개 함수 타입힌트", core.check_type_hints, (files,), files, NO_PY),
         _entry("secrets", "시크릿 토큰 하드코딩", core.check_secrets(both), both, NO_PY),
-        _entry("ts_any", "TS any 타입", core.check_ts_any(ui_files), ui_files, NO_UI),
+        _ui_entry("ts_any", "TS any 타입", lint, ui_files, NO_UI),
         _syntax_section("conn_processing", "커넥션 블록 내 가공",
                         layers.check_connection_processing, (files,),
                         _under(files, "db") and profile.symbol("db_accessor"),
@@ -179,18 +194,12 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
                         layers.check_routes_error_response, (files,),
                         _under(files, "routes") and profile.symbol("error_response"),
                         _need_symbol("error_response")),
-        _entry("raw_fetch", "공용 래퍼 없는 fetch", frontend.check_frontend_raw_fetch(ui_files),
-               ui_files, NO_UI),
-        _entry("hex_literal", "프론트 색 리터럴", frontend.check_frontend_hex(ui_files),
-               ui_files, NO_UI),
-        _entry("responsive", "폰을 깨뜨리는 고정 폭", frontend.check_frontend_responsive(ui_files),
-               ui_files, NO_UI),
-        _entry("browser_api", "브라우저 API 직접 호출",
-               frontend.check_frontend_browser_api(ui_files),
-               ui_files and profile.ALLOWLIST["ui_platform"],
-               "설정에 브라우저 API 래퍼를 안 적었음"),
-        _entry("hash_nav", "해시 네비게이션 단일 기전",
-               frontend.check_frontend_hash_nav(ui_files), ui_files, NO_UI),
+        _ui_entry("raw_fetch", "공용 래퍼 없는 fetch", lint, ui_files, NO_UI),
+        _ui_entry("hex_literal", "프론트 색 리터럴", lint, ui_files, NO_UI),
+        _ui_entry("responsive", "폰을 깨뜨리는 고정 폭", lint, ui_files, NO_UI),
+        _ui_entry("browser_api", "브라우저 API 직접 호출", lint,
+                  ui_files and profile.ALLOWLIST["ui_platform"], "설정에 브라우저 API 래퍼를 안 적었음"),
+        _ui_entry("hash_nav", "해시 네비게이션 단일 기전", lint, ui_files, NO_UI),
         _entry("ui_logic_tests", "프론트 로직 테스트 짝",
                tests_pairing.check_ui_logic_test_pairing(ui_files), ui_files, NO_UI),
         _entry("ui_component_tests", "프론트 컴포넌트 테스트 짝",
@@ -222,13 +231,14 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
     ]
 
 
-def _doc_sections() -> list[Section]:
+def _doc_sections(full: bool = True) -> list[Section]:
+    """문서 게이트. full 이 거짓이면(`--file`) 전역 REPORT 와 검사 48 을 뺀다 — 편집한 파일과 무관하다."""
     greenfield = profile.STAGE == "greenfield"
 
     # 새 프로젝트는 MD 가 코드보다 먼저 나온다 — plan 문서가 아직 없는 경로를 가리키는 게 정상
     # 순서다. 그 시기에 이걸 강제하면 첫 문서부터 막힌다. 파일이 생기면 mature 에서 잡힌다.
     refs = md_graph.check_md_path_refs()
-    if greenfield:
+    if greenfield and full:
         _print_style_reports(refs)
     map_exists = (ROOT / profile.HARNESS_MAP).exists()
     lessons = profile.LESSONS_DOC
@@ -248,6 +258,8 @@ def _doc_sections() -> list[Section]:
         _entry("md_fn_refs", "MD 함수 참조 실존", md_graph.check_md_fn_refs(),
                not greenfield, "greenfield — 문서가 코드보다 먼저다"),
     ]
+    if not full:                        # 검사 48 은 그림·소스 전량 대조라 --file 에 비교 상대가 없다(34·35 와 같다)
+        return sections
     # 그림 ↔ 실물 1:1. 그림이 없는 greenfield 는 "아직 없음", 있으면 노드마다 소스를 증명한다.
     hard, soft = arch_diagram.check_arch_diagram()
     _print_style_reports(soft)
@@ -283,7 +295,8 @@ def _local_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
 
 
 def _build_sections(
-    files: list[Path], ui_files: list[Path], include_md: bool, md_files: list[Path]
+    files: list[Path], ui_files: list[Path], include_md: bool, md_files: list[Path],
+    full: bool = True,
 ) -> list[Section]:
     sections = _kernel_sections(files, ui_files)
     if include_md and files:            # 린터는 레포 전체를 보므로 --file 모드에선 건너뛴다
@@ -303,7 +316,7 @@ def _build_sections(
         sections.append(("md_style", "MD 작성 규칙", hard, None))
         _print_style_reports(soft)
     if include_md:
-        sections += _doc_sections()
+        sections += _doc_sections(full)
     return sections
 
 
@@ -376,14 +389,15 @@ def main(argv: list[str]) -> int:
     if not profile.LOADED:
         print(f"[SETUP] {profile.PROFILE_FILE} 없음 — 프로젝트를 모르는 상태다. "
               f"레이어를 요구하는 게이트는 전부 [SKIP] 이다.")
-    if len(argv) >= 2 and argv[0] == "--file":
+    full = not (len(argv) >= 2 and argv[0] == "--file")
+    if not full:
         files, ui_files, include_md, md_files = _single_file_lists(argv[1])
         if not files and not ui_files and not include_md and not md_files:
             return 0
     else:
         files, ui_files = source_files()
         include_md, md_files = True, tracked_md_files()
-    sections = _apply_baseline(_build_sections(files, ui_files, include_md, md_files))
+    sections = _apply_baseline(_build_sections(files, ui_files, include_md, md_files, full))
     total = _print_sections(sections)
 
     if total:
