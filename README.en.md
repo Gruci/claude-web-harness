@@ -16,6 +16,16 @@ Harness v3.5.0
 2. This tool turns those agreements into **automatic checks** instead of documents — break one, and the save itself is blocked.
 3. After install, one sentence ("set up the harness") finishes configuration; from then on the checks run without you thinking about them.
 
+## At a glance
+
+These are the harness drawn with the harness. Every box carries a real source file and line range, and check 48 compares the diagram against the code on every save and at session end — change the code without fixing the diagram and the session will not end. Clone the repository and open the `.html` of the same name in `docs/architecture/` to click a box and jump to its code, play the guided views, or probe the route between two boxes.
+
+| Structure — hooks call the kernel; the kernel knows the project only through the profile | Hook firing order — from session start to end |
+|:--|:--|
+| ![Structure](docs/architecture/harness.architecture.svg) | ![Hook firing order](docs/architecture/hooks.workflow.svg) |
+| **One Edit's journey** — save → hook → runner → gates → feedback | **Hook rule map** — generated from the wiring: which hook checks what, and when |
+| ![One Edit's journey](docs/architecture/edit-trip.sequence.svg) | ![Hook rule map](docs/architecture/rules.workflow.svg) |
+
 ## What is this?
 
 Think of the automatic brakes that stop a car even when a novice driver makes a mistake. This tool is a guardrail for development: the moment the AI writes code that breaks a rule, the save stops and the AI has to fix it.
@@ -421,15 +431,7 @@ Any line differing from the answer file is reported. Passing this comparison is 
 
 ### Architecture diagrams — a diagram counts only if it is verified
 
-The four below are the harness's own diagrams: SVG rendered from the JSON source. Clone the repository and open the `.html` of the same name to click a box and jump to its source file and line range, play the guided views, or probe the route between two boxes.
-
-| Structure — hooks call the kernel; the kernel knows the project only through the profile | Hook firing order — from session start to end |
-|:--|:--|
-| ![Structure](docs/architecture/harness.architecture.svg) | ![Hook firing order](docs/architecture/hooks.workflow.svg) |
-| **One Edit's journey** — save → hook → runner → gates → feedback | **Hook rule map** — generated from the wiring: which hook checks what, and when |
-| ![One Edit's journey](docs/architecture/edit-trip.sequence.svg) | ![Hook rule map](docs/architecture/rules.workflow.svg) |
-
-`docs/architecture/` holds the source of truth (JSON) and the rendered HTML and SVG for structure, workflow, and sequence diagrams. The rule map is not drawn by hand: `python -X utf8 -m kernel.diagram rules` builds it from the hook wiring and the gate list. Every box carries the real source file and line range, and clicking a box in the viewer opens that code. Check 48 compares the diagram against the repository on every save and at session end — rename a file without fixing the diagram and the session will not end. Design documents that change the structure attach a before/after diagram (delta). The render engine ships inside the repository, so viewers install nothing.
+The four diagrams are at the top of this document under "At a glance". `docs/architecture/` holds the source of truth (JSON) and the rendered HTML and SVG for structure, workflow, and sequence diagrams. The rule map is not drawn by hand: `python -X utf8 -m kernel.diagram rules` builds it from the hook wiring and the gate list. Every box carries the real source file and line range, and clicking a box in the viewer opens that code. Check 48 compares the diagram against the repository on every save and at session end — rename a file without fixing the diagram and the session will not end. Design documents that change the structure attach a before/after diagram (delta). The render engine ships inside the repository, so viewers install nothing.
 
 ```bash
 python -X utf8 -m kernel.diagram validate architecture docs/architecture/<name>.architecture.json
