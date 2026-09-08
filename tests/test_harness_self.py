@@ -135,6 +135,19 @@ def test_diagram_engine_delivers_harness_architecture() -> None:
         assert "archify-source-evidence-data" in out.read_text(encoding="utf-8"), "소스 증거가 HTML 에 안 실렸다"
 
 
+def test_runner_leaves_tree_clean() -> None:
+    """전 게이트를 돌려도 추적 파일이 하나도 안 바뀐다 — 게이트는 판정만 한다(§23).
+
+    검사 48 의 엔진 위임이 정본의 revision 을 되써서 Stop 훅이 커밋된 그림을 더럽힌 적이 있다.
+    """
+    before = subprocess.run(["git", "status", "--porcelain"], cwd=str(REPO), capture_output=True,
+                            text=True, encoding="utf-8").stdout
+    _run([sys.executable, "-X", "utf8", "-m", "kernel.runner"], REPO)
+    after = subprocess.run(["git", "status", "--porcelain"], cwd=str(REPO), capture_output=True,
+                           text=True, encoding="utf-8").stdout
+    assert before == after, "러너가 작업 트리를 바꿨다 — 게이트가 파일을 쓴다:\n" + after
+
+
 def test_hook_reports_kernel_crash_as_gate_error() -> None:
     """커널이 터지면 ⑨ 는 exit 1 과 '크래시' 문구다 — 트레이스백을 규칙 위반으로 포장하지 않는다."""
     hook = (HOOKS / "check_file_rules.py").read_text(encoding="utf-8")
@@ -261,6 +274,7 @@ def demo() -> None:
                   test_hook_reports_kernel_crash_as_gate_error,
                   test_hooks_do_not_block_on_broken_payload,
                   test_runner_reports_profile_shape, test_diagram_engine_delivers_harness_architecture,
+                  test_runner_leaves_tree_clean,
                   test_runner_output_same_for_lf_and_crlf, test_fresh_install_is_green):
         check()
         print(f"  [OK] {check.__name__}")

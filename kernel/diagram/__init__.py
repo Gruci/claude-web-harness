@@ -117,7 +117,8 @@ def pin_revision(source: Path) -> str:
 
 
 def validate(kind: str, source: Path) -> dict[str, object]:
-    pin_revision(source)
+    """판정만 한다. 정본을 되쓰지 않는다 — 게이트가 Stop 훅에서 이걸 부르므로, 여기서 revision 을
+    찍으면 커밋된 정본이 세션 종료 때마다 더럽혀진다(실제로 났던 사고, `dev/LESSONS.md` §23)."""
     return _run(["validate", kind, str(source), "--repo-root", str(ROOT)])
 
 
