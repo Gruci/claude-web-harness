@@ -412,7 +412,15 @@ python -X utf8 tests/run_golden.py --bare   # 설정 부재 기준 대조
 
 ### 아키텍처 그림 — 검증되는 그림만 그림입니다
 
-`docs/architecture/`에 구조·흐름·시퀀스 그림의 정본(JSON)과 렌더된 HTML이 함께 있습니다. 상자마다 실제 소스 파일과 행 범위가 박혀 있고, 뷰어에서 상자를 누르면 그 코드가 열립니다. 검사 48이 매 저장·종료 때 그림과 실물을 대조합니다 — 파일 이름을 바꾸고 그림을 안 고치면 세션이 끝나지 않습니다. 구조를 바꾸는 설계서에는 변경 전후 그림(델타)이 붙습니다. 렌더 엔진은 저장소 안에 들어 있어 보는 쪽은 아무것도 설치하지 않습니다.
+아래 넷은 이 하네스 자신의 그림입니다. 정본 JSON에서 렌더한 SVG이고, 저장소를 받아 같은 이름의 `.html`을 열면 상자를 눌러 소스 파일·행 범위로 이동하고, 가이드 뷰를 재생하고, 두 상자 사이 경로를 찾을 수 있습니다.
+
+| 구조 — 훅이 커널을 부르고, 커널은 프로파일로만 프로젝트를 안다 | 훅 발화 순서 — 세션 시작부터 종료까지 |
+|:--|:--|
+| ![구조](docs/architecture/harness.architecture.svg) | ![훅 발화 순서](docs/architecture/hooks.workflow.svg) |
+| **Edit 한 번의 여정** — 저장 → 훅 → 러너 → 게이트 → 피드백 | **훅별 규칙 지도** — 배선에서 생성. 어느 훅이 언제 무엇을 검사하나 |
+| ![Edit 한 번의 여정](docs/architecture/edit-trip.sequence.svg) | ![훅별 규칙 지도](docs/architecture/rules.workflow.svg) |
+
+`docs/architecture/`에 구조·흐름·시퀀스 그림의 정본(JSON)과 렌더된 HTML·SVG가 함께 있습니다. 규칙 지도는 손으로 그리지 않고 `python -X utf8 -m kernel.diagram rules`가 훅 배선과 게이트 목록에서 만듭니다. 상자마다 실제 소스 파일과 행 범위가 박혀 있고, 뷰어에서 상자를 누르면 그 코드가 열립니다. 검사 48이 매 저장·종료 때 그림과 실물을 대조합니다 — 파일 이름을 바꾸고 그림을 안 고치면 세션이 끝나지 않습니다. 구조를 바꾸는 설계서에는 변경 전후 그림(델타)이 붙습니다. 렌더 엔진은 저장소 안에 들어 있어 보는 쪽은 아무것도 설치하지 않습니다.
 
 ```bash
 python -X utf8 -m kernel.diagram validate architecture docs/architecture/<이름>.architecture.json

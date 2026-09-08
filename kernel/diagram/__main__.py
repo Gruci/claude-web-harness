@@ -3,6 +3,8 @@
   validate <타입> <정본.json>                 진단만. 수정 루프에서 반복한다
   deliver  <타입> <정본.json> [출력.html]     최종 렌더 + 영수증
   compare  <base.json> <head.json> <출력.html>  architecture 델타
+  rules                                        훅 배선·게이트 목록에서 규칙 지도 생성 + deliver
+  svg      <정본.json>                          렌더된 HTML 에서 독립 SVG 만 다시 뽑기
   doctor                                       node·엔진 상태
 
 exit 는 엔진 결과를 따른다 — 0 통과, 1 진단, 2 인자 오류·도구 없음.
@@ -54,7 +56,22 @@ def main(argv: list[str]) -> int:
         code = _report(receipt.get("engine", receipt) if receipt.get("ok") else receipt)
         if code == 0:
             print(f"영수증: {diagram.receipt_path(Path(rest[1]).resolve()).name} · revision {receipt.get('revision')}")
+            undefined = receipt.get("svg_undefined_vars") or []
+            print(f"SVG: {diagram.output_path(Path(rest[1]).resolve()).with_suffix('.svg').name}"
+                  + (f" — 정의 안 된 CSS 변수: {' '.join(str(v) for v in undefined)}" if undefined else ""))
         return code
+    if command == "rules" and not rest:
+        from kernel.diagram import rules
+        source = rules.write()
+        print(f"생성: {source.relative_to(diagram.ROOT).as_posix()}")
+        return main(["deliver", "workflow", str(source)])
+    if command == "svg" and len(rest) == 1:
+        from kernel.diagram import svg
+        source = Path(rest[0]).resolve()
+        undefined = svg.export(diagram.output_path(source), diagram.output_path(source).with_suffix(".svg"))
+        print(f"SVG: {diagram.output_path(source).with_suffix('.svg').name}"
+              + (f" — 정의 안 된 CSS 변수 {len(undefined)}개: {' '.join(sorted(undefined))}" if undefined else ""))
+        return 1 if undefined else 0
     if command == "compare" and len(rest) == 3:
         return _report(diagram.compare(Path(rest[0]).resolve(), Path(rest[1]).resolve(),
                                        Path(rest[2]).resolve()))

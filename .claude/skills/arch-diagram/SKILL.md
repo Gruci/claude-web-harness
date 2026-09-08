@@ -34,7 +34,7 @@ python -X utf8 -m kernel.diagram validate <타입> docs/architecture/<이름>.<�
 python -X utf8 -m kernel.diagram deliver <타입> docs/architecture/<이름>.<타입>.json
 ```
 
-HTML 과 `.receipt.json` 이 생긴다. 셋(정본·HTML·영수증)을 같이 `git add` 한다. 통과한 정본은 이후 손대지 않는다 — 손댔으면 다시 deliver 다.
+HTML 과 `.svg` 와 `.receipt.json` 이 생긴다. 넷(정본·HTML·SVG·영수증)을 같이 `git add` 한다. 통과한 정본은 이후 손대지 않는다 — 손댔으면 다시 deliver 다. 훅이나 게이트를 바꿨으면 `python -X utf8 -m kernel.diagram rules` 로 규칙 지도도 다시 만든다 — 그 정본은 손으로 고치지 않는다.
 
 ## 5. 델타 — 구조가 바뀌는 plan 일 때
 

@@ -32,8 +32,11 @@
 docs/architecture/
   <이름>.<타입>.json           정본
   <이름>.<타입>.html           deliver 산출물 — 커밋한다. 보는 쪽은 아무것도 설치하지 않는다
+  <이름>.<타입>.svg            같은 렌더에서 뽑은 독립 SVG — README 가 싣는다. GitHub 은 HTML 을 안 그린다
   <이름>.<타입>.receipt.json   하네스 영수증 — 커밋한다. 검사 48 이 정본 해시와 대조한다
 ```
+
+`rules.workflow.json` 은 예외로 **생성물**이다. `python -X utf8 -m kernel.diagram rules` 가 `.claude/settings.json` 배선과 러너 게이트 목록에서 만들고 바로 deliver 한다. 훅·게이트가 바뀌면 다시 돌린다 — 손으로 고치지 않는다.
 
 영수증은 엔진 receipt 를 감싼 것이고 `spec_sha256_lf`(정본의 LF 정규화 해시)·`revision`(deliver 시점 HEAD)·`validation` 을 갖는다. 정본만 고치고 deliver 를 안 하면 해시가 어긋나 걸린다.
 

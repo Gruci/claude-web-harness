@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "schema": 1,
+  "kind": "workflow",
+  "source": "docs/architecture/rules.workflow.json",
+  "output": "docs/architecture/rules.workflow.html",
+  "spec_sha256_lf": "b90e9a214ce2677b3e0771838b0d75743c54cf7f2dceb7e7a8eb9106357aa01c",
+  "revision": "b8f18d95ace2864b30833b31f1aff4fe53d80900",
+  "delivered_at": "2026-09-09T02:47:55",
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "engine": {
+    "schemaVersion": 1,
+    "ok": true,
+    "command": "deliver",
+    "type": "workflow",
+    "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\rules.workflow.json",
+    "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\rules.workflow.html",
+    "specification": {
+      "sha256": "e199fa48c2a5955b74bf09c5394cfeb1fcdb28526ff108522112a70c98e9c87b",
+      "bytes": 19887
+    },
+    "artifact": {
+      "sha256": "f3c2382caa1632c299d77f78bf2069e87be2400e8616d42108a9fe052b8de6c8",
+      "bytes": 854803
+    },
+    "validation": {
+      "checksPassed": 9,
+      "checkCount": 9,
+      "compositionProfile": "showcase",
+      "compositionStatus": "pass",
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

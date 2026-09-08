@@ -135,6 +135,21 @@ def test_diagram_engine_delivers_harness_architecture() -> None:
         assert "harness-source-evidence-data" in out.read_text(encoding="utf-8"), "소스 증거가 HTML 에 안 실렸다"
 
 
+def test_rules_map_matches_wiring() -> None:
+    """규칙 지도는 배선에서 나온다 — settings.json 의 훅 항목 수와 노드 수가 같고, 노드마다 소스가 있다."""
+    sys.path.insert(0, str(REPO))
+    from kernel.diagram import rules          # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    entries = rules._entries()
+    doc = rules.build()
+    nodes = doc["nodes"]
+    assert len(nodes) == len(entries), f"훅 {len(entries)}개인데 노드 {len(nodes)}개"
+    assert all(node.get("sources") for node in nodes), "소스 없는 노드가 있다"
+    assert all(0 <= int(node["col"]) <= rules.MAX_COL for node in nodes), "col 상한을 넘겼다"
+    lane_ids = {lane["id"] for lane in doc["lanes"]}
+    assert all(node["lane"] in lane_ids for node in nodes), "레인 없는 노드"
+
+
 def test_runner_leaves_tree_clean() -> None:
     """전 게이트를 돌려도 추적 파일이 하나도 안 바뀐다 — 게이트는 판정만 한다(§23).
 
@@ -274,7 +289,7 @@ def demo() -> None:
                   test_hook_reports_kernel_crash_as_gate_error,
                   test_hooks_do_not_block_on_broken_payload,
                   test_runner_reports_profile_shape, test_diagram_engine_delivers_harness_architecture,
-                  test_runner_leaves_tree_clean,
+                  test_runner_leaves_tree_clean, test_rules_map_matches_wiring,
                   test_runner_output_same_for_lf_and_crlf, test_fresh_install_is_green):
         check()
         print(f"  [OK] {check.__name__}")

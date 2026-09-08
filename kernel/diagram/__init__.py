@@ -143,6 +143,9 @@ def deliver(kind: str, source: Path, output: Path | None = None) -> dict[str, ob
     }
     receipt_path(source).write_text(json.dumps(wrapped, ensure_ascii=False, indent=2) + "\n",
                                     encoding="utf-8")
+    # README 가 싣는 독립 SVG — HTML 과 같은 렌더에서 뽑으므로 둘이 어긋날 수 없다.
+    from kernel.diagram import svg as _svg
+    wrapped["svg_undefined_vars"] = sorted(_svg.export(target, target.with_suffix(".svg")))
     return wrapped
 
 

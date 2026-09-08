@@ -26,8 +26,9 @@ harness_gates/     이 레포 전용 게이트 (선택)
 | 구조 | 세션 → 훅·규칙·스킬 → 러너 → 게이트·팩·프로파일 → 관찰·테스트·엔진 | `docs/architecture/harness.architecture.html` |
 | 훅 발화 순서 | 위 표 ①~⑱ 를 레인·단계로. 가이드 뷰 3개, `?present=1&play=1` 로 재생 | `docs/architecture/hooks.workflow.html` |
 | Edit 한 번의 여정 | 저장 → ⑨ → 러너 → 게이트 → 관찰 → 피드백 → 재수정 | `docs/architecture/edit-trip.sequence.html` |
+| 훅별 규칙 지도 | 어느 훅이 언제 무엇을 검사하나 — `settings.json` 배선과 게이트 목록에서 **생성**. 훅이 바뀌면 `python -X utf8 -m kernel.diagram rules` | `docs/architecture/rules.workflow.html` |
 
-규약은 `dev/DIAGRAM.md`, 만드는 절차는 `arch-diagram` 스킬이다.
+같은 이름의 `.svg` 가 README 에 실린다. 규약은 `dev/DIAGRAM.md`, 만드는 절차는 `arch-diagram` 스킬이다.
 
 ## 훅 발화 순서
 
