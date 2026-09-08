@@ -35,7 +35,6 @@ worktree 가 존재하면 **공유 메인 체크아웃은 자동으로 구현 �
 
 | 과업(브랜치) #sid | 스코프 요약 | 시작 | 상태 |
 |---|---|---|---|
-| feat/harness-update-path #sid:a8386cf2 | 하네스 업데이트 경로 — KERNEL_VERSION·PROFILE_SCHEMA·--check-update·--upgrade·세션 시작 고지 | 2026-09-09 | 진행 |
 <!-- 예시:
 | feat/peers-progressive #sid:a1b2c3d4 | peers AUM 탭 점진 로딩 — API 분할 + 소비 훅 개편 | 2026-07-28 | 진행 |
 -->
