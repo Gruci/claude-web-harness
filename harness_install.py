@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 
@@ -77,7 +78,9 @@ def _version_tuple(text: str) -> tuple[int, ...]:
 def upstream_version() -> str:
     """원류 기본 브랜치의 KERNEL_VERSION. 파일 하나만 받는다 — clone 은 --upgrade 때만."""
     raw = UPSTREAM.replace("https://github.com/", "https://raw.githubusercontent.com/")
-    with urllib.request.urlopen(f"{raw}/{UPSTREAM_BRANCH}/kernel/__init__.py", timeout=10) as response:
+    # 캐시 무력화 — raw CDN 이 몇 분 전 판을 돌려주면 "최신" 오판이 난다
+    url = f"{raw}/{UPSTREAM_BRANCH}/kernel/__init__.py?t={int(time.time())}"
+    with urllib.request.urlopen(url, timeout=10) as response:
         body = response.read().decode("utf-8", "replace")
     found = _VERSION_RE.search(body)
     return found.group(1) if found else ""
