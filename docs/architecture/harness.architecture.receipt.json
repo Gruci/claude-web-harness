@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "kind": "architecture",
+  "source": "docs/architecture/harness.architecture.json",
+  "output": "docs/architecture/harness.architecture.html",
+  "spec_sha256_lf": "a73be1ad77b35e0169d744c964a401d7e7145ef8eb0a343539b407f1500bc223",
+  "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a",
+  "delivered_at": "2026-09-09T02:07:30",
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "engine": {
+    "schemaVersion": 1,
+    "ok": true,
+    "command": "deliver",
+    "type": "architecture",
+    "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\harness.architecture.json",
+    "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\harness.architecture.html",
+    "specification": {
+      "sha256": "e7e0b999662a983a51a17ef1bcdfea7590d11f205fe9c062dad22043ef3ed0e3",
+      "bytes": 10793
+    },
+    "artifact": {
+      "sha256": "9c609360798dd47cdab0843c11f93f219366a8192930b71b6896f531cfde92a9",
+      "bytes": 821767
+    },
+    "validation": {
+      "checksPassed": 9,
+      "checkCount": 9,
+      "compositionProfile": "showcase",
+      "compositionStatus": "pass",
+      "errors": 0,
+      "warnings": 0
+    },
+    "evidence": {
+      "verified": true,
+      "repository": "https://github.com/Gruci/claude-web-harness",
+      "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a",
+      "references": 27
+    }
+  }
+}

@@ -6,3 +6,4 @@
 {"ts": "2026-08-21T16:25:30", "sid": "39f60753", "hook": "check_workflow_script", "kind": "workflow_model", "gate": "", "file": "", "msg": "model 미지정 agent() 1건 — 줄 [8]"}
 {"ts": "2026-09-07T14:48:21", "sid": "f3a88f1f", "hook": "check_coding_rules", "kind": "gate", "gate": "file_placement", "file": "upgrade/", "msg": "upgrade/: 도메인 패키지에 __init__.py 없음 — 생성하라"}
 {"ts": "2026-09-07T14:48:21", "sid": "f3a88f1f", "hook": "check_coding_rules", "kind": "gate", "gate": "file_placement", "file": "upgrade/", "msg": "upgrade/: 도메인 정본 MD 없음 — upgrade/UPGRADE.md 를 만들고 허브에서 링크하라 (고아 MD 게이트가 도달성을 본다)"}
+{"ts": "2026-09-09T01:42:56", "sid": "a8386cf2", "hook": "check_file_rules", "kind": "gate", "gate": "md_style", "file": "docs/tasks/plan_아키텍처_다이어그램.md", "msg": "docs/tasks/plan_아키텍처_다이어그램.md:109: ⑬b 한 줄에 설명 붙은 나열 13개 — 표나 불릿으로 쪼개라"}

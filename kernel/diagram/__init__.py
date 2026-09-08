@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 from datetime import datetime
@@ -34,6 +35,7 @@ NODE_KEY = {"architecture": "components", "workflow": "nodes", "sequence": "part
             "dataflow": "nodes", "lifecycle": "states"}
 RECEIPT_SUFFIX = ".receipt.json"
 ENGINE_TIMEOUT_SEC = 120
+_REVISION = re.compile(r'("revision"\s*:\s*")[0-9a-fA-F]{40}(")')
 
 
 def node_path() -> str | None:
@@ -104,8 +106,13 @@ def pin_revision(source: Path) -> str:
     head = _head_revision()
     if not isinstance(repository, dict) or not head or repository.get("revision") == head:
         return head if isinstance(repository, dict) else ""
-    repository["revision"] = head
-    source.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # 값만 바꾼다 — json.dumps 로 되쓰면 사람이 잡은 줄 배치가 통째로 풀린다.
+    text = source.read_text(encoding="utf-8")
+    rewritten, count = _REVISION.subn(lambda m: f"{m.group(1)}{head}{m.group(2)}", text, count=1)
+    if count != 1:
+        repository["revision"] = head
+        rewritten = json.dumps(doc, ensure_ascii=False, indent=2) + "\n"
+    source.write_text(rewritten, encoding="utf-8")
     return head
 
 
@@ -122,6 +129,7 @@ def deliver(kind: str, source: Path, output: Path | None = None) -> dict[str, ob
     if not receipt.get("ok"):
         return receipt
     wrapped: dict[str, object] = {
+        "ok": True,
         "schema": 1,
         "kind": kind,
         "source": source.relative_to(ROOT).as_posix() if source.is_absolute() else str(source),

@@ -62,7 +62,7 @@ def test_fresh_install_is_green() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "proj"
         for rel in tracked:
-            if not rel or rel.startswith("docs/"):
+            if not rel or rel.startswith("docs/tasks/"):
                 continue
             src = REPO / rel
             if not src.is_file():
@@ -86,6 +86,7 @@ def test_fresh_install_is_green() -> None:
         assert (work / "harness_trace.jsonl").read_text(encoding="utf-8").strip() == "", (
             "하네스 레포 자신의 관찰 기록이 새 프로젝트에 딸려갔다")
         assert not (work / "harness_surface.txt").exists(), "하네스 자신의 표면 동결본이 딸려갔다"
+        assert not (work / "docs" / "architecture").exists(), "하네스 자신의 그림이 새 프로젝트에 딸려갔다"
 
         typo = _run([sys.executable, "-X", "utf8", "harness_install.py", "--dryrun"], work)
         assert typo.returncode == 2, "오타 옵션 --dryrun 이 거절되지 않고 실행됐다"
@@ -107,6 +108,31 @@ def test_runner_reports_profile_shape() -> None:
     assert "[FAIL] 프로파일 형식 (profile_shape)" in output, output
     assert "모르는 설정 이름 LAYER" in output, output
     assert "SCOPE['exclude_all'] 는 튜플이어야 한다" in output, output
+
+
+def test_diagram_engine_delivers_harness_architecture() -> None:
+    """엔진 실물 — 하네스 자신의 architecture 정본을 스크래치로 deliver 해 9/9 showcase 를 본다.
+
+    골든은 엔진 위임을 [TOOL] 로 고정하므로 엔진이 실제로 도는지는 여기서만 확인한다.
+    node 가 없으면 skipped 로 찍고 통과 처리하지 않는다 — 건너뛴 것은 건너뛴 것이다.
+    """
+    sys.path.insert(0, str(REPO))
+    from kernel import diagram                # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    source = REPO / "docs" / "architecture" / "harness.architecture.json"
+    assert source.exists(), "하네스 자신의 architecture 정본이 없다"
+    if not diagram.node_path():
+        print("  [SKIPPED] node 없음 — 엔진 실물 테스트를 건너뛴다(통과 아님)")
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        receipt = diagram.validate("architecture", source)
+        assert receipt.get("ok"), "\n".join(diagram.diagnostics_lines(receipt))
+        out = Path(tmp) / "harness.html"
+        engine = diagram._run(["deliver", "architecture", str(source), str(out), "--repo-root", str(REPO)])
+        validation = engine.get("validation") or {}
+        assert engine.get("ok") and validation.get("checksPassed") == validation.get("checkCount"), (
+            "\n".join(diagram.diagnostics_lines(engine)))
+        assert "archify-source-evidence-data" in out.read_text(encoding="utf-8"), "소스 증거가 HTML 에 안 실렸다"
 
 
 def test_hook_reports_kernel_crash_as_gate_error() -> None:
@@ -234,7 +260,7 @@ def demo() -> None:
     for check in (test_skill_and_agent_frontmatter, test_readme_versions_agree,
                   test_hook_reports_kernel_crash_as_gate_error,
                   test_hooks_do_not_block_on_broken_payload,
-                  test_runner_reports_profile_shape,
+                  test_runner_reports_profile_shape, test_diagram_engine_delivers_harness_architecture,
                   test_runner_output_same_for_lf_and_crlf, test_fresh_install_is_green):
         check()
         print(f"  [OK] {check.__name__}")

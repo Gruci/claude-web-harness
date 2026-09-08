@@ -19,6 +19,16 @@ harness_gates/     이 레포 전용 게이트 (선택)
 아래가 위를 강제한다. 사람이 어겨도 훅이 막고, 훅이 무엇을 막을지는 프로파일 한 파일이
 정한다. 그래서 다른 프로젝트로 옮길 때 고치는 파일도 `harness_profile.py` 하나다.
 
+이 구조의 그림은 `docs/architecture/` 에 있다 — 상자마다 소스 파일·행 범위가 박혀 있고 검사 48 이 실물과 대조한다.
+
+| 그림 | 무엇 | 열기 |
+|:--|:--|:--|
+| 구조 | 세션 → 훅·규칙·스킬 → 러너 → 게이트·팩·프로파일 → 관찰·테스트·엔진 | `docs/architecture/harness.architecture.html` |
+| 훅 발화 순서 | 위 표 ①~⑱ 를 레인·단계로. 가이드 뷰 3개, `?present=1&play=1` 로 재생 | `docs/architecture/hooks.workflow.html` |
+| Edit 한 번의 여정 | 저장 → ⑨ → 러너 → 게이트 → 관찰 → 피드백 → 재수정 | `docs/architecture/edit-trip.sequence.html` |
+
+규약은 `dev/DIAGRAM.md`, 만드는 절차는 `arch-diagram` 스킬이다.
+
 ## 훅 발화 순서
 
 세션 시작부터 종료까지 시간순이다. **차단**은 exit 2 로 진행을 멈추고 모델에게 피드백을 준다.

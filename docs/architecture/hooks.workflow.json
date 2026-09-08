@@ -1,0 +1,361 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "훅 발화 순서 — 세션 시작부터 종료까지",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "repository": {
+      "url": "https://github.com/Gruci/claude-web-harness",
+      "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a"
+    },
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "편집 한 번의 정상 경로",
+        "focus": [
+          "start",
+          "growth",
+          "pretool",
+          "write_gate",
+          "editing_lock",
+          "coding_rules",
+          "stop_rest"
+        ],
+        "note": "세션 시작 훅에서 종료 훅까지, 아무것도 막히지 않을 때의 순서다."
+      },
+      {
+        "id": "block-loop",
+        "label": "차단과 재수정",
+        "focus": [
+          "pretool",
+          "write_gate",
+          "coding_rules"
+        ],
+        "note": "저장 시점 ⑨ 가 막으면 그 턴에 고친다. 종료 시점 ⑬ 이 막으면 세션이 안 끝난다."
+      },
+      {
+        "id": "stop-checks",
+        "label": "종료 시점 검사",
+        "focus": [
+          "editing_lock",
+          "coding_rules",
+          "stop_rest"
+        ],
+        "note": "추론 판정은 경고, 직접 관측은 차단 — 단계는 근거가 정한다."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "session",
+      "label": "세션"
+    },
+    {
+      "id": "tool",
+      "label": "툴 이벤트"
+    },
+    {
+      "id": "stop",
+      "label": "종료",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "boot",
+      "label": "시작·프롬프트",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "edit",
+      "label": "툴 전·후",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "end",
+      "label": "종료",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "groups": [],
+  "mainPath": [
+    "start",
+    "growth",
+    "pretool",
+    "write_gate",
+    "editing_lock",
+    "coding_rules",
+    "stop_rest"
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "session",
+      "col": 0,
+      "type": "frontend",
+      "label": "①~⑥ 세션 시작",
+      "sublabel": "페르소나·git·정비",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/lazy-persona.md",
+          "label": "① 페르소나"
+        },
+        {
+          "path": ".claude/hooks/git_staleness.py",
+          "line": 42,
+          "end_line": 67,
+          "label": "⑤ 정렬"
+        },
+        {
+          "path": ".claude/hooks/check_maintenance.py",
+          "line": 22,
+          "end_line": 46,
+          "label": "⑥ 정비"
+        }
+      ]
+    },
+    {
+      "id": "growth",
+      "lane": "session",
+      "col": 1,
+      "type": "backend",
+      "label": "⑦ 컨텍스트 성장",
+      "sublabel": "transcript 크기",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_context_growth.py",
+          "line": 21,
+          "end_line": 56,
+          "label": "main"
+        }
+      ]
+    },
+    {
+      "id": "pretool",
+      "lane": "tool",
+      "col": 2,
+      "type": "security",
+      "label": "⑧ 툴 전 게이트",
+      "sublabel": "Read 다이어트 · 셸 계약",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_context_diet.py",
+          "line": 48,
+          "end_line": 85,
+          "label": "⑧ Read"
+        },
+        {
+          "path": ".claude/hooks/check_bash_write.py",
+          "line": 286,
+          "end_line": 351,
+          "label": "⑧-1 셸"
+        },
+        {
+          "path": ".claude/hooks/check_worktree_name.py",
+          "line": 125,
+          "end_line": 156,
+          "label": "⑧-2 worktree"
+        }
+      ]
+    },
+    {
+      "id": "write_gate",
+      "lane": "tool",
+      "col": 3,
+      "type": "security",
+      "label": "⑨ 저장 시점 게이트",
+      "sublabel": "kernel.runner --file",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_file_rules.py",
+          "line": 35,
+          "end_line": 111,
+          "label": "훅"
+        },
+        {
+          "path": "kernel/runner.py",
+          "line": 372,
+          "end_line": 397,
+          "label": "러너"
+        }
+      ]
+    },
+    {
+      "id": "agent_return",
+      "lane": "tool",
+      "col": 4,
+      "type": "backend",
+      "label": "⑪ 에이전트 반환",
+      "sublabel": "크기 상한",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_agent_return.py",
+          "line": 38,
+          "end_line": 77,
+          "label": "main"
+        }
+      ]
+    },
+    {
+      "id": "editing_lock",
+      "lane": "stop",
+      "col": 3,
+      "type": "backend",
+      "label": "⑫ 보드 잔존",
+      "sublabel": "경고 — 추론",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_editing_lock.py",
+          "line": 178,
+          "end_line": 218,
+          "label": "main"
+        },
+        {
+          "path": "EDITING.md",
+          "label": "샘플"
+        }
+      ]
+    },
+    {
+      "id": "coding_rules",
+      "lane": "stop",
+      "col": 4,
+      "type": "security",
+      "label": "⑬ 전량 게이트",
+      "sublabel": "차단 — 직접 관측",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_coding_rules.py",
+          "line": 40,
+          "end_line": 81,
+          "label": "main"
+        },
+        {
+          "path": "tests/golden/full.txt",
+          "label": "샘플"
+        }
+      ]
+    },
+    {
+      "id": "stop_rest",
+      "lane": "stop",
+      "col": 5,
+      "type": "backend",
+      "label": "⑭~⑱ 종료 검사",
+      "sublabel": "원격·잔해·UI 카피",
+      "width": 140,
+      "sources": [
+        {
+          "path": ".claude/hooks/check_git_remote.py",
+          "line": 71,
+          "end_line": 102,
+          "label": "⑭ 원격"
+        },
+        {
+          "path": ".claude/hooks/check_task_residue.py",
+          "line": 89,
+          "end_line": 104,
+          "label": "⑰ 산출물"
+        },
+        {
+          "path": ".claude/hooks/check_ui_copy.py",
+          "line": 200,
+          "end_line": 247,
+          "label": "⑱ UI 카피"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-growth",
+      "from": "start",
+      "to": "growth",
+      "label": "프롬프트"
+    },
+    {
+      "id": "growth-pretool",
+      "from": "growth",
+      "to": "pretool",
+      "label": "툴 호출"
+    },
+    {
+      "id": "pretool-write",
+      "from": "pretool",
+      "to": "write_gate",
+      "label": "Edit 저장",
+      "variant": "emphasis"
+    },
+    {
+      "id": "write-agent",
+      "from": "write_gate",
+      "to": "agent_return",
+      "label": "위임 시",
+      "variant": "dashed"
+    },
+    {
+      "id": "write-lock",
+      "from": "write_gate",
+      "to": "editing_lock",
+      "label": "턴 종료",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lock-rules",
+      "from": "editing_lock",
+      "to": "coding_rules"
+    },
+    {
+      "id": "rules-rest",
+      "from": "coding_rules",
+      "to": "stop_rest",
+      "label": "통과"
+    },
+    {
+      "id": "rules-back",
+      "from": "coding_rules",
+      "to": "pretool",
+      "label": "차단 → 고치고 다시",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "차단 (exit 2)",
+      "items": [
+        "직접 관측 — 검사기가 위반을 뱉었거나 파일이 실제로 거기 있다",
+        "⑧ ⑧-1~4 ⑨ ⑪ ⑬ ⑭ ⑯ ⑰"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "경고 (exit 1)",
+      "items": [
+        "추론 — git 상태로 '끝났을 것'을 추측한다",
+        "⑫ ⑫-1 ⑮"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "통과",
+      "items": [
+        "판정 불능 · 모델이 지금 고칠 수 없는 조건",
+        "훅 오작동은 규칙 위반이 아니다"
+      ]
+    }
+  ]
+}
