@@ -4,9 +4,9 @@
   "kind": "workflow",
   "source": "docs/architecture/rules.workflow.json",
   "output": "docs/architecture/rules.workflow.html",
-  "spec_sha256_lf": "b90e9a214ce2677b3e0771838b0d75743c54cf7f2dceb7e7a8eb9106357aa01c",
-  "revision": "b8f18d95ace2864b30833b31f1aff4fe53d80900",
-  "delivered_at": "2026-09-09T02:47:55",
+  "spec_sha256_lf": "1660c90b996c3ff9bb3bbde4e7bfaeffe3aa0f33798ede17d31cff1d5b8bacff",
+  "revision": "08e3233c312162ea865977cff8276d50a4586f85",
+  "delivered_at": "2026-09-09T02:58:34",
   "validation": {
     "checksPassed": 9,
     "checkCount": 9,
@@ -23,12 +23,12 @@
     "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\rules.workflow.json",
     "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\rules.workflow.html",
     "specification": {
-      "sha256": "e199fa48c2a5955b74bf09c5394cfeb1fcdb28526ff108522112a70c98e9c87b",
-      "bytes": 19887
+      "sha256": "0ddcc1858cacad499d346a6b04d1d659ae191829ce4f2c55a5f08966b7088888",
+      "bytes": 19879
     },
     "artifact": {
-      "sha256": "f3c2382caa1632c299d77f78bf2069e87be2400e8616d42108a9fe052b8de6c8",
-      "bytes": 854803
+      "sha256": "1fc87425be1508a7d470ac529cd2653453f7bd7106bf880fe3ba1331efa603a7",
+      "bytes": 854787
     },
     "validation": {
       "checksPassed": 9,

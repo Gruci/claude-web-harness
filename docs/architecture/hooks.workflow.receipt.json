@@ -1,11 +1,12 @@
 {
+  "ok": true,
   "schema": 1,
   "kind": "workflow",
   "source": "docs/architecture/hooks.workflow.json",
   "output": "docs/architecture/hooks.workflow.html",
-  "spec_sha256_lf": "2a99cef676efd80c6230c3aecec087406bc00a38dffaa8d1e328cee76f5256ce",
-  "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a",
-  "delivered_at": "2026-09-09T02:07:37",
+  "spec_sha256_lf": "d7bc48c26fea7a9f235e0ebf43c38d66fff74721822dba13c03f289a64b287b7",
+  "revision": "08e3233c312162ea865977cff8276d50a4586f85",
+  "delivered_at": "2026-09-09T02:58:08",
   "validation": {
     "checksPassed": 9,
     "checkCount": 9,
@@ -22,12 +23,12 @@
     "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\hooks.workflow.json",
     "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\hooks.workflow.html",
     "specification": {
-      "sha256": "fe1a1a165c2cfb746ac040927609d4e579efa51cef420bd7e4b6e7a031337834",
-      "bytes": 8554
+      "sha256": "9eedabc7d79d86537b8c2f9942d37c32e3c9060701c618091bd192c4abfb1308",
+      "bytes": 8553
     },
     "artifact": {
-      "sha256": "122f0d44b46b1ed11d052af3f734c66497a79c0af696fc9e7b9af45589ec8140",
-      "bytes": 814613
+      "sha256": "078514d049bf24551dfe9a811605822441f40e01f167294145e7d28434fd9fd7",
+      "bytes": 829333
     },
     "validation": {
       "checksPassed": 9,
@@ -36,12 +37,6 @@
       "compositionStatus": "pass",
       "errors": 0,
       "warnings": 0
-    },
-    "evidence": {
-      "verified": true,
-      "repository": "https://github.com/Gruci/claude-web-harness",
-      "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a",
-      "references": 17
     }
   }
 }

@@ -133,11 +133,11 @@ svg[data-preset="blueprint"] .c-security-group,
         <path data-edge-from="pretooluse-context_diet" data-edge-to="posttooluse-file_rules" data-edge-label="다음 이벤트" data-edge-key="3" data-edge-id="pretooluse-context_diet--posttooluse-file_rules" data-composition-points="118,393;118,414;32,414;32,491;48,491" d="M 118 393 L 118 414 L 32 414 L 32 491 L 48 491" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="pretooluse-context_diet" data-edge-to="pretooluse-bash_write" data-edge-key="4" data-edge-id="pretooluse-context_diet--pretooluse-bash_write" data-composition-points="118,393;118,409;286,409;286,393" d="M 118 393 L 118 409 L 286 409 L 286 393" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="pretooluse-worktree_name" data-edge-to="pretooluse-workflow_script" data-edge-key="5" data-edge-id="pretooluse-worktree_name--pretooluse-workflow_script" data-composition-points="524,367;552,367" d="M 524 367 L 552 367" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-git_staleness" data-edge-to="sessionstart-maintenance" data-edge-key="6" data-edge-id="sessionstart-git_staleness--sessionstart-maintenance" data-composition-points="860,119;888,119" d="M 860 119 L 888 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-gitcheck" data-edge-to="sessionstart-harnesssetup" data-edge-key="7" data-edge-id="sessionstart-gitcheck--sessionstart-harnesssetup" data-composition-points="356,119;384,119" d="M 356 119 L 384 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-harnesssetup" data-edge-to="sessionstart-pythoncheck" data-edge-key="8" data-edge-id="sessionstart-harnesssetup--sessionstart-pythoncheck" data-composition-points="524,119;552,119" d="M 524 119 L 552 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-lazy-persona" data-edge-to="sessionstart-gitcheck" data-edge-key="9" data-edge-id="sessionstart-lazy-persona--sessionstart-gitcheck" data-composition-points="188,119;216,119" d="M 188 119 L 216 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-lazy-persona" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="10" data-edge-id="sessionstart-lazy-persona--userpromptsubmit-context_growth" data-composition-points="118,145;118,166;204,166;204,243;188,243" d="M 118 145 L 118 166 L 204 166 L 204 243 L 188 243" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="sessionstart-code-master" data-edge-to="sessionstart-gitcheck" data-edge-key="6" data-edge-id="sessionstart-code-master--sessionstart-gitcheck" data-composition-points="188,119;216,119" d="M 188 119 L 216 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-code-master" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="7" data-edge-id="sessionstart-code-master--userpromptsubmit-context_growth" data-composition-points="118,145;118,166;204,166;204,243;188,243" d="M 118 145 L 118 166 L 204 166 L 204 243 L 188 243" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="sessionstart-git_staleness" data-edge-to="sessionstart-maintenance" data-edge-key="8" data-edge-id="sessionstart-git_staleness--sessionstart-maintenance" data-composition-points="860,119;888,119" d="M 860 119 L 888 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-gitcheck" data-edge-to="sessionstart-harnesssetup" data-edge-key="9" data-edge-id="sessionstart-gitcheck--sessionstart-harnesssetup" data-composition-points="356,119;384,119" d="M 356 119 L 384 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-harnesssetup" data-edge-to="sessionstart-pythoncheck" data-edge-key="10" data-edge-id="sessionstart-harnesssetup--sessionstart-pythoncheck" data-composition-points="524,119;552,119" d="M 524 119 L 552 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="sessionstart-pythoncheck" data-edge-to="sessionstart-git_staleness" data-edge-key="11" data-edge-id="sessionstart-pythoncheck--sessionstart-git_staleness" data-composition-points="692,119;720,119" d="M 692 119 L 720 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="stop-coding_rules" data-edge-to="stop-git_remote" data-edge-key="12" data-edge-id="stop-coding_rules--stop-git_remote" data-composition-points="356,739;384,739" d="M 356 739 L 384 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="stop-editing_lock" data-edge-to="stop-coding_rules" data-edge-key="13" data-edge-id="stop-editing_lock--stop-coding_rules" data-composition-points="118,765;118,781;286,781;286,765" d="M 118 765 L 118 781 L 286 781 L 286 765" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
@@ -149,14 +149,14 @@ svg[data-preset="blueprint"] .c-security-group,
         <path data-edge-from="userpromptsubmit-context_growth" data-edge-to="pretooluse-context_diet" data-edge-label="다음 이벤트" data-edge-key="19" data-edge-id="userpromptsubmit-context_growth--pretooluse-context_diet" data-composition-points="118,269;118,290;32,290;32,367;48,367" d="M 118 269 L 118 290 L 32 290 L 32 367 L 48 367" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
 
         <!-- Nodes -->
-        <g id="node-sessionstart-lazy-persona" data-node-id="sessionstart-lazy-persona" data-node-label="lazy-persona" tabindex="0" role="button" aria-label="Focus lazy-persona, startup|resume|clear|compact, 세션 시작" aria-pressed="false" data-node-kind="backend" data-node-sublabel="startup|resume|clear|compact" data-node-context="세션 시작">
-          <title>lazy-persona · startup|resume|clear|compact · 세션 시작</title>
+        <g id="node-sessionstart-code-master" data-node-id="sessionstart-code-master" data-node-label="code-master" tabindex="0" role="button" aria-label="Focus code-master, startup|resume|clear|compact, 세션 시작" aria-pressed="false" data-node-kind="backend" data-node-sublabel="startup|resume|clear|compact" data-node-context="세션 시작">
+          <title>code-master · startup|resume|clear|compact · 세션 시작</title>
           <rect x="48" y="93" width="140" height="52" rx="6" class="c-mask"/>
           <rect x="48" y="93" width="140" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(54 99) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="118" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">lazy-persona</text>
+          <text data-node-label="" data-detail-anchor="" x="118" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">code-master</text>
           <text data-detail="context" x="118" y="131" class="t-muted" font-size="7.8" text-anchor="middle">startup|resume|clear|compact</text>
         </g>
 
@@ -414,13 +414,13 @@ svg[data-preset="blueprint"] .c-security-group,
 
 
 
-
-
-
-        <g data-detail="context" data-edge-from="sessionstart-lazy-persona" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="10" data-edge-id="sessionstart-lazy-persona--userpromptsubmit-context_growth">
+        <g data-detail="context" data-edge-from="sessionstart-code-master" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="7" data-edge-id="sessionstart-code-master--userpromptsubmit-context_growth">
           <rect x="129.6" y="146" width="62.8" height="14" rx="3" class="c-mask"/>
           <text x="161" y="156" class="t-backend" font-size="8" text-anchor="middle">다음 이벤트</text>
         </g>
+
+
+
 
 
 
