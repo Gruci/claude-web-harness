@@ -52,6 +52,8 @@ GATE_BASELINES: tuple[tuple[Path, str], ...] = (
 )
 
 
+KNOWN_FLAGS = frozenset({"--list", "--doctor", "--prune", "--dry-run", "--preset"})
+
 # 목록에 보여줄 순서. 흔한 것부터, 빈 서식은 마지막. 여기 없는 프리셋은 뒤에 이름순으로 붙는다.
 PRESET_ORDER = ("web_fastapi_react", "api_fastapi", "batch_python", DEFAULT_PRESET)
 
@@ -197,6 +199,7 @@ def install_profile(preset: str) -> bool:
         return False
     if target.exists():
         print(f"[프로파일] 딸려온 하네스 자기 프로파일을 이 프로젝트의 것으로 교체한다")
+        reset_shipped_state()
     source = PRESET_DIR / f"{preset}.py"
     if not source.exists():
         print(f"[프로파일] 프리셋 '{preset}' 없음. 쓸 수 있는 것: {' '.join(presets())}")
@@ -207,6 +210,31 @@ def install_profile(preset: str) -> bool:
     print("   → 레이어 이름을 실물에 맞추고, 아는 것부터 채워라. "
           "빈 항목은 조용히 통과하지 않고 [SKIP] 으로 찍힌다.")
     return True
+
+
+# 하네스 레포 자신의 상태 파일. 프로파일과 같이 딸려오지만 이 프로젝트의 것이 아니다 —
+# 관찰 기록은 남의 세션 것이라 첫 회고가 거짓 패턴을 읽고, 표면 동결본은 남의 면제 목록이다.
+SHIPPED_TRACE = "harness_trace.jsonl"
+SHIPPED_SURFACE = "harness_surface.txt"
+SHIPPED_DIAGRAMS = "docs/architecture"
+
+
+def reset_shipped_state() -> None:
+    """자기 프로파일을 교체하는 그 시점에만 부른다 — 이후 쌓이는 것은 이 프로젝트의 기록이다."""
+    trace = ROOT / SHIPPED_TRACE
+    if trace.exists():
+        trace.write_text("", encoding="utf-8")
+        print(f"[동봉 상태] {SHIPPED_TRACE} 비움 — 하네스 레포 자신의 관찰 기록이었다")
+    surface = ROOT / SHIPPED_SURFACE
+    if surface.exists():
+        surface.unlink()
+        print(f"[동봉 상태] {SHIPPED_SURFACE} 제거 — 하네스 레포 자신의 면제 동결본이었다. "
+              f"edit_surface 게이트를 켤 때 이 프로젝트의 표면으로 다시 뜬다")
+    diagrams = ROOT / SHIPPED_DIAGRAMS
+    if diagrams.is_dir():
+        shutil.rmtree(diagrams)
+        print(f"[동봉 상태] {SHIPPED_DIAGRAMS} 제거 — 하네스 자신의 그림이었다. "
+              f"이 프로젝트의 그림은 arch-diagram 스킬이 레이어에서 만든다")
 
 
 def install_gate_baselines() -> None:
@@ -274,6 +302,15 @@ def main(argv: list[str]) -> int:
     except Exception:
         pass
     args = set(argv)
+
+    # 모르는 옵션은 무시하지 않고 거절한다. `--dryrun` 오타가 실제 설치로 돌아 동결 파일을
+    # 덮어쓰는 것이 실사고 경로다 — 오타의 대가가 "아무 일 없음"이 아니라 "다른 일이 일어남"이다.
+    unknown = [a for a in argv if a not in KNOWN_FLAGS
+               and not (argv.index(a) > 0 and argv[argv.index(a) - 1] == "--preset")]
+    if unknown:
+        print(f"모르는 옵션: {' '.join(unknown)}")
+        print(f"쓸 수 있는 것: {' '.join(sorted(KNOWN_FLAGS))}")
+        return 2
 
     if "--list" in args:
         print_presets()

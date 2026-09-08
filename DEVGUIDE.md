@@ -16,6 +16,7 @@
 | React 프론트엔드 (Vite·TS·컴포넌트·빌드) | `frontend/FRONTEND.md` (프론트 스캐폴딩 시 생성) |
 | 테스트 전략 | `dev/TESTING.md` |
 | 관례 갈림길·공용 헬퍼 | `dev/CONVENTIONS.md` |
+| 아키텍처·흐름 그림 (`docs/architecture/`) | `dev/DIAGRAM.md` — 1:1 매핑 규약과 검사 48. 작성 계약은 `dev/DIAGRAM_AUTHORING.md` |
 
 ---
 

@@ -46,9 +46,89 @@ def _load() -> Any:
 
 _MOD = _load()
 
+# ── 프로파일 형식 검사 ────────────────────────────────────────────────────────
+#
+# 파이썬 모듈이라 오타가 예외를 안 낸다. `LAYER = {...}` 는 그냥 무시되고 그 게이트가 [SKIP]
+# 이 되며, `SCOPE["exclude_all"] = "tests/"` 처럼 튜플 자리에 문자열을 적으면 `tuple()` 이
+# 글자 단위로 쪼개 `startswith(("t","e","s",...))` 가 돼 **소스 대부분이 조용히 검사에서
+# 빠진다.** 둘 다 화면엔 아무것도 안 뜬다. 그래서 강제(coerce)하기 전에 모양부터 본다.
+_KNOWN_NAMES = frozenset({
+    "STAGE", "LANG", "ARCH", "SYNTAX", "SOURCE_EXT", "UI_EXT", "PATTERNS", "NOT_APPLICABLE",
+    "LINTERS", "LAYERS", "FILES", "SYMBOLS", "VOCAB", "ALLOWLIST", "MD", "SCOPE", "HUBS",
+    "HUB_DOMAIN_MD_IMPLICIT", "DOC_SYNC", "BEHAVIOR_TESTED_ROOTS", "LOCAL_GATES", "HARNESS_MAP",
+    "ROOT_FILES", "LEGACY_PATHS", "LESSONS_DOC", "AGENT_MODEL_POLICY", "MAINTENANCE",
+    "VERSIONED_PROMPTS", "UI_COPY", "HARNESS_SELF", "HARNESS_ASSETS", "PRESET_SUMMARY",
+    "PRESET_FITS",
+})
+_STR_NAMES = ("STAGE", "LANG", "ARCH", "SYNTAX", "HARNESS_MAP", "LESSONS_DOC")
+_DICT_NAMES = ("LAYERS", "FILES", "SYMBOLS", "VOCAB", "ALLOWLIST", "MD", "SCOPE", "PATTERNS",
+               "NOT_APPLICABLE", "AGENT_MODEL_POLICY", "MAINTENANCE", "UI_COPY")
+_SEQ_NAMES = ("HUBS", "DOC_SYNC", "BEHAVIOR_TESTED_ROOTS", "LOCAL_GATES", "ROOT_FILES",
+              "SOURCE_EXT", "UI_EXT", "LINTERS", "LEGACY_PATHS", "VERSIONED_PROMPTS",
+              "HARNESS_ASSETS")
+_SUB_KEYS = {
+    "LAYERS": _LAYER_KEYS, "FILES": _FILE_KEYS, "SYMBOLS": _SYMBOL_KEYS, "VOCAB": _VOCAB_KEYS,
+    "ALLOWLIST": _ALLOWLIST_KEYS, "MD": _MD_KEYS, "SCOPE": ("exclude_all", "exclude_scratch"),
+}
+_SEQ_VALUED = ("VOCAB", "ALLOWLIST", "MD", "SCOPE")
+_PATH_VALUED = ("LAYERS", "FILES", "SYMBOLS")
+
+
+def _is_seq(value: object) -> bool:
+    return isinstance(value, (list, tuple))
+
+
+def _shape_errors(mod: Any) -> list[str]:
+    """프로파일 원문의 모양 위반. 이름 오타·문자열/튜플 혼동·모르는 하위 키."""
+    if mod is None:
+        return []
+    found: list[str] = []
+    for name in vars(mod):
+        if name.isupper() and len(name) > 1 and name not in _KNOWN_NAMES:
+            found.append(f"{PROFILE_FILE}: 모르는 설정 이름 {name} — 오타면 그 설정은 조용히 무시된다")
+    for name in _STR_NAMES:
+        value = getattr(mod, name, None)
+        if value is not None and not isinstance(value, str):
+            found.append(f"{PROFILE_FILE}: {name} 은 문자열이어야 한다 — {type(value).__name__}")
+    for name in _DICT_NAMES:
+        value = getattr(mod, name, None)
+        if value is not None and not isinstance(value, dict):
+            found.append(f"{PROFILE_FILE}: {name} 은 dict 여야 한다 — {type(value).__name__}")
+    for name in _SEQ_NAMES:
+        value = getattr(mod, name, None)
+        if value is not None and not _is_seq(value):
+            found.append(f"{PROFILE_FILE}: {name} 은 튜플이어야 한다 — 값 하나면 ('x',) 로 감싼다")
+    for name, keys in _SUB_KEYS.items():
+        mapping = getattr(mod, name, None)
+        if not isinstance(mapping, dict):
+            continue
+        for key, value in mapping.items():
+            if key not in keys:
+                found.append(f"{PROFILE_FILE}: {name}[{key!r}] 는 모르는 키다 — 쓸 수 있는 것: {' '.join(keys)}")
+            elif name in _SEQ_VALUED and value is not None and not _is_seq(value):
+                found.append(f"{PROFILE_FILE}: {name}[{key!r}] 는 튜플이어야 한다 — 문자열 하나면 글자 단위로 쪼개져 검사가 헛돈다")
+            elif name in _PATH_VALUED and value is not None and not isinstance(value, str):
+                found.append(f"{PROFILE_FILE}: {name}[{key!r}] 는 경로 문자열이거나 None 이어야 한다")
+    return found
+
+
+PROFILE_ERRORS: list[str] = _shape_errors(_MOD)
+
+
+def _dict(name: str) -> dict[str, Any]:
+    """모양이 틀린 선언은 없는 것으로 읽는다 — 형식 위반은 PROFILE_ERRORS 가 따로 찍는다."""
+    given = getattr(_MOD, name, None) if _MOD else None
+    return given if isinstance(given, dict) else {}
+
+
+def _seq(name: str, default: tuple = ()) -> tuple:
+    """튜플 자리의 문자열을 글자 단위로 쪼개지 않는다."""
+    given = getattr(_MOD, name, None) if _MOD else None
+    return tuple(given) if _is_seq(given) else default
+
 
 def _mapping(name: str, keys: tuple[str, ...], empty: object) -> dict[str, Any]:
-    given = getattr(_MOD, name, None) or {} if _MOD else {}
+    given = _dict(name)
     return {key: given.get(key) if empty is None else given.get(key, empty) for key in keys}
 
 
@@ -67,18 +147,18 @@ ALLOWLIST = _mapping("ALLOWLIST", _ALLOWLIST_KEYS, ())
 MD = _mapping("MD", _MD_KEYS, ())
 
 SCOPE = {
-    "exclude_all": tuple((getattr(_MOD, "SCOPE", None) or {}).get("exclude_all", ())) if _MOD else (),
-    "exclude_scratch": tuple((getattr(_MOD, "SCOPE", None) or {}).get("exclude_scratch", ())) if _MOD else (),
+    "exclude_all": tuple(_dict("SCOPE").get("exclude_all", ()))
+    if _is_seq(_dict("SCOPE").get("exclude_all", ())) else (),
+    "exclude_scratch": tuple(_dict("SCOPE").get("exclude_scratch", ()))
+    if _is_seq(_dict("SCOPE").get("exclude_scratch", ())) else (),
 }
-HUBS: tuple[str, ...] = tuple(getattr(_MOD, "HUBS", ())) if _MOD else ()
+HUBS: tuple[str, ...] = _seq("HUBS")
 HUB_DOMAIN_MD_IMPLICIT: bool = getattr(_MOD, "HUB_DOMAIN_MD_IMPLICIT", True) if _MOD else True
-DOC_SYNC: list[dict[str, Any]] = list(getattr(_MOD, "DOC_SYNC", [])) if _MOD else []
-BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = (
-    tuple(getattr(_MOD, "BEHAVIOR_TESTED_ROOTS", ())) if _MOD else ()
-)
-LOCAL_GATES: tuple[str, ...] = tuple(getattr(_MOD, "LOCAL_GATES", ())) if _MOD else ()
+DOC_SYNC: list[dict[str, Any]] = list(_seq("DOC_SYNC"))
+BEHAVIOR_TESTED_ROOTS: tuple[str, ...] = _seq("BEHAVIOR_TESTED_ROOTS")
+LOCAL_GATES: tuple[str, ...] = _seq("LOCAL_GATES")
 HARNESS_MAP: str = getattr(_MOD, "HARNESS_MAP", "HARNESS.md") if _MOD else "HARNESS.md"
-ROOT_FILES: tuple[str, ...] = tuple(getattr(_MOD, "ROOT_FILES", ())) if _MOD else ()
+ROOT_FILES: tuple[str, ...] = _seq("ROOT_FILES")
 
 # ── 언어 ───────────────────────────────────────────────────────────────────────
 #
@@ -88,12 +168,8 @@ ROOT_FILES: tuple[str, ...] = tuple(getattr(_MOD, "ROOT_FILES", ())) if _MOD els
 LANG: str | None = getattr(_MOD, "LANG", None) if _MOD else None
 _PACK = lang.load(LANG)
 
-SOURCE_EXT: tuple[str, ...] = (
-    tuple(getattr(_MOD, "SOURCE_EXT", _PACK["EXT"])) if _MOD else _PACK["EXT"]
-)
-UI_EXT: tuple[str, ...] = (
-    tuple(getattr(_MOD, "UI_EXT", ("*.tsx", "*.ts"))) if _MOD else ("*.tsx", "*.ts")
-)
+SOURCE_EXT: tuple[str, ...] = _seq("SOURCE_EXT", tuple(_PACK["EXT"]))
+UI_EXT: tuple[str, ...] = _seq("UI_EXT", ("*.tsx", "*.ts"))
 SYNTAX: str | None = getattr(_MOD, "SYNTAX", _PACK["SYNTAX"]) if _MOD else _PACK["SYNTAX"]
 
 # 언어팩이 준 것 위에 프로파일이 덮어쓴다 — 프로젝트 사정이 언어 관례보다 우선이다.
@@ -122,7 +198,7 @@ NOT_APPLICABLE.update(_na_prefixed(_ARCH_PACK["NOT_APPLICABLE"], ARCH))
 if _MOD and getattr(_MOD, "NOT_APPLICABLE", None):
     NOT_APPLICABLE.update(_na_prefixed(dict(_MOD.NOT_APPLICABLE), SYNTAX))
 
-LINTERS: tuple = tuple(getattr(_MOD, "LINTERS", _PACK["LINTERS"])) if _MOD else _PACK["LINTERS"]
+LINTERS: tuple = _seq("LINTERS", tuple(_PACK["LINTERS"]))
 
 
 def pattern(name: str) -> str:
@@ -143,9 +219,7 @@ def need_syntax() -> str:
 def not_applicable(slug: str) -> str:
     """이 언어·아키텍처에서 규칙 자체가 성립하지 않으면 그 사유. 아니면 빈 문자열."""
     return NOT_APPLICABLE.get(slug, "")
-LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = (
-    tuple(getattr(_MOD, "LEGACY_PATHS", ())) if _MOD else ()
-)
+LEGACY_PATHS: tuple[tuple[str, "str | None"], ...] = _seq("LEGACY_PATHS")
 LESSONS_DOC: str | None = getattr(_MOD, "LESSONS_DOC", None) if _MOD else None
 AGENT_MODEL_POLICY: dict[str, tuple[str, str]] = (
     dict(getattr(_MOD, "AGENT_MODEL_POLICY", {})) if _MOD else {}
@@ -155,9 +229,7 @@ MAINTENANCE: dict[str, dict[str, int]] = (
     dict(getattr(_MOD, "MAINTENANCE", {})) if _MOD else {}
 )
 # 헤더 `V<major>.<minor>` 버전 범프를 강제할 LLM 프롬프트 파일 목록. 비면 그 게이트는 [SKIP].
-VERSIONED_PROMPTS: tuple[str, ...] = (
-    tuple(getattr(_MOD, "VERSIONED_PROMPTS", ())) if _MOD else ()
-)
+VERSIONED_PROMPTS: tuple[str, ...] = _seq("VERSIONED_PROMPTS")
 # UI 카피 LLM 감수 훅의 도메인 주입 — "context"(업종·제품 한 줄)와 "product_terms"(위반이
 # 아닌 도메인 필수 용어). 훅의 판정 기준 자체는 범용이라 커널이 갖고, 여기는 맥락만 준다.
 UI_COPY: dict[str, Any] = dict(getattr(_MOD, "UI_COPY", {})) if _MOD else {}

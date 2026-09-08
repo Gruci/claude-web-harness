@@ -345,5 +345,39 @@ BEHAVIOR_TESTED_ROOTS = ("kofia/",)
 LOCAL_GATES = ()
 '''
 
+# 검사 48 — 그림 ↔ 실물 1:1. 위반을 하나씩 심는다: 없는 revision · 없는 파일 · 행 범위 밖 ·
+# sources 없는 노드 · 안 그린 레이어(utils/) · 영수증 없음. external 노드는 면제라 통과해야 한다.
+FILES["docs/architecture/app.architecture.json"] = '''{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "픽스처 앱",
+    "quality_profile": "showcase",
+    "repository": { "url": "https://github.com/example/miniproj", "revision": "0000000000000000000000000000000000000000" }
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "사용자", "pos": [40, 200], "size": [150, 64] },
+    { "id": "ui", "type": "frontend", "label": "화면", "sublabel": "frontend/src/", "pos": [300, 200], "size": [170, 64],
+      "sources": [ { "path": "frontend/src/Consumer.tsx", "label": "소비 화면" } ] },
+    { "id": "routes", "type": "backend", "label": "라우트", "sublabel": "web/routes/", "pos": [560, 200], "size": [170, 64],
+      "sources": [ { "path": "web/routes/errors.py", "line": 1 } ] },
+    { "id": "reads", "type": "database", "label": "조회", "sublabel": "db/reads/", "pos": [820, 200], "size": [170, 64],
+      "sources": [ { "path": "db/reads/bad_write.py", "line": 1, "end_line": 99 }, { "path": "db/writes/loader.py" }, { "path": "db/schema/tables.py" } ] },
+    { "id": "batch", "type": "backend", "label": "배치", "sublabel": "batches/", "pos": [560, 380], "size": [170, 64],
+      "sources": [ { "path": "batches/report.py" }, { "path": "kofia/collect.py", "label": "수집" }, { "path": "tests/unit/test_placeholder.py", "label": "샘플" } ] },
+    { "id": "gone", "type": "backend", "label": "옮긴 모듈", "pos": [820, 380], "size": [170, 64],
+      "sources": [ { "path": "utils/gone.py" } ] },
+    { "id": "orphan", "type": "backend", "label": "출처 없는 상자", "pos": [300, 380], "size": [170, 64] }
+  ],
+  "boundaries": [],
+  "connections": [
+    { "id": "user-ui", "from": "user", "to": "ui" },
+    { "id": "ui-routes", "from": "ui", "to": "routes", "label": "fetch" },
+    { "id": "routes-reads", "from": "routes", "to": "reads" },
+    { "id": "batch-reads", "from": "batch", "to": "reads", "fromSide": "right", "toSide": "bottom" }
+  ]
+}
+'''
+
 FILES[".gitignore"] = GITIGNORE
 

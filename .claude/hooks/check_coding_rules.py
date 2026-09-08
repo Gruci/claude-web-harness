@@ -57,6 +57,14 @@ def main() -> None:
         record("check_coding_rules", "gate_error", sid=sid, msg="게이트 60초 타임아웃")
         print("[CODING RULES] 게이트가 60초 내 응답 없음 — 검사 불능 상태, 원인 확인 전 종료 불가.", file=sys.stderr)
         sys.exit(2)
+    if result.returncode != 0 and "[FAIL]" not in result.stdout and "Traceback" in result.stderr:
+        # 검사기 크래시 = 검사 불능. 타임아웃과 같은 방향(원인 확인 전 종료 불가)이되,
+        # "규칙 위반"으로 포장하지 않는다 — 고칠 대상은 앱 코드가 아니라 커널이다.
+        record("check_coding_rules", "gate_error", sid=sid, msg="검사기 크래시")
+        print("[CODING RULES] 검사기 자체가 크래시했다 — 앱 코드의 규칙 위반이 아니다. "
+              "검사 불능 상태라 종료 불가. 아래 트레이스백으로 커널을 고쳐라:", file=sys.stderr)
+        print(result.stderr, file=sys.stderr)
+        sys.exit(2)
     if result.returncode != 0:
         record_runner_output("check_coding_rules", sid, result.stdout)
         # Stop 훅 차단 사유는 stderr로 내보내야 Claude에게 전달된다(stdout은 무시됨).

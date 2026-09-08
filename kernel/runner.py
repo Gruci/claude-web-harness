@@ -23,13 +23,13 @@ import importlib
 import sys
 from pathlib import Path
 
-from kernel import linters, profile
+from kernel import diagram, linters, profile
 # 재수출 — trace(violation_path)·설치 스크립트(BASELINE_FILE·load_baseline)가 러너 경유로 쓴다.
 from kernel.baseline import (BASELINE_FILE, apply_baseline as _apply_baseline,  # noqa: F401
                              load_baseline, violation_path)
 from kernel.context import READ_ENC, ROOT, _rel, app_code, is_harness_own, tracked
-from kernel.gates import (api_types, core, duplication, frontend, harness_self, layers,
-                          md_graph, md_style, orphan_api, placement, prompt_version,
+from kernel.gates import (api_types, arch_diagram, core, duplication, frontend, harness_self,
+                          layers, md_graph, md_style, orphan_api, placement, prompt_version,
                           schema, tests_pairing)
 
 # (slug, 제목, 위반 목록, 건너뜀). 건너뜀은 (등급, 사유) 이고 None 이면 실제로 검사한 것이다.
@@ -134,6 +134,9 @@ def _kernel_sections(files: list[Path], ui_files: list[Path]) -> list[Section]:
     settings = profile.FILES.get("settings")
 
     return [
+        # 맨 앞이다 — 프로파일 모양이 틀리면 아래 전부가 대상 0건으로 조용히 초록불이 된다.
+        _entry("profile_shape", "프로파일 형식", profile.PROFILE_ERRORS, profile.LOADED,
+               "프로파일 없음"),
         _entry("line_limit", "파일 길이 상한", core.check_line_limit(files), files, NO_PY),
         _entry("header_path", "헤더 경로 주석", core.check_header_path_comment(files), files, NO_PY),
         _syntax_section("closures", "중첩 def(클로저)", core.check_closures, (files,), files, NO_PY),
@@ -245,6 +248,16 @@ def _doc_sections() -> list[Section]:
         _entry("md_fn_refs", "MD 함수 참조 실존", md_graph.check_md_fn_refs(),
                not greenfield, "greenfield — 문서가 코드보다 먼저다"),
     ]
+    # 그림 ↔ 실물 1:1. 그림이 없는 greenfield 는 "아직 없음", 있으면 노드마다 소스를 증명한다.
+    hard, soft = arch_diagram.check_arch_diagram()
+    _print_style_reports(soft)
+    has_diagrams = bool(arch_diagram.diagrams())
+    sections.append(_entry("arch_diagram", "아키텍처 그림 1:1 대조", hard,
+                           has_diagrams or (arch_diagram.expected_nodes() and not greenfield),
+                           "그릴 레이어·패키지가 아직 없음" if not arch_diagram.expected_nodes()
+                           else f"greenfield — {diagram.DIAGRAM_DIR} 아직 없음"))
+    if has_diagrams:
+        sections += arch_diagram.engine_sections()
     for pair in profile.DOC_SYNC:
         title = f"문서↔코드 대조({pair['doc']}↔{pair['code']})"
         sections.append(_entry(f"doc_sync:{pair['doc']}", title,

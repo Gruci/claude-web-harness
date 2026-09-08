@@ -331,7 +331,7 @@ python -X utf8 harness_install.py                             # Register legacy 
 python -X utf8 setup_global_permissions.py                    # Merge global permissions
 ```
 
-Prerequisites: a Git repository (required — targets are collected via `git ls-files`, so an uninitialized repo neuters every check), a GitHub remote (required — without one, session exit is blocked), Python (required), Node.js (optional — only for UI quality tooling).
+Prerequisites: a Git repository (required — targets are collected via `git ls-files`, so an uninitialized repo neuters every check), a GitHub remote (required — without one, session exit is blocked), Python 3.10 or newer (required — older versions trigger a warning at session start), Node.js (optional — only for UI quality tooling).
 
 ### Adopting on an existing project
 

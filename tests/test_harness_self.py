@@ -1,0 +1,245 @@
+"""tests/test_harness_self.py — 하네스 자체의 설치·저하·체크아웃·메타데이터 테스트.
+
+`test_hooks.py` 는 사고 뒤에 심은 회귀 방어다. 여기는 **사고를 기다리지 않는** 쪽이다 —
+archify 가 이미 막아둔 실패 경로 중 하네스에도 성립하는 것을 사고 전에 이식했다.
+괄호는 archify 쪽 원본 테스트다.
+
+  fresh 설치     clone 직후 install 두 번이 초록불로 끝나고 남의 상태 파일이 안 남는가
+                 (package smoke rejects repository-only artifacts)
+  훅 저하        페이로드가 깨져도 차단(exit 2)이 아닌가 (degraded: fails friendly)
+  검사기 크래시  커널이 터졌을 때 "규칙 위반"으로 포장하지 않는가 (malformed input is one
+                 clean machine object without a stack)
+  프로파일 모양  튜플 자리의 문자열·이름 오타가 [FAIL] 로 뜨는가 (field as a string fails
+                 friendly · rejects unknown fields)
+  오타 옵션      설치 스크립트가 모르는 옵션을 거절하는가 (rejects a mistyped option instead of
+                 writing a file named after it)
+  CRLF           LF·CRLF 체크아웃에서 러너 출력이 같은가 (checkout-line-endings)
+  frontmatter    스킬·에이전트 name 이 실물과 같고 description 이 1024자 안인가 (skill-metadata)
+  버전 일치      두 README 의 하네스 버전이 같은가 (release-identity)
+
+실행: `python -X utf8 tests/test_harness_self.py`
+"""
+
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+HOOKS = REPO / ".claude" / "hooks"
+TEXT_SUFFIXES = (".py", ".md", ".ts", ".tsx", ".txt", ".json", ".gitignore", ".toml", ".cfg")
+
+# 페이로드로 판정하는 훅만. Stop 훅 중 전량 검사를 도는 것은 페이로드와 무관해 뺀다.
+PAYLOAD_HOOKS = ("check_file_rules", "check_bash_write", "check_worktree_name",
+                 "check_workflow_script", "check_context_diet", "check_agent_return",
+                 "check_context_growth", "check_editing_lock")
+
+_FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.S)
+
+
+def _run(cmd: list[str], cwd: Path, stdin: bytes | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, cwd=str(cwd), input=stdin, capture_output=True,
+                          timeout=600)
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(("git", "-c", "user.email=t@t", "-c", "user.name=t", *args),
+                   cwd=str(cwd), check=True, capture_output=True)
+
+
+def test_fresh_install_is_green() -> None:
+    """clone 직후 프리셋 설치 → 동결 설치가 exit 0 이고 초록불 문구로 끝난다.
+
+    하네스 자기 프로파일이 딸려 오는 것을 install 이 교체하는 경로까지 포함한다.
+    """
+    tracked = subprocess.run(["git", "ls-files", "-z"], cwd=str(REPO), capture_output=True,
+                             check=True).stdout.decode("utf-8").split("\0")
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "proj"
+        for rel in tracked:
+            if not rel or rel.startswith("docs/"):
+                continue
+            src = REPO / rel
+            if not src.is_file():
+                continue
+            dst = work / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+        _git(work, "init", "-q")
+        _git(work, "add", "-A")
+        _git(work, "commit", "-qm", "init")
+
+        first = _run([sys.executable, "-X", "utf8", "harness_install.py",
+                      "--preset", "web_fastapi_react"], work)
+        assert first.returncode == 0, first.stdout.decode("utf-8", "replace")
+        assert (work / "harness_profile.py").exists(), "프리셋 프로파일이 안 만들어졌다"
+
+        second = _run([sys.executable, "-X", "utf8", "harness_install.py"], work)
+        out = second.stdout.decode("utf-8", "replace")
+        assert second.returncode == 0, out
+        assert "설치 완료" in out, "동결 후 검증이 초록불이 아니다:\n" + out
+        assert (work / "harness_trace.jsonl").read_text(encoding="utf-8").strip() == "", (
+            "하네스 레포 자신의 관찰 기록이 새 프로젝트에 딸려갔다")
+        assert not (work / "harness_surface.txt").exists(), "하네스 자신의 표면 동결본이 딸려갔다"
+
+        typo = _run([sys.executable, "-X", "utf8", "harness_install.py", "--dryrun"], work)
+        assert typo.returncode == 2, "오타 옵션 --dryrun 이 거절되지 않고 실행됐다"
+
+
+def test_runner_reports_profile_shape() -> None:
+    """튜플 자리의 문자열과 이름 오타가 [FAIL] 프로파일 형식으로 뜬다 — 조용한 스코프 증발 방지."""
+    sys.path.insert(0, str(HERE))
+    import run_golden                       # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    run_golden._ensure_fixtures()
+    with tempfile.TemporaryDirectory() as tmp:
+        fixture = Path(tmp) / "shape"
+        shutil.copytree(run_golden.FIXTURE, fixture,
+                        ignore=shutil.ignore_patterns("__pycache__", ".git"))
+        with (fixture / "harness_profile.py").open("a", encoding="utf-8") as out:
+            out.write('\nLAYER = {"read": "db/reads"}\nSCOPE = {"exclude_all": "tests/"}\n')
+        output = run_golden.capture(REPO / "kernel", fixture=fixture)
+    assert "[FAIL] 프로파일 형식 (profile_shape)" in output, output
+    assert "모르는 설정 이름 LAYER" in output, output
+    assert "SCOPE['exclude_all'] 는 튜플이어야 한다" in output, output
+
+
+def test_hook_reports_kernel_crash_as_gate_error() -> None:
+    """커널이 터지면 ⑨ 는 exit 1 과 '크래시' 문구다 — 트레이스백을 규칙 위반으로 포장하지 않는다."""
+    hook = (HOOKS / "check_file_rules.py").read_text(encoding="utf-8")
+    assert '"Traceback" in result.stderr' in hook and "sys.exit(1)" in hook, (
+        "check_file_rules 가 검사기 크래시를 위반과 구분하지 않는다")
+    stop_hook = (HOOKS / "check_coding_rules.py").read_text(encoding="utf-8")
+    assert "검사기 자체가 크래시" in stop_hook, "check_coding_rules 가 검사기 크래시를 위반으로 말한다"
+
+
+def test_hooks_do_not_block_on_broken_payload() -> None:
+    """깨진 stdin 에 exit 2 를 내는 훅이 없어야 한다 — 복구 수단이 차단된 그 툴이다.
+
+    훅은 막을 때 `harness_trace.jsonl` 에 관찰을 남긴다. 테스트가 만든 실패는 관찰이 아니라
+    되돌린다 — 안 그러면 회고가 테스트 실행 횟수를 마찰 빈도로 읽는다.
+    """
+    trace = REPO / "harness_trace.jsonl"
+    before = trace.read_bytes() if trace.exists() else None
+    try:
+        for name in PAYLOAD_HOOKS:
+            done = _run([sys.executable, "-X", "utf8", str(HOOKS / f"{name}.py")], REPO,
+                        stdin=b"this is not json")
+            assert done.returncode != 2, (
+                f"{name}: 페이로드 파싱 실패를 차단으로 냈다\n"
+                + done.stderr.decode("utf-8", "replace"))
+    finally:
+        if before is not None:
+            trace.write_bytes(before)
+
+
+def _copy_with_eol(src: Path, dst: Path, eol: bytes) -> None:
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", ".git"))
+    for path in dst.rglob("*"):
+        if not path.is_file() or path.suffix not in TEXT_SUFFIXES and path.name != ".gitignore":
+            continue
+        body = path.read_bytes().replace(b"\r\n", b"\n")
+        path.write_bytes(body.replace(b"\n", eol))
+
+
+def test_runner_output_same_for_lf_and_crlf() -> None:
+    """LF 체크아웃과 CRLF 체크아웃에서 전 게이트 출력이 바이트 단위로 같다."""
+    sys.path.insert(0, str(HERE))
+    import run_golden                       # noqa: E402  (경로 삽입 후에만 import 가능)
+
+    run_golden._ensure_fixtures()
+    outputs: dict[str, str] = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for label, eol in (("lf", b"\n"), ("crlf", b"\r\n")):
+            fixture = Path(tmp) / label
+            _copy_with_eol(run_golden.FIXTURE, fixture, eol)
+            outputs[label] = run_golden.capture(REPO / "kernel", fixture=fixture)
+    assert outputs["lf"] == outputs["crlf"], (
+        "LF 와 CRLF 에서 러너 출력이 다르다 — Windows 에서 초록·CI 에서 파열의 경로다\n"
+        + "\n".join(
+            line for line in outputs["crlf"].splitlines()
+            if line not in outputs["lf"].splitlines()))
+
+
+def _frontmatter(path: Path) -> dict[str, str]:
+    match = _FRONTMATTER.match(path.read_text(encoding="utf-8"))
+    assert match, f"{path}: frontmatter 가 없다"
+    fields: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        if ":" in line and not line.startswith((" ", "\t")):
+            key, _, value = line.partition(":")
+            fields[key.strip()] = value.strip()
+    return fields
+
+
+MAX_DESCRIPTION_CHARS = 1024     # 일부 런타임이 여기서 자른다 — 뒤쪽 트리거 문구가 사라진다
+
+
+def _description(path: Path) -> str:
+    """`description: 한 줄` 과 `description: >` 블록 둘 다 본문으로 편다."""
+    match = _FRONTMATTER.match(path.read_text(encoding="utf-8"))
+    lines = match.group(1).splitlines() if match else []
+    parts: list[str] = []
+    inside = False
+    for line in lines:
+        if line.startswith("description:"):
+            inside = True
+            parts.append(line.partition(":")[2].strip().lstrip(">").strip())
+        elif inside and line.startswith((" ", "\t")):
+            parts.append(line.strip())
+        elif inside:
+            break
+    return " ".join(part for part in parts if part)
+
+
+def test_skill_and_agent_frontmatter() -> None:
+    """name 은 디렉토리(스킬)·파일명(에이전트)과 같고 description 은 비어 있지 않고 상한 안이다.
+
+    검사 28·29 는 지도 등재와 모델 정책만 본다. 이름이 어긋나면 스킬이 조용히 안 뜬다.
+    """
+    for skill in sorted((REPO / ".claude" / "skills").glob("*/SKILL.md")):
+        fields = _frontmatter(skill)
+        assert fields.get("name") == skill.parent.name, (
+            f"{skill}: name={fields.get('name')!r} ≠ 디렉토리 {skill.parent.name!r}")
+        description = _description(skill)
+        assert description, f"{skill}: description 이 비어 있다"
+        assert len(description) <= MAX_DESCRIPTION_CHARS, (
+            f"{skill}: description {len(description)}자 — {MAX_DESCRIPTION_CHARS}자에서 잘리는 런타임이 있다")
+    for agent in sorted((REPO / ".claude" / "agents").glob("*.md")):
+        fields = _frontmatter(agent)
+        assert fields.get("name") == agent.stem, (
+            f"{agent}: name={fields.get('name')!r} ≠ 파일명 {agent.stem!r}")
+        assert fields.get("description"), f"{agent}: description 이 비어 있다"
+
+
+_VERSION = re.compile(r"\b[Hh]arness v(\d+\.\d+\.\d+)|하네스 v(\d+\.\d+\.\d+)")
+
+
+def test_readme_versions_agree() -> None:
+    """두 README 머리의 하네스 버전이 같다 — 한쪽만 올리면 배포 정체가 둘이 된다."""
+    found: dict[str, str] = {}
+    for name in ("README.md", "README.en.md"):
+        match = _VERSION.search((REPO / name).read_text(encoding="utf-8"))
+        assert match, f"{name}: 머리에 하네스 버전이 없다"
+        found[name] = match.group(1) or match.group(2)
+    assert len(set(found.values())) == 1, f"README 버전 불일치: {found}"
+
+
+def demo() -> None:
+    for check in (test_skill_and_agent_frontmatter, test_readme_versions_agree,
+                  test_hook_reports_kernel_crash_as_gate_error,
+                  test_hooks_do_not_block_on_broken_payload,
+                  test_runner_reports_profile_shape,
+                  test_runner_output_same_for_lf_and_crlf, test_fresh_install_is_green):
+        check()
+        print(f"  [OK] {check.__name__}")
+    print("하네스 자체 테스트 전건 통과")
+
+
+if __name__ == "__main__":
+    demo()

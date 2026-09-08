@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import difflib
+import os
 import shutil
 import subprocess
 import sys
@@ -81,9 +82,12 @@ def capture(checker_dir: Path, bare: bool = False, fixture: Path | None = None) 
         _git(work, "init", "-q")
         _git(work, "add", "-A")
 
+        # 그림 엔진 위임은 [TOOL] 로 고정한다 — 정답지가 머신의 node 유무에 따라 갈리면 안 된다.
+        # 엔진 실물은 tests/test_harness_self.py 가 돈다.
         done = subprocess.run(
             command, cwd=work, capture_output=True, text=True,
             encoding="utf-8", errors="replace",
+            env={**os.environ, "HARNESS_DIAGRAM_ENGINE": "off"},
         )
         body = done.stdout
         if done.stderr.strip():

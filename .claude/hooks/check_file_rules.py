@@ -84,6 +84,15 @@ def main() -> None:
         record("check_file_rules", "gate_error", sid=sid, file=rel, msg="게이트 30초 타임아웃")
         print("[WRITE-TIME GATE] 게이트가 30초 내 응답 없음 — 작성 시점 검사가 쉬고 있다. 원인을 확인하라(Stop 훅이 전량 재검사한다).", file=sys.stderr)
         sys.exit(1)
+    if result.returncode != 0 and "[FAIL]" not in result.stdout and "Traceback" in result.stderr:
+        # 검사기 자체의 크래시는 규칙 위반이 아니다. 위반으로 포장해 exit 2 를 내면 모델은
+        # 트레이스백을 "고쳐야 할 코드"로 읽고, 방금 저장한 멀쩡한 파일을 되돌린다.
+        record("check_file_rules", "gate_error", sid=sid, file=rel, msg="검사기 크래시")
+        print("[WRITE-TIME GATE] 검사기 자체가 크래시했다 — 방금 저장한 파일의 규칙 위반이 아니다. "
+              "작성 시점 검사가 쉬고 있으니 아래 트레이스백으로 커널을 고쳐라(Stop 훅이 전량 재검사한다):",
+              file=sys.stderr)
+        print(result.stderr, file=sys.stderr)
+        sys.exit(1)
     if result.returncode != 0:
         record_runner_output("check_file_rules", sid, result.stdout)
         # exit 2 + stderr → Claude 에게 즉시 피드백 (작성한 그 턴 안에 수정)

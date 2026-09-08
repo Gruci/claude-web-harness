@@ -2,6 +2,7 @@ exit=1
 [SETUP] harness_profile.py 없음 — 프로젝트를 모르는 상태다. 레이어를 요구하는 게이트는 전부 [SKIP] 이다.
 [REPORT] DEVGUIDE.md: ⑬e 날짜 태그 6개 — 성분 D 의심(경위는 dev/LESSONS.md 로)
 [REPORT] AGENTS.md:5: 실존하지 않는 경로 참조 `db/reads/gone.py`
+[SKIP] 프로파일 형식 — 프로파일 없음
 
 [FAIL] 파일 길이 상한 (line_limit) — 1건
    - utils/long_report.py: 401줄 (>400)
@@ -85,4 +86,13 @@ exit=1
 [SKIP] 사고 절 승격 상태 — 설정에 사고 기록 문서를 안 적었음
 [SKIP] MD 함수 참조 실존 — greenfield — 문서가 코드보다 먼저다
 
-총 24건 위반.
+[FAIL] 아키텍처 그림 1:1 대조 (arch_diagram) — 6건
+   - docs/architecture/app.architecture.json: revision 0000000 이 이 레포에 없음 — deliver 를 다시 돌려 HEAD 로 찍는다
+   - docs/architecture/app.architecture.json: 노드 reads → db/reads/bad_write.py 행 99 없음 (파일은 5줄)
+   - docs/architecture/app.architecture.json: 노드 gone → utils/gone.py 실존하지 않음 — 이름을 바꿨으면 그림도 고친다
+   - docs/architecture/app.architecture.json: 노드 orphan 에 sources 없음 — 코드 어디인지 적어야 그림이다
+   - docs/architecture/app.architecture.json: utils/ 를 가리키는 노드 없음 — 레이어·도메인 패키지는 전부 그린다
+   - docs/architecture/app.architecture.json: 영수증 없음 — `python -X utf8 -m kernel.diagram deliver` 로 렌더한다
+[TOOL] 그림 엔진 진단(docs/architecture/app.architecture.json) — node 없음 — node 를 설치하면 켜진다
+
+총 30건 위반.
