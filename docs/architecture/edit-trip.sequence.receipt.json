@@ -4,9 +4,9 @@
   "kind": "sequence",
   "source": "docs/architecture/edit-trip.sequence.json",
   "output": "docs/architecture/edit-trip.sequence.html",
-  "spec_sha256_lf": "7abc3e85b99aaf7ad967234ec5dfbf9b681d7e340572c083b30199735c8a79bf",
-  "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a",
-  "delivered_at": "2026-09-09T02:09:54",
+  "spec_sha256_lf": "4b7e2f1a052daeaa3ec9e6931dcdfa539d12765b554e43be9469f272b472e9d7",
+  "revision": "40051addfe3cbc9c9c6e28d7bbfb3835f47dc17b",
+  "delivered_at": "2026-09-09T03:54:28",
   "validation": {
     "checksPassed": 9,
     "checkCount": 9,
@@ -23,12 +23,12 @@
     "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\edit-trip.sequence.json",
     "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\edit-trip.sequence.html",
     "specification": {
-      "sha256": "68c06e57ea6999d95385d4a53f3b1b95266eb51771cf16aeb39dd722d3a2729b",
+      "sha256": "e40a7f5e0107af51b97b0175e95eb484b390b11627ff8f55342723621fd87dda",
       "bytes": 5312
     },
     "artifact": {
-      "sha256": "34469fbc04911b7a2e245aa189558714a168bd003e6d9edc7f19f0f41f7fd17e",
-      "bytes": 808421
+      "sha256": "fa3968d16abc2ac943fdc906fdcf271fe6ee7cc297d7f248a12d2c0fd628b2a3",
+      "bytes": 823143
     },
     "validation": {
       "checksPassed": 9,
@@ -37,12 +37,6 @@
       "compositionStatus": "pass",
       "errors": 0,
       "warnings": 0
-    },
-    "evidence": {
-      "verified": true,
-      "repository": "https://github.com/Gruci/claude-web-harness",
-      "revision": "73f4d1da307c37413ea8ba9c8ef9db9f9c5c307a",
-      "references": 7
     }
   }
 }

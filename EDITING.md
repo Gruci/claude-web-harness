@@ -35,7 +35,6 @@ worktree 가 존재하면 **공유 메인 체크아웃은 자동으로 구현 �
 
 | 과업(브랜치) #sid | 스코프 요약 | 시작 | 상태 |
 |---|---|---|---|
-| master #sid:34cafb69 | 하네스 개선 — 검사 48 비용·전역 REPORT 전량 한정·⑱ 경고·프론트 6종 ESLint 위임·CLAUDE.md 중복 제거 | 2026-09-09 | 진행 |
 <!-- 예시:
 | feat/peers-progressive #sid:a1b2c3d4 | peers AUM 탭 점진 로딩 — API 분할 + 소비 훅 개편 | 2026-07-28 | 진행 |
 -->

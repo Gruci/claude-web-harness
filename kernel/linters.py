@@ -107,7 +107,6 @@ def sections() -> list[tuple[str, str, list[str], str]]:
 
 UI_SLUGS = ("ts_any", "raw_fetch", "hex_literal", "responsive", "browser_api", "hash_nav")
 UI_CONFIG = Path(__file__).resolve().parent / "eslint.harness.mjs"
-UI_INSTALL = "npm i -D eslint @typescript-eslint/parser typescript"
 _SLUG_TAG = re.compile(r"^\[(\w+)\]\s*")
 # 정규식 시절 admin 화면(`ui_admin` 레이어·경로의 /admin/)을 면제하던 넷
 _ADMIN_SLUGS = ("raw_fetch", "hex_literal", "responsive", "browser_api")
@@ -149,13 +148,11 @@ def ui_allow(npm_dir: Path) -> dict[str, list[str]]:
         admin.append(_npm_relative(npm_dir, admin_layer) + "**")
     allow = profile.ALLOWLIST
     tokens = profile.layer_raw("ui_tokens")
-    per_slug: dict[str, list[str]] = {
-        "ts_any": [],
+    per_slug: dict[str, list[str]] = {          # 없는 slug 는 설정 쪽 `allow[slug] || []` 가 빈 면제로 읽는다
         "raw_fetch": [*allow["ui_fetch"], *allow["ui_fetch_wrappers"]],
         "hex_literal": [*allow["ui_hex"], *([tokens] if tokens else [])],
         "responsive": [],
         "browser_api": list(allow["ui_platform"]),
-        "hash_nav": [],
     }
     return {slug: (admin if slug in _ADMIN_SLUGS else []) + [_npm_relative(npm_dir, p) for p in paths]
             for slug, paths in per_slug.items()}
@@ -204,7 +201,8 @@ def run_ui_lint(ui_files: list[Path]) -> UiLint:
     if not npm_dir or not npm_dir.is_dir():
         return UiLint({}, "npm 디렉토리 없음 — 프로파일 UI_NPM_DIR 로 지정 (기본은 ui 레이어 첫 세그먼트)")
     if not ui_eslint_bin(npm_dir):
-        return UiLint({}, f"{npm_dir.relative_to(ROOT).as_posix()}/node_modules/.bin/eslint 없음 — 설치: {UI_INSTALL}")
+        return UiLint({}, f"{npm_dir.relative_to(ROOT).as_posix()}/node_modules/.bin/eslint 없음 — "
+                          "설치: npm i -D eslint @typescript-eslint/parser typescript")
     tokens = profile.layer_raw("ui_tokens")
     note = f"{tokens} 또는 CSS 변수" if tokens else "토큰 정본 또는 CSS 변수"
     return UiLint(eslint_report(npm_dir, ui_files, ui_allow(npm_dir), note), "")

@@ -4,9 +4,9 @@
   "kind": "workflow",
   "source": "docs/architecture/hooks.workflow.json",
   "output": "docs/architecture/hooks.workflow.html",
-  "spec_sha256_lf": "d7bc48c26fea7a9f235e0ebf43c38d66fff74721822dba13c03f289a64b287b7",
-  "revision": "08e3233c312162ea865977cff8276d50a4586f85",
-  "delivered_at": "2026-09-09T02:58:08",
+  "spec_sha256_lf": "ddde5222d86abc32703ef4d5bfce8025b5b4afa70cc8b8d55bfaec0301997fb3",
+  "revision": "40051addfe3cbc9c9c6e28d7bbfb3835f47dc17b",
+  "delivered_at": "2026-09-09T03:54:33",
   "validation": {
     "checksPassed": 9,
     "checkCount": 9,
@@ -23,12 +23,12 @@
     "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\hooks.workflow.json",
     "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\hooks.workflow.html",
     "specification": {
-      "sha256": "9eedabc7d79d86537b8c2f9942d37c32e3c9060701c618091bd192c4abfb1308",
-      "bytes": 8553
+      "sha256": "a6dc896a0fbdda8e6d54114295822f9d31c34a8e75dfc9ec52ef5f717c5b3bf5",
+      "bytes": 8600
     },
     "artifact": {
-      "sha256": "078514d049bf24551dfe9a811605822441f40e01f167294145e7d28434fd9fd7",
-      "bytes": 829333
+      "sha256": "c88a22c00c2760d7dd14c57813b9a1c6f9c5cf47b5837e707a88d5d23703f28c",
+      "bytes": 829380
     },
     "validation": {
       "checksPassed": 9,
