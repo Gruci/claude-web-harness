@@ -23,8 +23,8 @@ worktree 가 존재하면 **공유 메인 체크아웃은 자동으로 구현 �
 3. **구현·검증**은 전부 worktree 안에서 한다. 게이트와 테스트와 빌드가 동일하게 적용된다.
 3-1. **병렬 위임 워커는 격리하지 않는다** — 비격리 서브에이전트는 부모의 worktree를 cwd로 상속한다. `isolation:"worktree"`를 주면 워커마다 브랜치가 갈라져 브랜치 1개 계약이 깨진다. 한 worktree 공유라 git이 파일 충돌을 못 잡는다 — 소유권 배정이 유일한 방어이고 정본은 `orchestrator` 에이전트다. **금지 사유가 하나 더 있다** — 격리된 worktree 는 변경이 없으면 턴 종료 시 자동 제거 대상이라, 백그라운드 워커가 아직 읽고 있는 트리를 정리가 지운다. 원류에서 워커 둘이 사라진 트리를 52분간 재생성·재읽기만 하다 결과 없이 끝났다. 위임 직전 베이스라인 커밋을 만든다 — 워커 부분 실패 시 선별 롤백의 기준점이다.
     트랙별 worktree가 꼭 필요하면(트랙별 PR이 목적) 스폰 **전에** 각 worktree에 미추적 sentinel 파일을 두어 dirty로 만들고 `git worktree lock --reason "<sid8> worker"`를 건다 — dirty는 unchanged 판정을, lock은 제거를 막는다. **둘 다 필요하다.** 워커 프롬프트엔 "트리가 사라지면 **리터럴 절대경로**로 `git worktree add` 재생성"을 넣는다(`check_worktree_name.py`가 변수 경로를 막는다).
-4. **완료** — 원격에 PR·CI가 있으면 push → PR 생성 → CI 통과 확인 → merge, 없으면 기본 브랜치에 merge 후 push. 머지 충돌 시 자기 브랜치에 기본 브랜치를 merge해 해소 후 재시도한다(공유 트리를 건드리지 않는다). 끝나면 보드 행을 제거한다.
-5. **잔가지 제거 — 머지 직후 같은 턴에** — `git worktree remove` → `git branch -d <브랜치>` 순서다. 순서가 계약이다 — worktree가 점유 중인 브랜치는 로컬 삭제가 거부된다. 원격 브랜치는 레포의 `deleteBranchOnMerge` 설정이 머지 시 자동 삭제한다 — `push --delete`는 필요 없다. 미루면 죽은 worktree가 쌓여 `git worktree list`의 조인이 무의미해진다. Stop 훅 `check_worktree_residue.py`가 잔존 시 종료를 막는다.
+4. **완료** — 원격에 PR·CI가 있으면 push → PR 생성 → CI 통과 확인 → merge, 없으면 기본 브랜치에 merge 후 push. 머지 충돌 시 자기 브랜치에 기본 브랜치를 merge해 해소 후 재시도한다(공유 트리를 건드리지 않는다).
+5. **잔가지 제거 — 머지 직후 같은 턴에** — `git worktree remove` → `git branch -d <브랜치>` → **보드 행 제거** 순서다. 순서가 계약이다 — worktree가 점유 중인 브랜치는 로컬 삭제가 거부되고, 보드 행은 맨 끝이다. 행이 남아 있는 한 청소가 안 끝났다는 표식이라, 청소 도중 세션이 죽어도 잔해 주인이 `#sid`로 보드에서 추적된다. 원격 브랜치는 레포의 `deleteBranchOnMerge` 설정이 머지 시 자동 삭제한다 — `push --delete`는 필요 없다. 미루면 죽은 worktree가 쌓여 `git worktree list`의 조인이 무의미해진다. Stop 훅 `check_worktree_residue.py`가 잔존 시 종료를 막는다.
 
 **`#sid` 태그의 역할** — Stop 훅이 **자기 행만** 보고 종료를 차단한다. 태그가 없으면 훅이 세션을 식별하지 못해 전 행을 차단하고, 그러면 남의 잠금 때문에 내 세션이 못 끝난다.
 

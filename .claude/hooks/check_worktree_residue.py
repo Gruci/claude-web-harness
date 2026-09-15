@@ -125,7 +125,7 @@ def main() -> None:
     for tree in residue:
         name = Path(tree["path"]).name
         print(f"  {name}  [{tree['branch']}] — 머지 완료·원격 삭제됨", file=sys.stderr)
-    print("`git worktree remove <경로>` → `git branch -d <브랜치>` 순서로 정리한 후 종료하세요.", file=sys.stderr)
+    print("`git worktree remove <경로>` → `git branch -d <브랜치>` → 보드 행 제거 순서로 정리한 후 종료하세요.", file=sys.stderr)
     print("(순서가 계약이다 — worktree 가 점유 중인 브랜치는 로컬 삭제가 거부된다)", file=sys.stderr)
     # 경고(1)지 차단(2)이 아니다 — 판정 근거가 git 상태 추론이라서다. HARNESS.md 「단계」 참조.
     sys.exit(1)

@@ -205,7 +205,8 @@ def main() -> None:
     if mine:
         reason = "이 세션의" if sid8 else "(세션 식별 불가 — 태그 없는 행만 검사)"
         _report(f"{reason} 과업 보드 행이 머지 후에도 남아 있습니다 —", mine,
-                "머지가 끝난 과업이거나 브랜치명이 없는 행입니다. 보드에서 제거하세요.")
+                "머지가 끝난 과업이면 `git worktree remove` → `git branch -d` 를 먼저 끝내고 행은 맨 끝에 지웁니다. "
+                "브랜치명이 없는 행은 서식 위반이라 고칩니다.")
     if dead:
         _report("주인이 없어진 행 —", dead,
                 "브랜치가 origin 에도 로컬에도 없습니다. 끝난 과업의 잔해라 어느 세션이든 지웁니다.")
