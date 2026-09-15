@@ -64,11 +64,14 @@ def test_fresh_install_is_green() -> None:
 
     하네스 자기 프로파일이 딸려 오는 것을 install 이 교체하는 경로까지 포함한다.
     """
-    tracked = subprocess.run(["git", "ls-files", "-z"], cwd=str(REPO), capture_output=True,
-                             check=True).stdout.decode("utf-8").split("\0")
+    # Exercise the current checkout, including new implementation files before git add.
+    checkout_files = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=str(REPO), capture_output=True, check=True,
+    ).stdout.decode("utf-8").split("\0")
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "proj"
-        for rel in tracked:
+        for rel in dict.fromkeys(checkout_files):
             if not rel or rel.startswith("docs/tasks/"):
                 continue
             src = REPO / rel
@@ -171,12 +174,10 @@ def test_runner_leaves_tree_clean() -> None:
 
 
 def test_hook_reports_kernel_crash_as_gate_error() -> None:
-    """커널이 터지면 ⑨ 는 exit 1 과 '크래시' 문구다 — 트레이스백을 규칙 위반으로 포장하지 않는다."""
-    hook = (HOOKS / "check_file_rules.py").read_text(encoding="utf-8")
-    assert '"Traceback" in result.stderr' in hook and "sys.exit(1)" in hook, (
-        "check_file_rules 가 검사기 크래시를 위반과 구분하지 않는다")
-    stop_hook = (HOOKS / "check_coding_rules.py").read_text(encoding="utf-8")
-    assert "검사기 자체가 크래시" in stop_hook, "check_coding_rules 가 검사기 크래시를 위반으로 말한다"
+    """공통 훅의 실제 크래시 경로가 저장 경고와 종료 차단을 구분한다."""
+    done = _run([sys.executable, "-X", "utf8", str(HERE / "test_shared_harness.py"),
+                 "SharedHookTests.test_runner_crash_is_not_a_code_violation"], REPO)
+    assert done.returncode == 0, done.stderr.decode("utf-8", "replace")
 
 
 def test_hooks_do_not_block_on_broken_payload() -> None:

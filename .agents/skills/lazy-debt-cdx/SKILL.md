@@ -1,12 +1,11 @@
 ---
 name: code-debt-cdx
-description: Harvest every `lazy:` marker in the codebase into a debt ledger so deliberate shortcuts get tracked instead of rotting. Use for "lazy debt", "what did we defer", "list the shortcuts", or a scheduled monthly review. Reports only.
+description: Harvest every `debt:` marker (including legacy `lazy:` markers) in the codebase into a debt ledger so deliberate shortcuts get tracked instead of rotting. Use for "lazy debt", "what did we defer", "list the shortcuts", or a scheduled monthly review. Reports only, with a bounded maintenance metadata exception.
 ---
 
-# Debt ledger for Codex
+# code-debt for Codex
 
-1. Read only `.claude/skills/code-debt/SKILL.md` as the shared detailed workflow, plus `.codex/lazy-persona-cdx.md` for the marker format.
-2. Follow `AGENTS.md`. This skill produces a report and changes nothing.
-3. Collect every `lazy:` marker with its file, line, stated ceiling, and stated upgrade path.
-4. Flag markers whose stated ceiling has since been crossed — those are the ones that became real debt.
-5. Flag markers with no ceiling or no upgrade path. A shortcut without a stated limit is untracked debt, not a lazy decision.
+> 담는 것: 실행 환경별 연결 지침. 담지 않는 것: 공통 절차(→ `../../../dev/workflows/code-debt.md`). 읽는 시점: 이 스킬이 선택됐을 때.
+
+Read and follow [the shared workflow](../../../dev/workflows/code-debt.md).
+Follow AGENTS.md and use Codex-native tools within its read boundary.

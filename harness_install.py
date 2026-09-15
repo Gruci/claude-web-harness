@@ -8,6 +8,7 @@
   python -X utf8 harness_install.py --prune      이미 고쳐진 동결 행 제거(래칫 수확)
   python -X utf8 harness_install.py --list       쓸 수 있는 프리셋 목록
   python -X utf8 harness_install.py --check-update  원류 KERNEL_VERSION 과 대조 — 고지만 한다
+  python -X utf8 harness_install.py --check-agents  Claude·Codex 연결 진단 (읽기 전용)
   python -X utf8 harness_install.py --upgrade       kernel/ · .claude/hooks/ · profiles/*.py 만 교체
 
 **하는 일 셋.**
@@ -59,14 +60,14 @@ GATE_BASELINES: tuple[tuple[Path, str], ...] = (
 
 
 KNOWN_FLAGS = frozenset({"--list", "--doctor", "--prune", "--dry-run", "--preset",
-                         "--check-update", "--upgrade"})
+                         "--check-update", "--upgrade", "--check-agents"})
 
 # ── 하네스 자체 업데이트 ────────────────────────────────────────────────────────
 #
 # clone 해 간 프로젝트는 원류와 git 이 끊겨 있다. 그래서 커널 개선을 받을 길이 "역이식"뿐이었다.
 # `--check-update` 는 원류 기본 브랜치의 KERNEL_VERSION 만 읽어 고지하고, `--upgrade` 는 하네스가
 # 소유한 것만 갈아끼운다 — 프로파일·MD·harness_gates/·docs/ 는 프로젝트 것이라 절대 안 건드린다.
-UPGRADE_DIRS = ("kernel", ".claude/hooks")           # 통째로 교체
+UPGRADE_DIRS = ("kernel", ".claude/hooks")           # 원류 파일 갱신, 프로젝트 추가 파일 보존
 UPGRADE_PRESET_DIR = "profiles"                      # 최상위 프리셋 *.py 만 덮어쓴다 — lang/·arch/ 오버라이드는 남긴다
 _VERSION_RE = re.compile(r'^KERNEL_VERSION\s*=\s*"([^"]+)"', re.M)
 
@@ -121,17 +122,19 @@ def upgrade() -> int:
         found = _VERSION_RE.search((target / "kernel" / "__init__.py").read_text(encoding="utf-8"))
         latest = found.group(1) if found else "?"
         for rel in UPGRADE_DIRS:
-            shutil.rmtree(ROOT / rel, ignore_errors=True)
-            shutil.copytree(target / rel, ROOT / rel, ignore=shutil.ignore_patterns("__pycache__"))
-            print(f"[UPGRADE] {rel}/ 교체")
+            shutil.copytree(target / rel, ROOT / rel, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns("__pycache__"))
+            print(f"[UPGRADE] {rel}/ 갱신 (프로젝트 추가 파일 보존)")
         for preset in sorted((target / UPGRADE_PRESET_DIR).glob("*.py")):
             shutil.copy2(preset, ROOT / UPGRADE_PRESET_DIR / preset.name)
         print(f"[UPGRADE] {UPGRADE_PRESET_DIR}/*.py 덮어씀 (lang/·arch/ 오버라이드는 그대로)")
     print(f"\n[UPGRADE] {KERNEL_VERSION} → {latest}. 다음 순서:")
     print("   python -X utf8 -m kernel.profile     새 프로파일 항목 고지")
     print("   python -X utf8 -m kernel.runner      전 게이트 재검증")
-    print("   git diff 를 보고 커밋 — 마음에 안 들면 git checkout -- . 로 되돌린다")
-    return 0
+    print("   git diff 로 변경을 검토하라. 설정·스킬·공통 절차는 필요한 항목만 병합한다.")
+    # 새 프로세스에서 교체된 커널을 읽는다. 현재 프로세스는 이전 모듈을 캐시하고 있다.
+    return subprocess.run([sys.executable, "-X", "utf8", "-m", "kernel.harness_setup"],
+                          cwd=ROOT).returncode
 
 # 목록에 보여줄 순서. 흔한 것부터, 빈 서식은 마지막. 여기 없는 프리셋은 뒤에 이름순으로 붙는다.
 PRESET_ORDER = ("web_fastapi_react", "api_fastapi", "batch_python", DEFAULT_PRESET)
@@ -395,6 +398,11 @@ def main(argv: list[str]) -> int:
         print_presets()
         return 0
 
+    if "--check-agents" in args:
+        from kernel.harness_setup import check_agents
+
+        return check_agents(ROOT)
+
     if "--check-update" in args:
         return check_update()
 
@@ -402,8 +410,10 @@ def main(argv: list[str]) -> int:
         return upgrade()
 
     if "--doctor" in args:
+        from kernel.harness_setup import check_agents
+
         print_language_report()
-        return 0
+        return check_agents(ROOT)
 
     # 무엇보다 먼저. 위치가 틀리면 나머지를 다 해도 훅이 하나도 안 걸린다.
     if not report_install_location():

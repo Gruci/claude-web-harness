@@ -7,7 +7,7 @@
     "animation": "trace",
     "repository": {
       "url": "https://github.com/Gruci/claude-web-harness",
-      "revision": "6cace54415d634df5f3a6a61bb1578767b163ba5"
+      "revision": "a14a17f83c61d736a9f6ead3e8c3e33f32df453f"
     },
     "views": [
       {
@@ -178,8 +178,8 @@
       "sources": [
         {
           "path": ".claude/hooks/check_file_rules.py",
-          "line": 35,
-          "end_line": 111,
+          "line": 1,
+          "end_line": 12,
           "label": "훅"
         },
         {
@@ -239,8 +239,8 @@
       "sources": [
         {
           "path": ".claude/hooks/check_coding_rules.py",
-          "line": 40,
-          "end_line": 81,
+          "line": 1,
+          "end_line": 12,
           "label": "main"
         },
         {

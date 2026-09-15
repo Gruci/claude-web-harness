@@ -1,12 +1,76 @@
+# Local secrets; sanitized templates remain shareable.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.key
+*.p12
+*.pfx
+
+# Python environments, caches, and generated packages.
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+
+# JavaScript dependencies and generated caches; keep dependency lockfiles.
+node_modules/
+.npm/
+.pnpm-store/
+*.tsbuildinfo
+
+# Local logs, databases, dumps, and temporary files.
+*.log
+logs/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*_dump.sql
+*.dump
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# SQL source and migrations are intentionally not excluded.
+
+# Editor and operating-system state.
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Agent state is local; shared instructions, hooks, and configuration are tracked.
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+.codex/auth.json
+.codex/history.jsonl
+.codex/sessions/
+.codex/log/
+.codex/tmp/
+.codex/worktrees/
 
 # 이 레포는 배포본이라 자기 작업 산출물을 싣지 않는다. 로컬 보관은 하고 추적만 막는다 —
 # `harness_gates/archive_not_shipped.py` 가 같은 규칙을 게이트로 강제하고, gitignore 가
 # 없으면 `git add -A` 한 번에 다시 추적돼 그 게이트가 매번 걸린다.
 # clone 해 간 프로젝트는 자기 archive 를 커밋하는 게 맞으므로 이 행은 따라가지 않는다.
 docs/tasks/archive/
-
-# 화면 린터 검출 테스트의 npm 의존 — 정본은 package.json·package-lock.json, 실물은 npm ci 가 만든다
-tests/fixtures/uilint/node_modules/

@@ -1,17 +1,29 @@
 # AGENTS.md — Codex project harness
 
-> 담는 것: Codex 세션의 행동 규칙과 라우팅. 담지 않는 것: Claude 전용 하네스(→ `CLAUDE.md`·`HARNESS.md`)·상세 규칙(→ 각 정본 MD). 읽는 시점: Codex 세션 진입 시.
+> 담는 것: Codex 세션의 행동 규칙과 라우팅. 담지 않는 것: Claude 전용 행동 규칙(→ `CLAUDE.md`)·상세 규칙(→ 각 정본 MD). 읽는 시점: Codex 세션 진입 시.
 
 This is the Codex-only entry point for this project. Claude Code uses `CLAUDE.md` and `.claude/`; Codex uses this file, `.agents/`, and `.codex/`.
 
 ## Dual-agent boundary
 
-- Ordinary Codex work must not load `CLAUDE.md` or scan `.claude/`. A triggered `*-cdx` adapter may read only its single matching `.claude/skills/<name>/SKILL.md`.
+- Ordinary Codex work must not load `CLAUDE.md` or scan `.claude/`.
+- Shared skill procedures live in [dev/workflows/README.md](dev/workflows/README.md); adapters read the relevant procedure directly.
+- `impeccable-cdx` alone may read the unchanged vendor `.claude/skills/impeccable/SKILL.md` and the task-specific references and scripts it requires. Do not preload or modify vendor assets.
+- Worktree operations may use the shared location specified in `EDITING.md`; that is not permission to load Claude instructions.
 - Shared project truth lives in `README.md`, `DEVGUIDE.md`, `DESIGN_GUIDE.md`, `dev/`, `design/`, and `kernel/runner.py`.
 - Codex-only behavior belongs in `AGENTS.md`, `.agents/`, or `.codex/`. Edit Claude-only harness files only for explicitly requested interoperability.
 - Codex skill names end in `-cdx`.
 
-## Read before editing
+## Initial Codex setup
+
+This harness uses autonomous execution after scope and plan approval.
+At initial setup, run `python -X utf8 setup_global_permissions.py --agent codex --check`.
+If the global setup is missing, install it with `python -X utf8 setup_global_permissions.py --agent codex`.
+The installer preserves unrelated user settings and installs the two-question rule globally.
+Runtime-enforced restrictions may require one installation approval and remain fixed for the current session.
+Do not repeat setup when the check passes.
+
+## Editing prerequisites
 
 Read `EDITING.md` fresh immediately before every edit, then load only the documentation relevant to the target.
 
@@ -31,7 +43,10 @@ Search first and read targeted ranges. Do not preload unrelated Markdown.
 
 ## Change workflow
 
-- Every feature, behavioral change, refactor, performance change, or bug fix except an obvious typo or one configuration value must use `$feature-workflow-cdx`. Research and an explicitly approved plan are required before implementation.
+- Use `$feature-workflow-cdx` for code changes except an obvious typo or one configuration value.
+- The shared [change procedure](dev/workflows/feature-workflow.md) owns research, scope approval, implementation, verification, and archive requirements.
+- Existing approval of a concrete proposal remains valid; record it and continue without repeating the same approval request.
+- Runtime filesystem or sandbox approvals are separate from task approval. Request only access actually required by a failed operation; never weaken global permissions as an implementation shortcut.
 - At implementation start, read `EDITING.md` fresh and register a task-board row tagged with your session id.
 - Preserve unrelated edits. Never commit, revert, clean, reset, or delete them.
 - Use task-suffixed document names when another session may be active: `docs/tasks/research_<task>.md` and `docs/tasks/plan_<task>.md`.
@@ -58,8 +73,11 @@ Search first and read targeted ranges. Do not preload unrelated Markdown.
 - A bug fix must show its reproduction test passing. UI work also requires a rendered inspection.
 - Do not claim a test or build passed unless that command exited 0 in this checkout.
 - Update the relevant shared Markdown in the same turn as durable contracts, routes, components, schemas, or user rules. Write it to `dev/MD_STANDARD.md`: one meaning per line, one fact in one place, and nothing that Glob, Grep, or git log already answers.
-- Enforce checkable rules in `kernel/runner.py` or another deterministic gate. Markdown explains the rule but is not its enforcement. Check 17 validates Markdown structure at write time and `md_style_baseline.txt` may only shrink.
+- Enforce checkable rules in `kernel/runner.py` or another deterministic gate. Markdown explains the rule but is not its enforcement. The Markdown style gate validates structure at write time and `md_style_baseline.txt` may only shrink.
 
 ## Codex harness
 
-Codex skills live in `.agents/skills/`, the lazy ladder in `.codex/lazy-persona-cdx.md`, and shared deterministic gates in `kernel/runner.py`. Use the smallest applicable skill. Delegated results must be concise and include file:line evidence.
+Use the smallest applicable skill from `.agents/skills/`.
+Read [HARNESS.md](HARNESS.md) for shared hook installation, runtime trust, and verification boundaries.
+The shared simplicity ladder is [dev/workflows/simplicity.md](dev/workflows/simplicity.md).
+Delegated results must be concise and include file:line evidence.

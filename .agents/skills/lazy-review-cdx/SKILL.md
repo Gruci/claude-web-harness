@@ -3,10 +3,9 @@ name: code-trim-cdx
 description: Review the current diff for over-engineering only — what to delete, what to replace with a standard-library or existing helper. Use for "is this over-engineered", "what can we delete", or right after finishing an implementation.
 ---
 
-# Over-engineering review for Codex
+# code-trim for Codex
 
-1. Read only `.claude/skills/code-trim/SKILL.md` as the shared detailed workflow, plus `.codex/lazy-persona-cdx.md` for the ladder.
-2. Follow `AGENTS.md`. This skill hunts complexity, not correctness bugs.
-3. Look for reinvented standard library, unneeded dependencies, single-implementation interfaces, speculative flexibility, and configuration for values that never change.
-4. One line per finding: location, what to cut, what replaces it.
-5. Apply the findings in the same turn when the change is mechanical and the diff is still open.
+> 담는 것: 실행 환경별 연결 지침. 담지 않는 것: 공통 절차(→ `../../../dev/workflows/code-trim.md`). 읽는 시점: 이 스킬이 선택됐을 때.
+
+Read and follow [the shared workflow](../../../dev/workflows/code-trim.md).
+Follow AGENTS.md and use Codex-native tools within its read boundary.

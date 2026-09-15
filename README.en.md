@@ -12,8 +12,8 @@ Harness v3.6.0
 
 ## Three-line summary
 
-1. When you build with an AI like Claude Code, every new session forgets yesterday's agreements, and the code starts drifting.
-2. This tool turns those agreements into **automatic checks** instead of documents — break one, and the save itself is blocked.
+1. Claude Code and Codex use the same development rules and working procedures across sessions.
+2. **Automatic checks** report violations after edits, and configured stop hooks require fixes and verification.
 3. After install, one sentence ("set up the harness") finishes configuration; from then on the checks run without you thinking about them.
 
 ## At a glance
@@ -28,16 +28,41 @@ These are the harness drawn with the harness. Every box carries a real source fi
 
 ## What is this?
 
-Think of the automatic brakes that stop a car even when a novice driver makes a mistake. This tool is a guardrail for development: the moment the AI writes code that breaks a rule, the save stops and the AI has to fix it.
+Think of the automatic brakes that stop a car even when a novice driver makes a mistake. This tool reports rule violations immediately after edits so the AI can fix them before completing its work.
 
 Talk to an AI long enough and the code tangles. Today's session doesn't know yesterday's agreements, "this is probably fine" piles up, and one day nobody can read the codebase. Writing rules down doesn't stop this — a document is a request, not enforcement. This harness implements rules as **blocking**.
+
+### Use with Claude Code and Codex
+
+Both agents share development rules, working procedures, and the check engine.
+Their entry instructions and tool configuration stay separate.
+Use the [shared workflow hub](dev/workflows/README.md) for procedures and [harness guide](HARNESS.md) for runtime contracts.
+
+Initialize Codex with `python -X utf8 setup_global_permissions.py --agent codex`.
+Use `--agent both` to initialize both agents together.
+The installer configures autonomous tool execution and global instructions that ask only about material ambiguity or implementation-plan approval.
+Existing settings are preserved and backed up before changes.
+Python 3.11 or newer is recommended; Python 3.10 needs the installed `toml` package.
+Start a new session to apply the settings; host-enforced policies take precedence.
+
+Run `python -X utf8 harness_install.py --check-agents` to check both agents' wiring.
+Codex hooks must be reviewed and trusted in the runtime before they run.
+Verify host support and rejection of a deliberate violation in a temporary checkout.
+Successful file checks alone do not prove that automatic save and stop hooks are active.
+
+### Local files and secrets
+
+Environment files, virtual environments, dependencies, local databases, and logs are excluded by `.gitignore`.
+Sanitized templates such as `.env.example` and dependency lockfiles remain shareable.
+SQL source and migrations remain tracked.
+Ignore rules do not untrack existing files, so review the staged diff before committing.
 
 ### Before / after
 
 | | Without it | With it |
 |:--|:--|:--|
 | When the session changes | Yesterday's agreements are forgotten | The same rules are enforced regardless of session |
-| When a rule is broken | Nothing happens — a human finds out later | The save is blocked instantly and the AI fixes it |
+| When a rule is broken | Nothing happens — a human finds out later | Violations are reported after edits and the AI fixes them |
 | Order of work | Implementation starts immediately | No source is touched until you approve a design document |
 | "It's done" | May be just words | The session cannot end until every check passes |
 | When a check can't run | It silently looks like a pass | It is reported as not-run, with the reason |
@@ -192,7 +217,11 @@ Edit the matching entry in `harness_profile.py`. Adding screens to a project tha
 Empty its configuration entry and it moves to `[SKIP]`. The resting state is printed with its reason on every run, though — no setting hides that, on purpose.
 
 **How do I update the harness itself?**
-`python -X utf8 harness_install.py --check-update` compares your copy with the upstream version and only tells you; nothing is changed. When you decide to move, `--upgrade` replaces only the check engine (`kernel/`), the hooks (`.claude/hooks/`), and the presets. Your configuration file, documents, repository-specific checks, and diagrams belong to the project and are never touched. If the new version added configuration entries, the next session start lists them as "new entries you can fill in".
+`python -X utf8 harness_install.py --check-update` compares your copy with the upstream version without changing it.
+`--upgrade` updates upstream engine, Claude hook, and preset files while preserving files added by the project.
+Your configuration, documents, repository-specific checks, and diagrams stay intact.
+The upgrade then checks both agents' wiring.
+Merge missing shared workflows or hook configuration without overwriting project customizations, then rerun the check.
 
 **What do I have to write myself?**
 At install time, nothing. Folder names and framework function names are handled by onboarding. What only you know is your service's domain knowledge, which accumulates in `PROJECT.md` as development progresses.
@@ -283,7 +312,7 @@ Checks run at three moments:
 
 | When | Target | On violation |
 |:--|:--|:--|
-| Right after a file save | That file | Change blocked, fix demanded |
+| After an editing tool runs | Edited files | Violation feedback, fix demanded |
 | Session exit attempt | Everything | Exit blocked |
 | Manual run (`python -X utf8 -m kernel.runner`) | Everything | Exit code 1 |
 

@@ -3,65 +3,11 @@ name: review-loop
 description: 서비스 오너 검수 루프 — 화면·지표·문구를 product-reviewer 에이전트가 검수하고, 피드백을 반영해 재작업·재검수를 반복한다. "검수 돌려줘"·"리뷰해줘"·"이 화면 구성 맞는지 봐줘"·"이 지표들이 의미 있는지 확인해줘"·새 페이지/대시보드 완성 후 비즈니스 관점 검증·"재검수해줘" 요청 시 반드시 이 스킬을 사용할 것.
 ---
 
-# review-loop — 오너 검수 루프
+# review-loop for Claude Code
 
-> 담는 것: 검수 루프의 단계·판정 분기·재검수 서식. 담지 않는 것: 검수 기준 자체(→ `product-reviewer` 에이전트). 읽는 시점: 화면·지표·문구 검수 요청 시.
+> 담는 것: 실행 환경별 연결 지침. 담지 않는 것: 공통 절차(→ `../../../dev/workflows/review-loop.md`). 읽는 시점: 이 스킬이 선택됐을 때.
 
-## Phase 1: 검수 대상 확정
-
-검수 가능한 대상:
-- **화면 구성**: 레이아웃·섹션 구성·정보 위계 기술
-- **지표/정보 목록**: 화면에 표시되는 항목 나열
-- **문구**: 레이블·안내 텍스트·요약문
-- **복합**: 위 여럿을 한꺼번에
-
-## Phase 2: product-reviewer 에이전트 호출
-
-```
-[검수 요청]
-유형: <화면 구성 / 지표 목록 / 문구 / 복합>
-내용:
----
-<검수 대상 원문 또는 상세 설명>
----
-추가 컨텍스트: <이 화면의 용도·대상 사용자>
-```
-
-## Phase 3: 피드백 분류 및 작업 배정
-
-| 판정 | 다음 액션 |
-|------|---------|
-| 승인 | 루프 종료, 결과 보고 |
-| 조건부 승인 | ⚠️ 보완 필요 항목만 수정 후 Phase 4 |
-| 반려 | ❌ 누락 + ⚠️ 전체 재작업 후 Phase 2 재진입 |
-
-**보완 작업 배정**: 데이터/API 수정 → `backend` 에이전트 / UI 재배치·레이블 → `frontend` 에이전트
-
-## Phase 4: 재검수
-
-수정 완료 후 Phase 2 재진입. 서식 없이 넘기면 2회차 검수가 이전 판정을 모른 채 처음부터 다시 본다 — 아래 블록을 요청에 포함한다:
-
-```
-[재검수 요청]
-이전 판정: <조건부 승인 / 반려 + 핵심 지적 요약>
-반영한 수정: <지적 항목별로 무엇을 어떻게 고쳤는지 나열>
-수정 후 내용:
----
-<수정된 검수 대상 원문>
----
-```
-
-## 종료 조건
-
-- "승인" 판정 시 루프 종료
-- 3회 반복 후에도 "반려" 유지 시: 사용자에게 에스컬레이션 — 근본적인 방향 재설정 필요 가능성
-
-## 주의사항
-
-- product-reviewer는 코드 품질 검수 안 함 — 비즈니스 의미·완결성만 평가
-- 피드백 없이 "좋아요" 판정만 나오면 에이전트 프롬프트 재점검 (yes-man 방지)
-- 같은 내용 2회 이상 반려 시 화면/지표 설계 자체를 사용자와 재논의할 것
-
-## 기록
-
-끝나면 `python -X utf8 -m kernel.maintenance --stamp review-loop` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.
+Read and follow [the shared workflow](../../../dev/workflows/review-loop.md).
+Follow CLAUDE.md for environment-specific routing.
+Use product-reviewer for delegated business review.
+Approved rework can use backend for data changes and frontend for screen changes.

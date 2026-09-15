@@ -1,8 +1,14 @@
-"""setup_global_permissions.py — 글로벌 `~/.claude/settings.json` 에 하네스 권한을 병합한다.
+"""setup_global_permissions.py — 선택한 에이전트의 글로벌 자율 실행 설정을 병합한다.
 
   python -X utf8 setup_global_permissions.py
+  python -X utf8 setup_global_permissions.py --agent codex
+  python -X utf8 setup_global_permissions.py --agent both
+  python -X utf8 setup_global_permissions.py --agent codex --check
 
 clone 직후 1회. 기존 설정(훅·플러그인 등)은 보존하고 permissions 만 병합한다.
+기본 에이전트는 claude다. Codex는 CODEX_HOME 또는 ~/.codex를 사용한다.
+Codex는 config.toml과 글로벌 지침의 표시된 블록만 수정하고 기존 파일을 한 번 백업한다.
+--check는 파일을 쓰지 않으며 런타임이 강제한 정책이나 세션 옵션을 변경하지 않는다.
 
 ⚠️ 이 스크립트는 **이 머신의 모든 프로젝트**에 대해 도구 승인 프롬프트를 끈다
    (`defaultMode: bypassPermissions`). 하네스의 차단은 훅과 게이트가 하고 승인 프롬프트는
@@ -12,6 +18,7 @@ clone 직후 1회. 기존 설정(훅·플러그인 등)은 보존하고 permissi
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -24,13 +31,23 @@ ALLOW = [
 ]
 
 
-def main() -> int:
+def configure_claude(check: bool = False) -> int:
     path = Path.home() / ".claude" / "settings.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-
     settings: dict[str, object] = {}
     if path.exists():
         settings = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(settings, dict) or not isinstance(settings.get("permissions", {}), dict):
+        raise ValueError("Expected object-valued Claude settings and permissions")
+
+    if check:
+        perm = settings.get("permissions", {})
+        ready = (isinstance(perm, dict) and perm.get("defaultMode") == "bypassPermissions"
+                 and settings.get("skipDangerousModePermissionPrompt") is True
+                 and set(ALLOW) <= set(perm.get("allow", [])))
+        print(f"[CLAUDE] {'OK' if ready else 'MISSING'} global permissions: {path}")
+        return 0 if ready else 1
+
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     perm = settings.setdefault("permissions", {})
     if isinstance(perm, dict):
@@ -38,11 +55,36 @@ def main() -> int:
         perm["defaultMode"] = "bypassPermissions"
     settings["skipDangerousModePermissionPrompt"] = True
 
-    path.write_text(json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8")
+    updated = json.dumps(settings, indent=2, ensure_ascii=False) + "\n"
+    if not path.exists() or path.read_text(encoding="utf-8") != updated:
+        if path.exists():
+            backup = path.with_name(path.name + ".pre-harness-autonomy.bak")
+            if not backup.exists():
+                with backup.open("xb") as handle:
+                    handle.write(path.read_bytes())
+        path.write_text(updated, encoding="utf-8")
     print(f"글로벌 권한 설정 완료: {path}")
     print("다음 claude 세션부터 승인 프롬프트 없이 실행된다.")
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--agent", choices=("claude", "codex", "both"), default="claude")
+    parser.add_argument("--check", action="store_true", help="Read-only configuration check")
+    args = parser.parse_args(argv)
+    codes = []
+    if args.agent in ("claude", "both"):
+        try:
+            codes.append(configure_claude(check=args.check))
+        except (OSError, UnicodeError, ValueError, TypeError) as exc:
+            print(f"[CLAUDE] ERROR settings could not be updated: {exc.__class__.__name__}")
+            codes.append(2)
+    if args.agent in ("codex", "both"):
+        from kernel.codex_permissions import codex_home, configure_codex
+
+        codes.append(configure_codex(codex_home(), check=args.check))
+    return max(codes)
 
 
 if __name__ == "__main__":

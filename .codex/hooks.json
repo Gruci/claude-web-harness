@@ -1,0 +1,32 @@
+{
+  "description": "Shared harness gates. Review and trust these hooks in the Codex runtime before use.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/kernel/hook.py\" --agent codex --event PostToolUse",
+            "commandWindows": "python -X utf8 (Join-Path (git rev-parse --show-toplevel) 'kernel/hook.py') --agent codex --event PostToolUse; exit $LASTEXITCODE",
+            "timeout": 120,
+            "statusMessage": "Checking edited files"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -X utf8 \"$(git rev-parse --show-toplevel)/kernel/hook.py\" --agent codex --event Stop",
+            "commandWindows": "python -X utf8 (Join-Path (git rev-parse --show-toplevel) 'kernel/hook.py') --agent codex --event Stop; exit $LASTEXITCODE",
+            "timeout": 180,
+            "statusMessage": "Checking the full checkout"
+          }
+        ]
+      }
+    ]
+  }
+}

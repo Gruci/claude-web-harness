@@ -4,9 +4,9 @@
   "kind": "architecture",
   "source": "docs/architecture/harness.architecture.json",
   "output": "docs/architecture/harness.architecture.html",
-  "spec_sha256_lf": "456bde65a7dce46fc84c688b30188c008afffb49d05ba9608190b629ea2b9ccb",
-  "revision": "6cace54415d634df5f3a6a61bb1578767b163ba5",
-  "delivered_at": "2026-09-09T03:58:00",
+  "spec_sha256_lf": "5c453f8d713c29d6dd932e219ea7d78dc24250802b67b2beb2ad07ef9fd9a890",
+  "revision": "a14a17f83c61d736a9f6ead3e8c3e33f32df453f",
+  "delivered_at": "2026-09-15T20:36:37",
   "validation": {
     "checksPassed": 9,
     "checkCount": 9,
@@ -20,15 +20,15 @@
     "ok": true,
     "command": "deliver",
     "type": "architecture",
-    "input": "D:\\dev\\claude-web-harness\\docs\\architecture\\harness.architecture.json",
-    "output": "D:\\dev\\claude-web-harness\\docs\\architecture\\harness.architecture.html",
+    "input": "C:\\dev_project\\claude-web-harness\\docs\\architecture\\harness.architecture.json",
+    "output": "C:\\dev_project\\claude-web-harness\\docs\\architecture\\harness.architecture.html",
     "specification": {
-      "sha256": "679d8fbb2792f77945a1669b3e7a9394a1218e9486358dcc1ac6483ccfc2d1e2",
-      "bytes": 10792
+      "sha256": "1afa443342e6c9958ae506e9d987e309b06f40af03d2b479103e7919c29ad89a",
+      "bytes": 10789
     },
     "artifact": {
-      "sha256": "b67915fa4825f14e1cb827db9ce50e7c733d90bf14472ac6fcea99061c9212fb",
-      "bytes": 836488
+      "sha256": "726ff662731c6ed4b6cb301519d34ef0343449122814cdd5d594007ab7468290",
+      "bytes": 836482
     },
     "validation": {
       "checksPassed": 9,

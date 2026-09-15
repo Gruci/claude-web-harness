@@ -9,39 +9,9 @@ description: >
   not apply fixes.
 ---
 
-> 담는 것: 레포 전체 과잉설계 감사 절차. 담지 않는 것: diff 단위 검토(→ code-trim)·부채 수확(→ code-debt). 읽는 시점: 전체 감사 요청 또는 [정비] 알림 시.
+# code-audit for Claude Code
 
-code-trim, repo-wide. Scan the whole tree instead of a diff. Rank
-findings biggest cut first.
+> 담는 것: 실행 환경별 연결 지침. 담지 않는 것: 공통 절차(→ `../../../dev/workflows/code-audit.md`). 읽는 시점: 이 스킬이 선택됐을 때.
 
-## Tags
-
-Same as code-trim:
-
-- `delete:` dead code, unused flexibility, speculative feature. Replacement: nothing.
-- `stdlib:` hand-rolled thing the standard library ships. Name the function.
-- `native:` dependency or code doing what the platform already does. Name the feature.
-- `yagni:` abstraction with one implementation, config nobody sets, layer with one caller.
-- `shrink:` same logic, fewer lines. Show the shorter form.
-
-## Hunt
-
-Deps the stdlib or platform already ships, single-implementation interfaces,
-factories with one product, wrappers that only delegate, files exporting one
-thing, dead flags and config, hand-rolled stdlib.
-
-## Output
-
-One line per finding, ranked: `<tag> <what to cut>. <replacement>. [path]`.
-End with `net: -<N> lines, -<M> deps possible.` Nothing to cut: `Lean already. Ship.`
-
-## Boundaries
-
-Scope: over-engineering and complexity only. Correctness bugs, security holes,
-and performance are explicitly out of scope. Route them to a normal review
-pass. Lists findings, applies nothing. One-shot.
-"stop code-audit" or "normal mode" to revert.
-
-## 기록
-
-끝나면 `python -X utf8 -m kernel.maintenance --stamp code-audit` 를 돌리고 `harness_maintenance.json` 을 커밋한다. 이 기록이 다음 주기의 기준점이다 — 안 남기면 다음 세션이 또 돌린다.
+Read and follow [the shared workflow](../../../dev/workflows/code-audit.md).
+Follow CLAUDE.md for environment-specific routing.
