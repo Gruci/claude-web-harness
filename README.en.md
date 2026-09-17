@@ -327,7 +327,9 @@ project-root/
 ├── HARNESS.md              # Full map of checks, hooks, agents, skills
 ├── DEVGUIDE.md             # Server-side rules (with dev/)
 ├── DESIGN_GUIDE.md         # Screen design rules (with design/)
-├── BACKLOG.md              # Remaining backlog — active tasks live in .claude/workboard/ (untracked board)
+├── BACKLOG.md              # Remaining backlog — active tasks live on the board below
+├── workboard/              # Task board (agent-neutral; only README tracked, task files untracked)
+├── worktrees/              # Per-task isolated checkouts (untracked; git worktree list is the registry)
 ├── kernel/                 # Check engine. Knows nothing about the project
 │   ├── langs/              # Language packs — per-language declarations
 │   └── archs/              # Architecture packs — per-project-shape declarations
@@ -473,7 +475,7 @@ python -X utf8 -m kernel.diagram deliver  architecture docs/architecture/<name>.
 
 | Version | Changes |
 |:--|:--|
-| **v3.7.0** | Task board moved out of git into `.claude/workboard/` — one file per task, an edit-time overlap warning hook, EDITING.md renamed to BACKLOG.md. |
+| **v3.7.0** | Task board moved out of git into root `workboard/` — one file per task, edit-time overlap warnings (Claude hook + Codex entrypoint sharing one kernel judgment), worktrees relocated to root `worktrees/` for agent neutrality, EDITING.md renamed to BACKLOG.md. |
 | **v3.6.0** | Less check cost and noise. Full check 21 s → 3 s, six frontend checks delegated to ESLint, AI copy review downgraded to a warning, CLAUDE.md deduplicated. |
 | **v3.5.0** | Verified architecture diagrams. Built-in diagram engine and check 48, self-update path, profile-shape check 47, nine self-tests. |
 | **v3.4.0** | Second production back-port. Checks 35 → 46, session-end AI copy review, three harness defects fixed, three over-blocking cases relaxed. |

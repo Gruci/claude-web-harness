@@ -74,13 +74,29 @@ def test_alive_no_nameerror() -> None:
 
 
 def test_worktree_rel_strip() -> None:
-    """worktree 안 파일의 상대경로는 접두를 벗겨야 한다 — 안 벗기면 `.claude/` 접두가
-    is_harness_own 에 걸려 작성 시점 검사가 무음 통과한다."""
+    """worktree 안 파일의 상대경로는 접두를 벗겨야 한다 — 안 벗기면 경로 기반 게이트가
+    전부 오탐하고, 레거시 자리는 `.claude/` 접두가 is_harness_own 에 걸려 무음 통과한다."""
     sys.path.insert(0, str(ROOT))
     from kernel.context import ROOT as KROOT, _rel
-    inside = KROOT / ".claude" / "worktrees" / "feat-x--12345678" / "db" / "reads" / "a.py"
-    assert _rel(inside) == "db/reads/a.py"
+    inside = KROOT / "worktrees" / "feat-x--12345678" / "db" / "reads" / "a.py"
+    assert _rel(inside) == "db/reads/a.py", "루트 worktrees/ 접두를 못 벗겼다"
+    legacy = KROOT / ".claude" / "worktrees" / "feat-x--12345678" / "db" / "reads" / "a.py"
+    assert _rel(legacy) == "db/reads/a.py", "레거시 .claude/worktrees/ 접두를 못 벗겼다"
     assert _rel(KROOT / "db" / "reads" / "a.py") == "db/reads/a.py"
+    assert _rel(KROOT / "workboard" / "x.md") == "workboard/x.md", "보드 파일을 worktree 로 오인"
+
+
+def test_worktree_location() -> None:
+    """자리 규약 — 루트 `worktrees/` 통과, 레거시 `.claude/worktrees/` 와 임의 자리는 기대 경로 제시."""
+    naming = _load("check_worktree_name")
+    assert naming.wrong_location("worktrees/feat-x--12345678") is None
+    assert naming.wrong_location("D:/repo/worktrees/feat-x--12345678") is None, "절대경로 정상 자리를 막았다"
+    assert naming.wrong_location(".claude/worktrees/feat-x--12345678") == "worktrees/feat-x--12345678", \
+        "레거시 자리를 통과시켰다"
+    assert naming.wrong_location("feat-x--12345678") == "worktrees/feat-x--12345678", "루트 직생성을 통과시켰다"
+    assert naming.worktree_add_path(
+        "git worktree add worktrees/feat-x--12345678 -b feat/x origin/main"
+    ) == "worktrees/feat-x--12345678", "경로 토큰을 못 읽었다"
 
 
 def test_outbound_link() -> None:
@@ -299,7 +315,7 @@ def test_workflow_model_required() -> None:
 
 def demo() -> None:
     for check in (test_fresh_worktree_not_dead, test_alive_no_nameerror,
-                  test_worktree_rel_strip, test_outbound_link,
+                  test_worktree_rel_strip, test_worktree_location, test_outbound_link,
                   test_workboard_file_is_one_row, test_branch_comes_from_task_field,
                   test_workboard_overlap, test_worktree_name_matches_scope,
                   test_worktree_add_only_at_command_head,

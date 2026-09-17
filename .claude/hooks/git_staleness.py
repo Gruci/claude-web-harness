@@ -2,7 +2,7 @@
 
 ## 열린 과업 주입
 
-겹침 확인이 비싸면 착수 전에 건너뛰게 되고, 그 순간 보드는 있으나 마나다. `.claude/workboard/`
+겹침 확인이 비싸면 착수 전에 건너뛰게 되고, 그 순간 보드는 있으나 마나다. `workboard/`
 를 세션이 직접 열지 않아도 되도록 시작 시점에 한 줄씩 싣는다. **브랜치와 무관하게 돈다** —
 착수하는 쪽은 오히려 worktree 세션이다.
 
@@ -23,11 +23,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _hookio import board_dir  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-# 보드는 공유 체크아웃 한 곳이다 — 자기 트리로 잡으면 세션 수만큼 갈라진다(`_hookio.board_dir`).
-BOARD_DIR = board_dir()
+# 보드는 공유 체크아웃 한 곳이다 — 자기 트리로 잡으면 세션 수만큼 갈라진다
+# (`kernel.workboard.board_dir`). 커널을 못 읽으면 보드 주입만 접고 stale 감시는 계속한다.
+try:
+    from kernel.workboard import board_dir  # noqa: E402
+    BOARD_DIR: Path | None = board_dir()
+except Exception:
+    BOARD_DIR = None
 
 _FETCH_TIMEOUT_SEC = 15
 
@@ -65,7 +69,7 @@ def _field(text: str, name: str) -> str:
 
 def print_open_tasks() -> None:
     """열린 과업 한 줄 요약 — 착수 전 확인을 세션 기억에 안 맡긴다."""
-    if not BOARD_DIR.is_dir():
+    if BOARD_DIR is None or not BOARD_DIR.is_dir():
         return
     rows = []
     for path in sorted(BOARD_DIR.glob("*.md")):
@@ -83,7 +87,7 @@ def print_open_tasks() -> None:
     print(f"[WORKBOARD] 열린 과업 {len(rows)}건 — 같은 범위면 새로 파지 말고 합류하거나 쌓는다.")
     for row in rows:
         print(row)
-    print("  서식·착수 라우팅: .claude/workboard/README.md")
+    print("  서식·착수 라우팅: workboard/README.md")
 
 
 def main() -> None:

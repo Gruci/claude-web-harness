@@ -53,7 +53,9 @@ SYMBOLS: dict[str, str | None] = {
 
 
 HARNESS_ASSETS = ("tests/fixtures/", "tests/golden/", "tests/build_fixture.py",
-                  "tests/fixture_files.py", "tests/run_golden.py")
+                  "tests/fixture_files.py", "tests/run_golden.py",
+                  # 과업 보드 — 기계가 파싱하는 상태 파일이라 문서·정본 그래프의 대상이 아니다
+                  "workboard/")
 
 SCOPE: dict[str, tuple[str, ...]] = {
     "exclude_all":     ("docs/",) + HARNESS_ASSETS,

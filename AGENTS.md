@@ -9,7 +9,7 @@ This is the Codex-only entry point for this project. Claude Code uses `CLAUDE.md
 - Ordinary Codex work must not load `CLAUDE.md` or scan `.claude/`.
 - Shared skill procedures live in [dev/workflows/README.md](dev/workflows/README.md); adapters read the relevant procedure directly.
 - `impeccable-cdx` alone may read the unchanged vendor `.claude/skills/impeccable/SKILL.md` and the task-specific references and scripts it requires. Do not preload or modify vendor assets.
-- Worktree operations may use the shared location specified in `.claude/workboard/README.md`; that is not permission to load Claude instructions.
+- Worktree operations may use the shared location specified in `workboard/README.md`; that is not permission to load Claude instructions.
 - Shared project truth lives in `README.md`, `DEVGUIDE.md`, `DESIGN_GUIDE.md`, `dev/`, `design/`, and `kernel/runner.py`.
 - Codex-only behavior belongs in `AGENTS.md`, `.agents/`, or `.codex/`. Edit Claude-only harness files only for explicitly requested interoperability.
 - Codex skill names end in `-cdx`.
@@ -25,7 +25,7 @@ Do not repeat setup when the check passes.
 
 ## Editing prerequisites
 
-Before starting implementation, list `.claude/workboard/` for open tasks (one untracked file per task; protocol in that directory's README), then load only the documentation relevant to the target.
+Before starting implementation, list `workboard/` for open tasks (one untracked file per task; protocol in that directory's README), then load only the documentation relevant to the target.
 
 | Target | Required shared documentation |
 |---|---|
@@ -47,10 +47,10 @@ Search first and read targeted ranges. Do not preload unrelated Markdown.
 - The shared [change procedure](dev/workflows/feature-workflow.md) owns research, scope approval, implementation, verification, and archive requirements.
 - Existing approval of a concrete proposal remains valid; record it and continue without repeating the same approval request.
 - Runtime filesystem or sandbox approvals are separate from task approval. Request only access actually required by a failed operation; never weaken global permissions as an implementation shortcut.
-- At implementation start, check `.claude/workboard/` and create a task file named after the change scope, tagged `#sid:<session id first 8>`. If the scope already has a file, join it (add items) or stack on its branch instead of opening a duplicate.
+- At implementation start, check `workboard/` and create a task file named after the change scope, tagged `#sid:<session id first 8>`. If the scope already has a file, join it (add items) or stack on its branch instead of opening a duplicate.
 - Preserve unrelated edits. Never commit, revert, clean, reset, or delete them.
 - Use task-suffixed document names when another session may be active: `docs/tasks/research_<task>.md` and `docs/tasks/plan_<task>.md`.
-- Archive both documents under `docs/tasks/archive/YYYY-MM-DD-<task>/` in the same turn implementation completes, then delete your task file from `.claude/workboard/`.
+- Archive both documents under `docs/tasks/archive/YYYY-MM-DD-<task>/` in the same turn implementation completes, then delete your task file from `workboard/`.
 
 ## Repository invariants
 

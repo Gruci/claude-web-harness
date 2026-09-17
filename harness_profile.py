@@ -52,12 +52,13 @@ HARNESS_MAP = "HARNESS.md"
 
 MD: dict[str, tuple[str, ...]] = {
     "doc_exclude":   (".claude/", ".agents/", ".codex/", "tests/fixtures/",
-                      "docs/"),   # 작업 산출물 archive — 프리셋들과 동일하게 정본 그래프에서 제외
+                      "docs/", "workboard/"),   # 작업 산출물 archive·과업 보드 — 정본 그래프 밖
     "ref_exclude":   (),
     # `.claude/` 는 벤더 사본(impeccable 참고 문서 30여 개)과 frontmatter 형식의 정의
     # 파일이라 역할 계약 규약의 대상이 아니다. 레포 대문(README)도 마찬가지다.
+    # `workboard/` 과업 파일은 기계가 파싱하는 보드 상태라 문서 서식의 대상이 아니다.
     "style_exclude": (".claude/", ".agents/", ".codex/", "tests/fixtures/",
-                      "BACKLOG.md", "README.md", "README.en.md"),
+                      "workboard/", "BACKLOG.md", "README.md", "README.en.md"),
     "date_exempt":   ("dev/LESSONS.md",),
 }
 

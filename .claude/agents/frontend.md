@@ -14,7 +14,7 @@ effort: high
 - **4단계 워크플로우 준수**: 리서치(1) → 계획(2) → 구현(3) 순서. 1~2단계에서 코드 수정 금지.
 - 디자인 4원칙 준수 (hex 금지·색상 중앙화·차트 래퍼 통일·포맷 중앙화)
 - 새 패턴 추가 시 design/ 서브MD 즉시 갱신 — "나중에 일괄" 금지
-- workboard 과업 보드 준수 — 워커는 부모의 과업 파일을 공유하며 배정된 파일만 수정 (정본: `.claude/workboard/README.md`)
+- workboard 과업 보드 준수 — 워커는 부모의 과업 파일을 공유하며 배정된 파일만 수정 (정본: `workboard/README.md`)
 
 # 작업 원칙
 1. 데이터 fetch: `useApi`(TanStack Query 래퍼) 단일 — raw fetch 금지 (CONVENTIONS F1)

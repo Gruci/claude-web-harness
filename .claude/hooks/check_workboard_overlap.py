@@ -7,7 +7,8 @@
 worktree 는 **파일 충돌**만 막는다. 두 세션이 서로 다른 파일로 같은 기능을 각자 만들면 git 은
 조용히 둘 다 머지하고, 결과는 앞뒤가 안 맞는 화면이다(원류 MIS 2026-09-16 실측: 한쪽이
 클래스명을 바꾸자 다른 쪽 CSS 가 통째로 무효가 됐다). 그 겹침을 착수 시점에 드러내는 것이
-이 훅이다.
+이 훅이다. 판정은 `kernel/workboard.py` 가 단일 정본이고 Codex 진입점(`kernel/hook.py`)도
+같은 판정을 저장 직후에 돌린다 — Codex 에는 편집 전 이벤트가 없다.
 
 ## 경고지 차단이 아니다
 
@@ -18,12 +19,11 @@ worktree 는 **파일 충돌**만 막는다. 두 세션이 서로 다른 파일�
 
 파일명(= 범위 이름)으로 가르면 범위 이름을 바꾼 순간 자기 과업을 남의 것으로 경고한다.
 """
-import fnmatch
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _hookio import board_dir, read_hook_payload  # noqa: E402
+from _hookio import read_hook_payload  # noqa: E402
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -31,15 +31,22 @@ try:
 except Exception:
     pass
 
-# 보드는 **공유 체크아웃 한 곳**이다 — 훅 파일이 worktree 마다 복제되므로 자기 트리로
-# 잡으면 보드가 세션 수만큼 갈라진다(`_hookio.board_dir` 헤더).
-BOARD_DIR = board_dir()
 # ⚠️ ROOT 는 **자기 worktree 루트**다(보드와 다른 자리). 편집 대상 파일을 상대경로로 바꿔
 #    글로브와 맞대는 용도라, 공유 체크아웃으로 잡으면 worktree 안 파일이 전부 `relative_to`
 #    에서 벗어나 경고가 통째로 죽는다.
 ROOT = Path(__file__).resolve().parents[2]
 
 sys.path.insert(0, str(ROOT))
+
+# 판정 정본은 kernel/workboard.py — 커널을 못 읽으면 fail-open: 경고 훅이 편집을 막지 않는다.
+try:
+    from kernel.workboard import board_dir, overlaps as _overlaps, touch_globs  # noqa: E402,F401
+except Exception:
+    sys.exit(0)
+
+# 보드는 **공유 체크아웃 한 곳**이다 — 훅 파일이 worktree 마다 복제되므로 자기 트리로
+# 잡으면 보드가 세션 수만큼 갈라진다(`kernel.workboard.board_dir` 헤더).
+BOARD_DIR = board_dir()
 
 # 알릴 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 판정은 계속돼야 한다.
 try:
@@ -50,46 +57,9 @@ except Exception:
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
 
-def touch_globs(text: str) -> list[str]:
-    """`손대는 곳:` 아래의 글로브 목록. 다음 필드(`- 이름:`)를 만나면 끝난다."""
-    globs: list[str] = []
-    collecting = False
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("- 손대는 곳:"):
-            collecting = True
-            continue
-        if collecting:
-            # 두 칸 들여쓴 `- <glob>` 만 항목이다. 들여쓰기 없는 `- x:` 는 다음 필드다.
-            if line.startswith("  - "):
-                globs.append(stripped[2:].strip())
-                continue
-            if stripped.startswith("- "):
-                break
-    return globs
-
-
 def overlaps(target: Path, sid8: str) -> list[str]:
-    """내 것이 아닌 과업의 글로브에 걸리는가 — 걸리면 `범위 (글로브)` 목록."""
-    try:
-        rel = target.resolve().relative_to(ROOT).as_posix()
-    except ValueError:
-        return []                         # 레포 밖 파일(스크래치패드 등)은 대상이 아니다
-    hits: list[str] = []
-    for path in sorted(BOARD_DIR.glob("*.md")):
-        if path.name == "README.md":
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if sid8 and f"#sid:{sid8}" in text:
-            continue                      # 내 과업
-        for pattern in touch_globs(text):
-            if fnmatch.fnmatch(rel, pattern) or rel.startswith(pattern.rstrip("*")):
-                hits.append(f"{path.stem} ({pattern})")
-                break
-    return hits
+    """내 것이 아닌 과업의 글로브에 걸리는가 — 판정은 커널, 보드·루트 자리만 이 훅이 쥔다."""
+    return _overlaps(target, sid8, BOARD_DIR, ROOT)
 
 
 def _target(payload: dict) -> Path | None:

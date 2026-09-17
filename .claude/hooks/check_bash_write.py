@@ -22,7 +22,7 @@ worktree 를 걷는 과정 어딘가에서 그 실을 타고 공유 트리 쪽�
 「트리 밖」 판정만으로는 그 사고 경로가 양쪽 다 트리 안이 되어 그대로 빠져나간다. 의존성
 디렉토리는 어느 방향이든 링크할 이유가 없다 — 그 트리에서 직접 깔면 된다.
 
-worktree 프로토콜의 값은 격리다(`.claude/workboard/README.md`). 격리 밖을 가리키는 링크는 그 값을 무효로 만든다.
+worktree 프로토콜의 값은 격리다(`workboard/README.md`). 격리 밖을 가리키는 링크는 그 값을 무효로 만든다.
 안에서 안으로 거는 링크는 통과시킨다 — 격리를 안 깬다.
 
 ## 절 1 — 소스 쓰기 (작성 시점 게이트 우회 방지)
@@ -339,7 +339,7 @@ def main() -> None:
         print(
             f"[BASH GATE] 병렬 체제의 공유 메인 체크아웃에서 `{mutation}` — 구현·커밋은 자기 worktree 에서만 한다.\n"
             "EnterWorktree 로 격리하거나, 이미 판 worktree 면 `git -C <worktree경로>` 로 호출하라.\n"
-            "(정본: .claude/workboard/README.md 작업 격리)",
+            "(정본: workboard/README.md 작업 격리)",
             file=sys.stderr,
         )
         sys.exit(2)

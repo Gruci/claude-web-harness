@@ -1,4 +1,4 @@
-"""PreToolUse(EnterWorktree|Bash|PowerShell) 훅 — 새 worktree 이름에 세션 식별자 접미를 강제.
+"""PreToolUse(EnterWorktree|Bash|PowerShell) 훅 — 새 worktree 의 이름·자리 규약을 강제.
 
 매처는 셸을 실행하는 툴을 전부 담는다 — `Bash` 만 걸면 같은 `git worktree add` 가 `PowerShell`
 툴로 빠져나간다(원류 프로젝트 2026-08-06 실측).
@@ -7,8 +7,16 @@
 보드에는 `#sid:` 가 있는데 worktree 쪽에 연결고리가 없어 둘을 조인할 수 없다 — 그래서
 "다들 쓰고 있나 보다"로 추측하게 된다.
 
-서식은 `<주제>--<sid8>` 이다. 주제를 앞에 두는 이유는 사람이 목록에서 먼저 읽는 것이 "무엇"이고
-"누구"는 조인 키이기 때문이다. 접미만 검사하고 주제 작명은 자율이다.
+서식은 `worktrees/<범위>--<sid8>` 다. 범위를 앞에 두는 이유는 사람이 목록에서 먼저 읽는 것이
+"무엇"이고 "누구"는 조인 키이기 때문이다. 자리가 레포 루트 `worktrees/` 인 이유는 에이전트
+중립이다 — 보드(`workboard/`)와 같은 원칙이고, `.claude/` 밑이면 Codex 가 남의 전용 폴더에
+체크아웃을 만들게 된다.
+
+## EnterWorktree(name) 생성은 차단한다
+
+그 툴은 생성 위치가 `.claude/worktrees/` 로 고정이라(스키마 명세) 루트 규약과 항상 어긋난다.
+생성은 `git worktree add` 로 하고, 진입만 `EnterWorktree(path=...)` 로 한다 — path 진입은
+위치 무관이다.
 
 ## 왜 Stop 이 아니라 생성 시점인가
 
@@ -24,10 +32,10 @@
 import re
 import shlex
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _hookio import board_dir, read_hook_payload  # noqa: E402
+from _hookio import read_hook_payload  # noqa: E402
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -35,11 +43,19 @@ try:
 except Exception:
     pass
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+# 보드는 공유 체크아웃 한 곳이다(`kernel.workboard.board_dir`). 커널을 못 읽으면 범위 일치
+# 검사만 접는다 — 이름·자리 검사는 보드 없이도 성립한다.
+try:
+    from kernel.workboard import board_dir  # noqa: E402
+    BOARD_DIR: Path | None = board_dir()
+except Exception:
+    BOARD_DIR = None
+
 SID_LEN = 8
 WORKTREE_ADD = re.compile(r"\bgit\b.*\bworktree\s+add\b")
 SEPARATORS = (";", "|", "||", "&&", "&")
-# 보드는 공유 체크아웃 한 곳이다 — 자기 트리로 잡으면 세션 수만큼 갈라진다(`_hookio.board_dir`).
-BOARD_DIR = board_dir()
 
 
 def session_id8(payload: dict) -> str | None:
@@ -60,7 +76,7 @@ def offending_name(name: str, sid8: str) -> str | None:
 
 def my_scope(sid8: str) -> str | None:
     """내 `#sid` 가 든 workboard 파일의 범위 이름(= 파일 stem). 없으면 None."""
-    if not BOARD_DIR.is_dir():
+    if BOARD_DIR is None or not BOARD_DIR.is_dir():
         return None
     for path in sorted(BOARD_DIR.glob("*.md")):
         if path.name == "README.md":
@@ -76,7 +92,7 @@ def my_scope(sid8: str) -> str | None:
 def scope_mismatch(name: str, sid8: str) -> str | None:
     """worktree 이름 앞부분이 내 workboard 범위와 다른가 — 다르면 기대한 이름을 돌려준다.
 
-    맞추면 `ls .claude/workboard/` 와 `git worktree list` 가 눈으로 바로 조인된다(`#sid` 를
+    맞추면 `ls workboard/` 와 `git worktree list` 가 눈으로 바로 조인된다(`#sid` 를
     대조할 필요가 없다). 범위 이름은 보드에서 이미 정했으므로 새로 지을 것도 없다.
 
     **내 보드 파일이 없으면 검사하지 않는다.** 보드 등록이 프로토콜상 worktree 보다 먼저라
@@ -88,8 +104,21 @@ def scope_mismatch(name: str, sid8: str) -> str | None:
     return None if name[: -len(f"--{sid8}")] == scope else f"{scope}--{sid8}"
 
 
-def worktree_add_target(command: str) -> str | None:
-    """`git worktree add` 가 만들려는 경로의 basename. 생성 명령이 아니면 None.
+def wrong_location(token: str) -> str | None:
+    """생성 경로의 부모 세그먼트가 `worktrees` 가 아니면 기대 경로를 돌려준다.
+
+    `.claude/worktrees/` 는 레거시다 — 에이전트 중립 원칙으로 루트 `worktrees/` 에 통일했다.
+    부모 이름만 보므로 외부 디스크의 `<어딘가>/worktrees/<이름>` 은 통과한다(외부 worktree 는
+    프로토콜이 허용해 왔다).
+    """
+    parts = PurePosixPath(token.replace("\\", "/")).parts
+    if len(parts) >= 2 and parts[-2] == "worktrees" and (len(parts) < 3 or parts[-3] != ".claude"):
+        return None
+    return f"worktrees/{parts[-1]}"
+
+
+def worktree_add_path(command: str) -> str | None:
+    """`git worktree add` 가 만들려는 경로 토큰. 생성 명령이 아니면 None.
 
     `list`·`remove`·`move` 는 생성이 아니라 통과다. 옵션과 `-b <브랜치>` 값을 걷어낸 첫 인자가
     경로다 — 브랜치명을 경로로 오독하면 정상 호출이 막힌다.
@@ -103,7 +132,7 @@ def worktree_add_target(command: str) -> str | None:
     if not WORKTREE_ADD.search(command):
         return None
     try:
-        # posix 모드는 백슬래시를 이스케이프로 먹는다 — Windows 경로가 뭉개져 basename 판정이
+        # posix 모드는 백슬래시를 이스케이프로 먹는다 — Windows 경로가 뭉개져 판정이
         # 통째로 틀린다. 쪼개기 전에 구분자를 정규화한다.
         tokens = shlex.split(command.replace("\\", "/"), posix=True)
     except ValueError:
@@ -119,6 +148,12 @@ def worktree_add_target(command: str) -> str | None:
     return None
 
 
+def worktree_add_target(command: str) -> str | None:
+    """`git worktree add` 가 만들려는 경로의 basename. 생성 명령이 아니면 None."""
+    token = worktree_add_path(command)
+    return Path(token).name if token else None
+
+
 def _segments(tokens: list[str]) -> list[list[str]]:
     """셸 구분자로 끊은 명령 조각들. 각 조각의 첫 토큰이 그 조각의 명령이다."""
     segments: list[list[str]] = [[]]
@@ -131,7 +166,7 @@ def _segments(tokens: list[str]) -> list[list[str]]:
 
 
 def _first_path(rest: list[str]) -> str | None:
-    """옵션과 `-b <브랜치>` 값을 걷어낸 첫 인자의 basename."""
+    """옵션과 `-b <브랜치>` 값을 걷어낸 첫 인자."""
     skip_next = False
     for token in rest:
         if skip_next:
@@ -142,16 +177,8 @@ def _first_path(rest: list[str]) -> str | None:
             continue
         if token.startswith("-"):
             continue
-        return Path(token).name
+        return token
     return None
-
-
-def _target_name(tool_name: str, tool_input: dict) -> str | None:
-    """이 호출이 만들려는 worktree 이름. 생성이 아니면 None."""
-    if tool_name == "EnterWorktree":
-        # `path` 는 기존 worktree 진입이라 생성이 아니다.
-        return None if tool_input.get("path") else (tool_input.get("name") or None)
-    return worktree_add_target(tool_input.get("command") or "")
 
 
 def main() -> None:
@@ -162,36 +189,66 @@ def main() -> None:
               file=sys.stderr)
         sys.exit(1)
 
-    name = _target_name(payload.get("tool_name") or "", payload.get("tool_input") or {})
-    if not name:
-        sys.exit(0)
-
+    tool_name = payload.get("tool_name") or ""
+    tool_input = payload.get("tool_input") or {}
     sid8 = session_id8(payload)
+
+    if tool_name == "EnterWorktree":
+        # `path` 는 기존 worktree 진입이라 생성이 아니다 — 진입은 위치 무관으로 허용된다.
+        if tool_input.get("path") or not tool_input.get("name"):
+            sys.exit(0)
+        suffix = f"--{sid8}" if sid8 else "--<sid8>"
+        print(
+            "[WORKTREE NAME] EnterWorktree 생성은 `.claude/worktrees/` 고정이라 루트 규약과 어긋난다.\n"
+            "생성과 진입을 나눠라:\n"
+            f"  git worktree add worktrees/<범위>{suffix} -b <브랜치> origin/<기본브랜치>\n"
+            f"  EnterWorktree(path=\"worktrees/<범위>{suffix}\")\n"
+            "(정본: workboard/README.md 작업 격리)",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    token = worktree_add_path(tool_input.get("command") or "")
+    if not token:
+        sys.exit(0)
+    name = Path(token).name
+
     if sid8 is None:
         print("[WORKTREE NAME] 세션 식별자를 못 구했다 — 이름 검사를 건너뛴다. 훅을 점검하라.",
               file=sys.stderr)
         sys.exit(1)
 
-    if offending_name(name, sid8) is None:
-        expected = scope_mismatch(name, sid8)
-        if expected is None:
-            sys.exit(0)
+    if offending_name(name, sid8) is not None:
         print(
-            f"[WORKTREE NAME] 이름이 내 과업 범위와 다르다 — `{name}` → `{expected}`.\n"
-            "worktree 이름은 workboard 범위 이름을 그대로 쓴다. 그래야 `ls .claude/workboard/` 와\n"
-            "`git worktree list` 가 눈으로 바로 조인된다.\n"
-            "(정본: .claude/workboard/README.md)",
+            f"[WORKTREE NAME] worktree 이름에 세션 식별자가 없다 — `{name}` → `{name}--{sid8}`.\n"
+            "`git worktree list` 만으로 누가 무엇을 잡고 있는지 보여야 하고, 그 키가 보드의 #sid 다.\n"
+            "(정본: workboard/README.md)",
             file=sys.stderr,
         )
         sys.exit(2)
 
-    print(
-        f"[WORKTREE NAME] worktree 이름에 세션 식별자가 없다 — `{name}` → `{name}--{sid8}`.\n"
-        "`git worktree list` 만으로 누가 무엇을 잡고 있는지 보여야 하고, 그 키가 보드의 #sid 다.\n"
-        "(정본: .claude/workboard/README.md)",
-        file=sys.stderr,
-    )
-    sys.exit(2)
+    expected = scope_mismatch(name, sid8)
+    if expected is not None:
+        print(
+            f"[WORKTREE NAME] 이름이 내 과업 범위와 다르다 — `{name}` → `{expected}`.\n"
+            "worktree 이름은 workboard 범위 이름을 그대로 쓴다. 그래야 `ls workboard/` 와\n"
+            "`git worktree list` 가 눈으로 바로 조인된다.\n"
+            "(정본: workboard/README.md)",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    misplaced = wrong_location(token)
+    if misplaced is not None:
+        print(
+            f"[WORKTREE NAME] worktree 자리가 규약 밖이다 — `{token}` → `{misplaced}`.\n"
+            "자리는 레포 루트 `worktrees/` 다(에이전트 중립 — `.claude/worktrees/` 는 레거시).\n"
+            "(정본: workboard/README.md 작업 격리)",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    sys.exit(0)
 
 
 if __name__ == "__main__":

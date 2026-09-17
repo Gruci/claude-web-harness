@@ -1,15 +1,23 @@
-# .claude/workboard/ — 과업 보드와 worktree 프로토콜
+# workboard/ — 과업 보드와 worktree 프로토콜
 
 > 담는 것: 지금 누가 무엇을 잡고 있나(이 디렉토리의 파일들)와 착수~완료 절차. 담지 않는 것: 남은 일(→ 루트 `BACKLOG.md`)·세션 행동 규칙(→ `CLAUDE.md`)·훅의 차단·경고 구분(→ `HARNESS.md`). 읽는 시점: 과업 착수 전.
 
+## 자리가 레포 루트인 이유 — 에이전트 중립
+
+보드와 worktree 는 **어느 에이전트의 것도 아니다.** `.claude/` 밑에 두면 Codex 가 남의 전용
+폴더를 드나들어야 하고, 에이전트마다 자기 폴더에 두면 보드가 갈라진다 — 같은 기능이면 같은
+보드를 본다. 과업을 에이전트별로 나누지 않으며, 담당 도구를 밝힐 일이 있으면 과업 파일 안에
+`- 담당: claude` 처럼 적는 것으로 충분하다. 겹침 판정도 한 벌이다 — `kernel/workboard.py` 를
+Claude 훅과 Codex 진입점(`kernel/hook.py`)이 같이 쓴다.
+
 ## 보드는 공유 체크아웃 한 곳이다
 
-**과업 파일은 공유 체크아웃의 `.claude/workboard/` 에만 둔다.** worktree 안에도 같은 경로가
-있지만(이 README 는 git 추적이라 따라온다) 거기 쓰면 아무도 못 본다 — 보드가 세션 수만큼
-갈라져 공유 채널이 성립하지 않는다.
+**과업 파일은 공유 체크아웃(메인 체크아웃 루트)의 `workboard/` 에만 둔다.** worktree 안에도
+같은 경로가 있지만(이 README 는 git 추적이라 따라온다) 거기 쓰면 아무도 못 본다 — 보드가
+세션 수만큼 갈라져 공유 채널이 성립하지 않는다.
 
 훅은 `git rev-parse --git-common-dir` 로 공유 루트를 찾아 항상 한 곳을 본다
-(`_hookio.board_dir()`). 사람이 볼 때도 공유 체크아웃 경로에서 `ls` 한다.
+(`kernel.workboard.board_dir()`). 사람이 볼 때도 공유 체크아웃 경로에서 `ls` 한다.
 
 ## 이 디렉토리는 git 에 없다
 
@@ -73,7 +81,7 @@
 
 ```bash
 # 쌓기: 기본 브랜치가 아니라 앞 과업 브랜치에서 딴다
-git worktree add .claude/worktrees/<범위>--<sid8> -b <브랜치> <앞-브랜치>
+git worktree add worktrees/<범위>--<sid8> -b <브랜치> <앞-브랜치>
 ```
 
 ## 작업 격리
@@ -82,9 +90,19 @@ git worktree add .claude/worktrees/<범위>--<sid8> -b <브랜치> <앞-브랜�
 추가 worktree 가 없고 단일 세션이면 메인 체크아웃에서 작업할 수 있다.
 추가 worktree 가 있으면 공유 메인 체크아웃은 조회용이며 구현은 자기 worktree 에서 한다.
 
-- worktree 자리는 `.claude/worktrees/`, **이름은 workboard 범위 이름 + `--<sid8>`** 이다.
-  `ls .claude/workboard/` 와 `git worktree list` 가 눈으로 바로 조인되고,
-  `check_worktree_name.py` 가 생성 시점에 강제한다(내 보드 파일이 있을 때만).
+- worktree 자리는 레포 루트 `worktrees/`, **이름은 workboard 범위 이름 + `--<sid8>`** 이다.
+  `ls workboard/` 와 `git worktree list` 가 눈으로 바로 조인되고, `check_worktree_name.py` 가
+  생성 시점에 이름·자리를 강제한다(범위 일치는 내 보드 파일이 있을 때만).
+- 생성과 진입은 두 단계다 — 정본 목록은 폴더가 아니라 `git worktree list` 다:
+
+  ```bash
+  git worktree add worktrees/<범위>--<sid8> -b <브랜치> origin/<기본브랜치>
+  # Claude 세션은 이어서 EnterWorktree(path="worktrees/<범위>--<sid8>") 로 진입한다
+  ```
+
+  `EnterWorktree(name)` 생성은 쓰지 않는다 — 그 툴은 생성 위치가 `.claude/worktrees/` 로
+  고정이라 루트 규약과 어긋나고, 훅이 차단하며 위 두 명령을 제시한다. path 진입은 위치
+  무관이라 그대로 쓴다.
 - 생성 기준 브랜치는 원격 기본 브랜치의 실물을 확인해 고른다. 브랜치 이름은 작업 성격에
   맞는 접두(`feat/`·`fix/`·`perf/`·`chore/`·`docs/`)를 쓴다.
 - 구현과 검증은 같은 worktree 에서 수행한다.

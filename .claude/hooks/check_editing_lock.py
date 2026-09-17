@@ -1,6 +1,6 @@
-"""Stop hook — `.claude/workboard/` 에 '끝난' 과업 파일이 남아있으면 알린다.
+"""Stop hook — `workboard/` 에 '끝난' 과업 파일이 남아있으면 알린다.
 
-과업 보드는 파일 하나가 과업 하나다(`.claude/workboard/<수정범위>.md` — git 비추적).
+과업 보드는 파일 하나가 과업 하나다(`workboard/<수정범위>.md` — git 비추적).
 표 한 개를 모든 세션이 같이 고치던 시절에는 PR 이 머지될 때마다 열린 나머지가 전부 같은
 자리에서 깨졌다(원류 MIS 2026-09 실측: 보드 전용 PR 51건 = 전체의 25% · 충돌 해소 34건).
 파일을 가르면 git 이 충돌을 만들 수 없고, 디렉토리가 `.gitignore` 라 보드를 보이려고 머지할
@@ -9,7 +9,7 @@
 멀티 세션 대응: 구버전은 잠금 행 전체를 차단해서, 다른 세션이 작업 중이면 이 세션이 영원히
 종료 못 하는 데드락이 났다. 훅이 세션을 식별하지 못하는 게 원인이었다.
 
-관례(정본: `.claude/workboard/README.md`) — 과업 파일에 `#sid:<세션ID 앞8자>` 태그를 붙인다. 판정:
+관례(정본: `workboard/README.md`) — 과업 파일에 `#sid:<세션ID 앞8자>` 태그를 붙인다. 판정:
   - 내 sid 태그 과업 중 **머지가 끝난 것** → 잔존이다. 완료 보고를 안 한 과업이다.
   - 내 sid 태그 과업이라도 **진행 중이면 통과** (아래).
   - 다른 sid 태그 과업 → 다른 세션의 활성 과업이라 건드리지 않는다.
@@ -43,7 +43,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _hookio import board_dir, default_branch, git_output as _git, read_hook_payload  # noqa: E402
+from _hookio import default_branch, git_output as _git, read_hook_payload  # noqa: E402
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -52,12 +52,18 @@ except Exception:
     pass
 
 ROOT = Path(__file__).resolve().parents[2]
-# 보드는 **공유 체크아웃 한 곳**이다 — 훅 파일이 worktree 마다 복제되므로 자기 트리로
-# 잡으면 보드가 세션 수만큼 갈라진다(`_hookio.board_dir` 헤더).
-BOARD_DIR = board_dir()
-BRANCH_PATTERN = re.compile(r"\b((?:feat|fix|perf|chore|docs|refactor)/[A-Za-z0-9._/-]+)")
-
 sys.path.insert(0, str(ROOT))
+
+# 보드 데이터 계층은 kernel/workboard.py 가 단일 정본이다 — Codex 진입점과 같은 판정을 쓴다.
+# 커널을 못 읽으면 fail-open: 이 훅은 경고 계열이라 조용히 통과하는 쪽이 안전 방향이다.
+try:
+    from kernel.workboard import active_rows, board_dir, branch_of  # noqa: E402
+except Exception:
+    sys.exit(0)
+
+# 보드는 **공유 체크아웃 한 곳**이다 — 훅 파일이 worktree 마다 복제되므로 자기 트리로
+# 잡으면 보드가 세션 수만큼 갈라진다(`kernel.workboard.board_dir` 헤더).
+BOARD_DIR = board_dir()
 
 # 알릴 때마다 관찰을 남긴다 — 회고가 읽을 데이터다. 기록이 실패해도 판정은 계속돼야 한다.
 try:
@@ -74,18 +80,6 @@ def _my_sid8() -> str | None:
         return session_id[:8] if len(session_id) >= 8 else None
     except Exception:
         return None
-
-
-def branch_of(row: str) -> str | None:
-    """행의 브랜치명 — `과업:` 뒤를 먼저 보고, 없으면 행 전체에서 찾는다.
-
-    ⚠️ 전체 검색만 하면 `손대는 곳` 의 경로를 브랜치로 오인한다 — `docs/tasks/*` 는 브랜치
-    접두(`docs/`)와 형태가 같다. 구 표 서식에서 '첫 칸만' 보던 것과 같은 방어이고, 축만
-    위치에서 필드 이름으로 옮겼다(파일 서식엔 칸 개념이 없다).
-    """
-    after = row.split("과업:", 1)
-    found = BRANCH_PATTERN.search(after[1] if len(after) > 1 else row)
-    return found.group(1) if found else None
 
 
 def is_merged(branch: str, base: str) -> bool:
@@ -111,7 +105,7 @@ def is_dead(branch: str, base: str) -> bool:
     """주인이 없어진 과업인지 — 머지가 끝났고 브랜치 실물이 **어디에도** 없을 때만 참이다.
 
     "브랜치가 없다"만으로 판정하면 안 된다. 이 하네스는 단일 세션이면 브랜치 없이 메인
-    체크아웃에서 작업하는 것을 정본 경로로 둔다(`.claude/workboard/README.md`). 그래서 파일이
+    체크아웃에서 작업하는 것을 정본 경로로 둔다(`workboard/README.md`). 그래서 파일이
     적어둔 브랜치가 아직 실물이 아닌 것이 정상이고, 그것을 잔해로 읽으면 **착수하자마자 자기
     과업이 잔해가 된다.**
 
@@ -140,22 +134,8 @@ def _is_stale(row: str, base: str | None) -> bool:
 
 
 def _active_edit_rows() -> list[str]:
-    """진행 중 과업 행 — **파일 하나가 한 행**이다(`.claude/workboard/<범위>.md`).
-
-    한 파일을 한 줄로 이어 붙이는 이유는 소비처 계약이다 — `#sid:` substring 과 `branch_of()`
-    가 전부라, 줄바꿈을 살릴 이유가 없고 살리면 행 개수가 파일 수와 어긋난다.
-    """
-    if not BOARD_DIR.is_dir():
-        return []
-    rows: list[str] = []
-    for path in sorted(BOARD_DIR.glob("*.md")):
-        if path.name == "README.md":
-            continue                      # 서식 설명이지 과업이 아니다
-        try:
-            rows.append(" | ".join(path.read_text(encoding="utf-8").split()))
-        except OSError:
-            continue                      # 읽기 실패한 한 파일이 판정 전체를 죽이지 않는다
-    return rows
+    """진행 중 과업 행 — 판정은 `kernel.workboard.active_rows`, 보드 자리만 이 훅이 쥔다."""
+    return active_rows(BOARD_DIR)
 
 
 def _report(label: str, rows: list[str], guidance: str) -> None:
@@ -194,7 +174,7 @@ def main() -> None:
         reason = "이 세션의" if sid8 else "(세션 식별 불가 — 태그 없는 과업만 검사)"
         _report(f"{reason} 과업 파일이 머지 후에도 남아 있습니다 —", mine,
                 "머지가 끝난 과업이면 `git worktree remove` → `git branch -d` 를 먼저 끝내고 "
-                ".claude/workboard/ 의 자기 파일은 맨 끝에 지웁니다. 브랜치명이 없는 파일은 서식 위반이라 고칩니다.")
+                "workboard/ 의 자기 파일은 맨 끝에 지웁니다. 브랜치명이 없는 파일은 서식 위반이라 고칩니다.")
     if dead:
         _report("주인이 없어진 과업 —", dead,
                 "이미 머지됐고 브랜치가 origin 에도 로컬에도 없습니다. 끝난 과업의 잔해라 어느 세션이든 지웁니다.")

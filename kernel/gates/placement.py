@@ -24,8 +24,10 @@ from kernel.context import ROOT, _rel
 DOMAIN_PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 
 # 커널 자신의 발자국 — 프로젝트 앱 코드가 아니므로 배치 규칙의 대상이 아니다.
+# `worktrees/` 는 작업별 격리 체크아웃 자리(정본: workboard/README.md)라 앱 코드가 아니다 —
+# 활성 worktree 는 `.py` 를 품고 있어 등재 없이는 도메인 패키지로 오인된다.
 SELF_FILES = ("harness_profile.py", "harness_install.py")
-SELF_PREFIXES = ("kernel/", "profiles/", "harness_gates/", ".claude/")
+SELF_PREFIXES = ("kernel/", "profiles/", "harness_gates/", ".claude/", "worktrees/")
 
 # 하네스가 만들거나 요구하는 루트 실물 — 프로파일마다 다시 적게 하면 그 목록이 커널의 사본이
 # 되고 사본은 갈린다. 프로젝트 고유분만 프로파일 ROOT_FILES 가 든다.

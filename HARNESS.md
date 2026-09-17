@@ -89,7 +89,7 @@ Codex patch의 모든 추가·수정·이동 대상은 payload의 작업 디렉�
 | ⑨ | PostToolUse(Edit·Write) | `check_file_rules.py` | 저장한 파일이 게이트 위반 | **차단** |
 | ⑩ | PostToolUse(Edit·Write) | `impeccable/scripts/hook.mjs` | 항상 | 통과 (UI 리마인더) |
 | ⑪ | SubagentStop | `check_agent_return.py` | 반환이 임계 초과 | **차단** |
-| ⑫ | Stop | `check_editing_lock.py` | `.claude/workboard/` 에 자기 `#sid` 과업 파일이 **머지 후에도** 잔존 (진행 중은 통과) | 경고 (추론) |
+| ⑫ | Stop | `check_editing_lock.py` | `workboard/` 에 자기 `#sid` 과업 파일이 **머지 후에도** 잔존 (진행 중은 통과) | 경고 (추론) |
 | ⑫-1 | 〃 | `check_editing_lock.py` | 주인 없는 과업 파일 — 머지됐고 브랜치가 origin·로컬 양쪽에 없음 | 경고 (추론) |
 | ⑬ | Stop | `check_coding_rules.py` | 전 게이트 위반 잔존 | **차단** |
 | ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** + 만들 명령 제시 |

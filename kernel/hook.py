@@ -110,6 +110,32 @@ def check_file(root: Path, path: Path) -> str:
     return ""
 
 
+def board_overlaps(root: Path, paths: list[Path], sid: str) -> list[str]:
+    """Warn when an edit lands inside another task's claimed globs; never block.
+
+    Codex has no pre-edit hook event, so its overlap warning fires here after the save —
+    the Claude side runs the same kernel.workboard judgment at PreToolUse. Failures fall
+    open: a missing board reads as "no open tasks", which never stops a session.
+    """
+    try:
+        from kernel import workboard
+        board = workboard.board_dir()
+        hits: list[str] = []
+        for path in paths:
+            for hit in workboard.overlaps(path, sid[:8], board, root):
+                line = f"{path.name}: {hit}"
+                if line not in hits:
+                    hits.append(line)
+        if hits:
+            from kernel import trace
+            trace.TRACE = root / "harness_trace.jsonl"
+            trace.record("check_workboard_overlap", "workboard_overlap",
+                         sid=sid[:8], msg=f"{len(hits)}건 (codex)")
+        return hits
+    except Exception:
+        return []
+
+
 def run_checks(root: Path, paths: list[Path], event: str, sid: str) -> int:
     """Run file checks plus the Stop full gate, preserving failure severity."""
     jobs: list[list[str]] = []
@@ -180,6 +206,15 @@ def main(argv: list[str] | None = None) -> int:
         sys.path.insert(0, str(root))  # Direct script launch starts with kernel/ on sys.path.
         paths = untracked_paths(root) if args.event == "Stop" else edited_paths(payload, cwd)
         code = run_checks(root, paths, args.event, sid)
+        if args.event == "PostToolUse":
+            warned = board_overlaps(root, paths, sid)
+            if warned:
+                print("[WORKBOARD] 다른 과업이 잡은 곳이다 — 같은 범위면 합류하거나 그 브랜치 위에"
+                      " 쌓는다. 겹치는 줄이 아니면 그대로 진행해도 된다 (경고이지 차단이 아니다):",
+                      file=sys.stderr)
+                for line in warned:
+                    print(f"  {line}", file=sys.stderr)
+                code = max(code, 1)
     except Exception as exc:
         # A broken executable profile is an infrastructure error, not a violation.
         print(f"검사 불능: {exc}", file=sys.stderr)
