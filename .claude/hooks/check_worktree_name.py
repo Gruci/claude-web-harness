@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _hookio import read_hook_payload  # noqa: E402
+from _hookio import board_dir, read_hook_payload  # noqa: E402
 
 # Windows 기본 cp949 → 하네스(utf-8)에서 한글 깨짐 방지
 try:
@@ -38,6 +38,8 @@ except Exception:
 SID_LEN = 8
 WORKTREE_ADD = re.compile(r"\bgit\b.*\bworktree\s+add\b")
 SEPARATORS = (";", "|", "||", "&&", "&")
+# 보드는 공유 체크아웃 한 곳이다 — 자기 트리로 잡으면 세션 수만큼 갈라진다(`_hookio.board_dir`).
+BOARD_DIR = board_dir()
 
 
 def session_id8(payload: dict) -> str | None:
@@ -54,6 +56,36 @@ def offending_name(name: str, sid8: str) -> str | None:
     if not name:
         return None
     return None if name.endswith(f"--{sid8}") else name
+
+
+def my_scope(sid8: str) -> str | None:
+    """내 `#sid` 가 든 workboard 파일의 범위 이름(= 파일 stem). 없으면 None."""
+    if not BOARD_DIR.is_dir():
+        return None
+    for path in sorted(BOARD_DIR.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        try:
+            if f"#sid:{sid8}" in path.read_text(encoding="utf-8"):
+                return path.stem
+        except OSError:
+            continue
+    return None
+
+
+def scope_mismatch(name: str, sid8: str) -> str | None:
+    """worktree 이름 앞부분이 내 workboard 범위와 다른가 — 다르면 기대한 이름을 돌려준다.
+
+    맞추면 `ls .claude/workboard/` 와 `git worktree list` 가 눈으로 바로 조인된다(`#sid` 를
+    대조할 필요가 없다). 범위 이름은 보드에서 이미 정했으므로 새로 지을 것도 없다.
+
+    **내 보드 파일이 없으면 검사하지 않는다.** 보드 등록이 프로토콜상 worktree 보다 먼저라
+    정상 경로에서는 늘 있지만, 순서를 바꾼 예외 상황에서 막으면 손쓸 방법이 사라진다.
+    """
+    scope = my_scope(sid8)
+    if scope is None or not name.endswith(f"--{sid8}"):
+        return None
+    return None if name[: -len(f"--{sid8}")] == scope else f"{scope}--{sid8}"
 
 
 def worktree_add_target(command: str) -> str | None:
@@ -141,12 +173,22 @@ def main() -> None:
         sys.exit(1)
 
     if offending_name(name, sid8) is None:
-        sys.exit(0)
+        expected = scope_mismatch(name, sid8)
+        if expected is None:
+            sys.exit(0)
+        print(
+            f"[WORKTREE NAME] 이름이 내 과업 범위와 다르다 — `{name}` → `{expected}`.\n"
+            "worktree 이름은 workboard 범위 이름을 그대로 쓴다. 그래야 `ls .claude/workboard/` 와\n"
+            "`git worktree list` 가 눈으로 바로 조인된다.\n"
+            "(정본: .claude/workboard/README.md)",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     print(
         f"[WORKTREE NAME] worktree 이름에 세션 식별자가 없다 — `{name}` → `{name}--{sid8}`.\n"
-        "`git worktree list` 만으로 누가 무엇을 잡고 있는지 보여야 하고, 그 키가 보드 행의 #sid 다.\n"
-        "(정본: EDITING.md worktree 병렬 프로토콜)",
+        "`git worktree list` 만으로 누가 무엇을 잡고 있는지 보여야 하고, 그 키가 보드의 #sid 다.\n"
+        "(정본: .claude/workboard/README.md)",
         file=sys.stderr,
     )
     sys.exit(2)

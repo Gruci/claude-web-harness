@@ -102,7 +102,7 @@ python -X utf8 harness_install.py --preset <고른 것>
 grep -q "claude/worktrees" .git/info/exclude 2>/dev/null || echo ".claude/worktrees/" >> .git/info/exclude
 ```
 
-빼먹으면 worktree 가 게이트의 검사 대상과 검색에 섞인다. 정본은 `EDITING.md` 병렬 프로토콜이다.
+빼먹으면 worktree 가 게이트의 검사 대상과 검색에 섞인다. 정본은 `.claude/workboard/README.md` 작업 격리 절이다.
 
 **서버 언어가 파이썬이 아니면 `LANG` 부터 적는다.** 한 줄이면 확장자·관용구 정규식·
 해당없음 목록·외부 도구가 전부 따라온다.

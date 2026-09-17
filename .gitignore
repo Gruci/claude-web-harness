@@ -62,6 +62,13 @@ desktop.ini
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+
+# 과업 보드 — "지금 누가 무엇을 잡고 있나". 세션이 전부 같은 머신에서 도니 파일시스템이 곧
+# 공유 채널이고, git 을 거치면 모든 세션이 한 자리를 고쳐 충돌하고 보드를 보이려고 머지가
+# 필요해진다(원류 MIS 2026-09 실측: 보드 전용 PR 51건 = 전체의 25%, 충돌 해소 34건).
+# README.md 만 추적한다 — 프로토콜 정본이라 새 clone 에도 있어야 한다.
+.claude/workboard/*
+!.claude/workboard/README.md
 .codex/auth.json
 .codex/history.jsonl
 .codex/sessions/

@@ -57,9 +57,9 @@ HUB_DOMAIN_MD_IMPLICIT = True
 HARNESS_MAP = "HARNESS.md"
 
 MD: dict[str, tuple[str, ...]] = {
-    "doc_exclude":   ("docs/", ".claude/", ".codex/", ".agents/", "EDITING.md"),
+    "doc_exclude":   ("docs/", ".claude/", ".codex/", ".agents/", "BACKLOG.md"),
     "ref_exclude":   ("docs/", "idea/", "memory/"),
-    "style_exclude": ("docs/", ".agents/", ".codex/", ".claude/skills/impeccable/", "EDITING.md"),
+    "style_exclude": ("docs/", ".agents/", ".codex/", ".claude/skills/impeccable/", "BACKLOG.md"),
     "date_exempt":   ("dev/LESSONS.md",),
 }
 

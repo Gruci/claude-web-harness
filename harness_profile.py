@@ -57,7 +57,7 @@ MD: dict[str, tuple[str, ...]] = {
     # `.claude/` 는 벤더 사본(impeccable 참고 문서 30여 개)과 frontmatter 형식의 정의
     # 파일이라 역할 계약 규약의 대상이 아니다. 레포 대문(README)도 마찬가지다.
     "style_exclude": (".claude/", ".agents/", ".codex/", "tests/fixtures/",
-                      "EDITING.md", "README.md", "README.en.md"),
+                      "BACKLOG.md", "README.md", "README.en.md"),
     "date_exempt":   ("dev/LESSONS.md",),
 }
 

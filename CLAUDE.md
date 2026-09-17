@@ -54,7 +54,8 @@ Codex도 함께 초기화하는 요청이면 `python -X utf8 setup_global_permis
 | **아키텍처·흐름 그림 작성·갱신** | `dev/DIAGRAM.md` — 정본 위치·1:1 매핑 규약·검사 48. 작성 계약은 `dev/DIAGRAM_AUTHORING.md` |
 | **규칙에 이의 제기 전** | `dev/LESSONS.md` — 그 규칙이 생긴 사고 경위 |
 | **이미 나온 제안을 다시 꺼내기 전** | `dev/REJECTED.md` — 거절·보류된 것과 그 사유 |
-| **모든 편집 전 (예외 없음)** | `EDITING.md` — 항상 fresh Read. 동적 파일이라 import 금지 |
+| **3단계 구현 착수 전 (예외 없음)** | `.claude/workboard/README.md` — 착수 라우팅·서식. 열린 과업은 SessionStart가 주입하나 오래된 세션은 `ls .claude/workboard/`로 다시 본다 |
+| **다음 과업을 고를 때** | `BACKLOG.md` — 잔여 백로그. 착수 전 서술을 실물로 대조한다 |
 
 새 도메인 패키지는 **등재하지 않는다.** 최상위에 소문자 패키지를 만들면 자동으로 도메인 패키지가 되고, 같은 턴에 패키지 초기화 모듈과 동명 정본 MD와 `PROJECT.md` 표의 행이 없으면 검사 21과 27이 막는다. 그 시점부터 검사 22가 그 패키지의 수집·계산 모듈에 행동 테스트를 요구한다.
 
@@ -74,7 +75,7 @@ Codex도 함께 초기화하는 요청이면 `python -X utf8 setup_global_permis
 - **plan 승인 전 구현 절대 금지.** 구체적인 제안과 범위를 이미 승인받았다면 그 근거를 plan에 기록하고 진행한다.
 - 같은 범위의 승인을 반복해서 요구하지 않는다.
 - 구현 완료 즉시 같은 턴에 `docs/tasks/archive/YYYY-MM-DD-{작업명}/`으로 `git mv`한다. "나중에 정리"는 오지 않는다.
-- **"깃에 올려라"** = `git push origin HEAD` 한 번에 실행. 중간 확인 없음. 단 exit 0과 출력을 확인하기 전에 "올렸다"고 선언하지 않는다. 원격에 PR·CI가 있는 프로젝트는 `EDITING.md` 4번의 push→PR→CI→merge 분기를 따른다.
+- **"깃에 올려라"** = `git push origin HEAD` 한 번에 실행. 중간 확인 없음. 단 exit 0과 출력을 확인하기 전에 "올렸다"고 선언하지 않는다. 원격에 PR·CI가 있는 프로젝트는 `.claude/workboard/README.md` 「완료」의 push→PR→CI→merge 분기를 따른다.
 
 **🚫 허락 구하기 금지** — 사용자에게 질문하는 지점은 **딱 두 곳**이다. 0단계 범위 인터뷰와 plan 승인 대기. 그 외 전 구간은 자율 진행 후 결과만 보고한다. "이렇게 해도 될까요"류의 중간 확인은 금지다.
 
@@ -95,7 +96,7 @@ Codex도 함께 초기화하는 요청이면 `python -X utf8 setup_global_permis
 6. **DB 변경 전 `dev/DATA_MODEL.md` 먼저** — 불변 속성은 차원 한 곳에 두고 팩트는 denormalize하지 말고 JOIN한다. §9
 7. **디버깅은 단일 가설과 최소 변경, 3회 실패 시 STOP** — 증거와 함께 사용자에게 보고한다. §10
 8. **research·plan 생략 금지** — 예외 기준은 「4단계」 첫 줄 하나다. "간단해 보인다"는 생략 근거가 아니다. §4 §0
-9. **병렬 체제에서 구현·커밋은 자기 worktree에서만** — 첫 편집 전에 브랜치와 경로를 확인하고, 아니면 멈춘다. 프로토콜 정본은 `EDITING.md`다.
+9. **병렬 체제에서 구현·커밋은 자기 worktree에서만** — 첫 편집 전에 브랜치와 경로를 확인하고, 아니면 멈춘다. 프로토콜 정본은 `.claude/workboard/README.md`다.
 
 ---
 
@@ -113,7 +114,7 @@ Codex도 함께 초기화하는 요청이면 `python -X utf8 setup_global_permis
 
 ## 코딩·편집 원칙
 
-**편집 잠금** — 3단계 시작 시 `EDITING.md`를 fresh Read하고 과업 보드에 자기 행을 등록한다. 서식과 `#sid`와 병렬 프로토콜의 정본은 `EDITING.md`다.
+**편집 잠금** — 3단계 시작 시 `.claude/workboard/`를 확인하고 자기 과업 파일을 등록한다(파일명 = 수정 범위, git 비추적). 같은 범위가 이미 있으면 새로 파지 말고 합류하거나 쌓는다. 서식과 `#sid`와 착수 라우팅·병렬 프로토콜의 정본은 `.claude/workboard/README.md`다.
 
 **리서치(1단계)** — 파일명과 시그니처만 훑지 않는다. 내부 로직과 데이터 흐름과 모듈 의존성까지 본다. 소스 수정은 절대 금지다.
 

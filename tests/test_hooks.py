@@ -104,24 +104,88 @@ def test_outbound_link() -> None:
         assert gate.outbound_link(command) is None, f"통과해야 하는데 막음: {label}"
 
 
-def test_board_header_is_split_by_separator() -> None:
-    """표 헤더는 문구가 아니라 구분선 위치로 가른다.
+# workboard 과업 파일 픽스처 — 깨지면 잡는 것: 파일=행 계약·브랜치 오인·겹침 판정·이름 조인.
+_TASK = (
+    "- 범위: admin-report-viewers\n"
+    "- 과업: feat/report-viewers #sid:abcd1234\n"
+    "- 손대는 곳:\n"
+    "  - frontend/src/components/admin/salesStatus/*\n"
+    "  - docs/tasks/plan_x.md\n"
+    "- 상태: 진행\n"
+)
 
-    문구로 가르던 구버전은 서식이 바뀌면 헤더를 데이터 행으로 세어, 세션 식별 불가 경로에서
-    헤더 하나만으로 영영 막혔다.
+
+def _fake_board(base: Path) -> Path:
+    board = base / "workboard"
+    board.mkdir()
+    (board / "admin-report-viewers.md").write_text(_TASK, encoding="utf-8")
+    (board / "README.md").write_text("# 서식\n- 과업: feat/example #sid:deadbeef\n",
+                                     encoding="utf-8")
+    return board
+
+
+def test_workboard_file_is_one_row() -> None:
+    """파일 하나가 행 하나 — README 는 서식 설명이지 과업이 아니고, 디렉토리가 없으면 빈 보드다.
+
+    이 계약이 깨지면 잔존 검사가 영영 안 돌거나(영구 busy) 훅이 예외로 죽는다(fail-open 위반).
     """
+    import tempfile
     lock = _load("check_editing_lock")
-    board = (
-        "## 🔒 과업 보드 (Active Edits)\n\n"
-        "| 무슨 일 | 어디를 | 언제 | 상태 |\n"
-        "|---|---|---|---|\n"
-        "| feat/a #sid:11111111 | 스코프 | 2026-08-21 | 진행 |\n"
-        "\n## 다음 절\n"
-    )
-    rows = lock._active_edit_rows(board)
-    assert len(rows) == 1, f"헤더가 데이터 행으로 셌다: {rows}"
-    assert "#sid:11111111" in rows[0]
-    assert lock.branch_of(rows[0]) == "feat/a"
+    with tempfile.TemporaryDirectory() as tmp:
+        board = _fake_board(Path(tmp))
+        (board / "issues-quarter.md").write_text(
+            "- 과업: fix/quarter #sid:99999999\n- 상태: 진행\n", encoding="utf-8")
+        lock.BOARD_DIR = board
+        rows = lock._active_edit_rows()
+        assert len(rows) == 2, f"README 를 빼고 과업 파일 수만큼 나와야 한다: {rows}"
+        assert all("example" not in row for row in rows), "README 를 과업으로 셌다"
+        lock.BOARD_DIR = Path(tmp) / "nope"
+        assert lock._active_edit_rows() == [], "없는 디렉토리는 빈 보드여야 한다"
+
+
+def test_branch_comes_from_task_field() -> None:
+    """브랜치는 `과업:` 필드에서 — `손대는 곳` 의 `docs/tasks/*` 는 브랜치 접두와 형태가 같다."""
+    import tempfile
+    lock = _load("check_editing_lock")
+    with tempfile.TemporaryDirectory() as tmp:
+        lock.BOARD_DIR = _fake_board(Path(tmp))
+        (row,) = lock._active_edit_rows()
+        assert lock.branch_of(row) == "feat/report-viewers", \
+            f"과업 필드가 아니라 다른 데서 집었다: {lock.branch_of(row)}"
+
+
+def test_workboard_overlap() -> None:
+    """겹침 판정 — 내 과업 무경고(소음화 방지) · 남의 과업 경고(방어 사멸 방지) · 무관 파일 무경고."""
+    import tempfile
+    overlap = _load("check_workboard_overlap")
+    globs = overlap.touch_globs(_TASK)
+    assert globs == ["frontend/src/components/admin/salesStatus/*", "docs/tasks/plan_x.md"], \
+        f"다음 필드(- 상태:)를 글로브로 먹었다: {globs}"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        overlap.BOARD_DIR = _fake_board(root)
+        overlap.ROOT = root
+        target = root / "frontend/src/components/admin/salesStatus/X.tsx"
+        assert overlap.overlaps(target, "abcd1234") == [], "자기 과업에 경고가 떴다"
+        hits = overlap.overlaps(target, "ffffffff")
+        assert hits and "admin-report-viewers" in hits[0], f"남의 글로브를 놓쳤다: {hits}"
+        assert overlap.overlaps(root / "db/core.py", "ffffffff") == [], "무관 파일에 경고가 떴다"
+
+
+def test_worktree_name_matches_scope() -> None:
+    """worktree 이름 앞부분 = 내 workboard 범위 — 어긋나면 기대 이름, 보드 파일이 없으면 skip.
+
+    보드 등록이 worktree 보다 먼저지만, 순서를 바꾼 예외 상황에서 막으면 손쓸 방법이 없다.
+    """
+    import tempfile
+    naming = _load("check_worktree_name")
+    with tempfile.TemporaryDirectory() as tmp:
+        naming.BOARD_DIR = _fake_board(Path(tmp))
+        assert naming.scope_mismatch("admin-report-viewers--abcd1234", "abcd1234") is None
+        assert naming.scope_mismatch("report-viewers--abcd1234", "abcd1234") \
+            == "admin-report-viewers--abcd1234", "범위 불일치를 통과시켰다"
+        assert naming.scope_mismatch("anything--00000000", "00000000") is None, \
+            "보드 파일 없는 세션의 생성을 막았다"
 
 
 def test_worktree_add_only_at_command_head() -> None:
@@ -173,7 +237,7 @@ def test_task_residue_fresh() -> None:
     """방금 만든 산출물은 검출하지 않는다 — 보드 행 없는 계획 단계 세션을 유예가 덮는다."""
     import time
     residue = _load("check_task_residue")
-    fake = ROOT / "EDITING.md"                     # 실존 파일이면 무엇이든 mtime 조작 없이 fresh
+    fake = ROOT / "BACKLOG.md"                     # 실존 파일이면 무엇이든 mtime 조작 없이 fresh
     assert residue._is_fresh(fake, time.time()) in (True, False)   # 판정이 죽지 않는다
     assert residue._is_fresh(fake, fake.stat().st_mtime + 60) is True, "1분 전 파일을 잔해로 판정"
     assert residue._is_fresh(fake, fake.stat().st_mtime + residue.FRESH_SEC + 1) is False, \
@@ -236,7 +300,8 @@ def test_workflow_model_required() -> None:
 def demo() -> None:
     for check in (test_fresh_worktree_not_dead, test_alive_no_nameerror,
                   test_worktree_rel_strip, test_outbound_link,
-                  test_board_header_is_split_by_separator,
+                  test_workboard_file_is_one_row, test_branch_comes_from_task_field,
+                  test_workboard_overlap, test_worktree_name_matches_scope,
                   test_worktree_add_only_at_command_head,
                   test_auto_merge, test_task_residue_fresh, test_ui_copy_extract,
                   test_workflow_model_required):

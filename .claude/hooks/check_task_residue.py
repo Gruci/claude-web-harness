@@ -13,7 +13,7 @@ plan 은 목업과 달리 **과업이 끝날 때까지 루트에 있는 게 정�
 버전이 다른 세션의 진행 중 plan 3건을 잡았다. 그 상태에서 빠져나가는 유일한 길이 `wip_`
 접두라, 접두가 기본값이 되고 게이트는 소음이 된다.
 
-완료 신호는 파일이 아니라 **과업 보드**다. `EDITING.md` Active Edits 에 행이 하나라도 있으면
+완료 신호는 파일이 아니라 **과업 보드**다. `.claude/workboard/` 에 과업 파일이 하나라도 있으면
 누군가 작업 중이므로 검사를 건너뛴다. 보드가 비었는데 루트에 산출물이 남아 있으면 그것이 잔존이다.
 
 대가는 명시한다 — 다른 과업이 진행 중인 동안에는 끝난 과업의 잔해도 안 잡힌다. 미탐을 택한
@@ -46,7 +46,6 @@ except Exception:
     pass
 
 TASK_DIR = Path(__file__).resolve().parents[2] / "docs" / "tasks"
-EDITING_MD = Path(__file__).resolve().parents[2] / "EDITING.md"
 
 # 갓 만든 산출물의 유예(초) — 계획 단계 세션이 보드 행 없이 작업하는 구간을 덮는다.
 # 하루로 두면 "어제 끝낸 과업의 잔해"가 다음날 첫 세션에서 잡힌다 — 다음 세션의 오독을
@@ -55,16 +54,12 @@ FRESH_SEC = 24 * 60 * 60
 
 
 def board_is_busy() -> bool:
-    """과업 보드에 진행 중 행이 있는지. 읽지 못하면 True — 판정 불능일 때는 막지 않는다.
+    """과업 보드에 진행 중 과업이 있는지.
 
-    `#sid:` 태그가 붙은 행만 센다 — 태그는 과업 등록의 필수 요소라 실제 행과 헤더·예시를
-    가르는 정확한 신호다.
+    `#sid:` 태그가 붙은 행만 센다 — 태그는 과업 등록의 필수 요소이고, 서식을 안 지킨 파일이
+    보드를 영구히 '진행 중'으로 만들어 잔존 검사를 영영 못 돌게 하는 것을 막는다.
     """
-    try:
-        rows = _active_edit_rows(EDITING_MD.read_text(encoding="utf-8"))
-    except OSError:
-        return True
-    return any("#sid:" in row for row in rows)
+    return any("#sid:" in row for row in _active_edit_rows())
 
 
 def _is_fresh(path: Path, now: float) -> bool:

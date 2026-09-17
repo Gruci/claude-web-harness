@@ -69,7 +69,7 @@ HARNESS_MAP = "HARNESS.md"
 MD: dict[str, tuple[str, ...]] = {
     "doc_exclude":   (".claude/", ".agents/", ".codex/", "docs/") + HARNESS_ASSETS,
     "ref_exclude":   ("docs/",),
-    "style_exclude": (".claude/", ".agents/", ".codex/", "EDITING.md",
+    "style_exclude": (".claude/", ".agents/", ".codex/", "BACKLOG.md",
                       "README.md", "README.en.md") + HARNESS_ASSETS,
     "date_exempt":   ("dev/LESSONS.md",),
 }
@@ -96,7 +96,7 @@ ALLOWLIST: dict[str, tuple[str, ...]] = {
 # 루트 잡파일 게이트가 확장자 불문 루트 전부를 이 목록과 대조한다 — 정본 MD 도 등재 대상이다.
 ROOT_FILES: tuple[str, ...] = ("settings.py", "batch_runner.py", "README.md", "CLAUDE.md",
                                "AGENTS.md", "PROJECT.md", "DEVGUIDE.md", "DESIGN_GUIDE.md",
-                               "HARNESS.md", "EDITING.md")
+                               "HARNESS.md", "BACKLOG.md")
 
 
 DOC_SYNC: list[dict[str, object]] = [

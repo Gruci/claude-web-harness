@@ -38,6 +38,27 @@ def git_output(*args: str) -> str | None:
     return done.stdout if done.returncode == 0 else None
 
 
+def board_dir() -> Path:
+    """공유 체크아웃의 과업 보드 `.claude/workboard/`. git 조회 실패 시 자기 트리로 폴백한다.
+
+    훅 파일은 worktree 마다 복제되므로 `parents[2] / ".claude/workboard"` 로 잡으면 보드가
+    세션 수만큼 갈라진다 — 보드를 git 밖으로 꺼낸 이유(같은 머신의 파일시스템이 공유 채널이다)
+    자체가 무너진다. `git rev-parse --git-common-dir` 은 worktree 안에서도 **메인 `.git`** 을
+    가리키고, 그 부모가 공유 체크아웃 루트다.
+
+    폴백이 안전한 방향인 이유: 보드를 못 찾으면 '열린 과업 없음'으로 읽혀 잔존 검사가 돌고
+    겹침 경고가 안 뜬다 — 둘 다 세션을 막지 않는다(경고·통과 계열).
+    """
+    common = git_output("rev-parse", "--git-common-dir")
+    if not common or not common.strip():
+        return _ROOT / ".claude" / "workboard"
+    # 메인 체크아웃에서는 `.git` 처럼 상대경로가 온다 — git_output 의 cwd(_ROOT) 기준으로 푼다.
+    found = Path(common.strip())
+    if not found.is_absolute():
+        found = _ROOT / found
+    return found.resolve().parent / ".claude" / "workboard"
+
+
 def default_branch() -> str | None:
     """원격 기본 브랜치 이름. `origin/HEAD` → 실패 시 main·master 실물 순 폴백.
 

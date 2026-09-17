@@ -76,19 +76,21 @@ Codex patch의 모든 추가·수정·이동 대상은 payload의 작업 디렉�
 | ② | SessionStart | git·origin 검사 | 저장소 아님 또는 origin 미설정 | 경고 문자열 |
 | ③ | SessionStart | 프로파일 검사 | `harness_profile.py` 없음, 또는 `PROFILE_SCHEMA` 가 커널 요구치보다 낮음(새 항목 목록 고지) | 경고 문자열 |
 | ④ | SessionStart | 인터프리터 검사 | python 또는 node 실행 불가 | 경고 문자열 |
-| ⑤ | SessionStart | `git_staleness.py` | 기본 브랜치가 origin 보다 뒤 (**startup 한정**) | ff-only 자동 정렬 |
+| ⑤ | SessionStart | `git_staleness.py` | 항상 열린 과업 주입 + 기본 브랜치가 origin 보다 뒤면 정렬 (**startup 한정**) | 과업 목록 · ff-only 자동 정렬 |
 | ⑥ | SessionStart | `check_maintenance.py` | 정비 임계치 초과 (**startup 한정**) | 밀린 정비 목록 |
 | ⑦ | UserPromptSubmit | `check_context_growth.py` | transcript 가 임계 초과 | 경고 + `/clear` 권고 |
 | ⑧ | PreToolUse(Read) | `check_context_diet.py` | 추정 토큰 초과인데 분할 없음 | **차단** |
 | ⑧-1 | PreToolUse(Bash·PowerShell) | `check_bash_write.py` | 셸로 소스 쓰기·판정 exit 삼킴·병렬 중 공유 트리 git 변경 | **차단** |
 | ⑧-3 | 〃 | `check_bash_write.py` | 트리 밖·의존성 디렉토리를 잇는 junction·symlink 생성 | **차단** |
 | ⑧-2 | PreToolUse(EnterWorktree·Bash·PowerShell) | `check_worktree_name.py` | 새 worktree 이름에 `--<sid8>` 접미 없음 | **차단** |
+| ⑧-2 | 〃 | `check_worktree_name.py` | worktree 이름 앞부분이 내 workboard 범위와 다름 (내 보드 파일 있을 때만) | **차단** |
 | ⑧-4 | PreToolUse(Workflow) | `check_workflow_script.py` | 스크립트의 `agent()` 에 model 미지정 | **차단** |
+| ⑧-5 | PreToolUse(Edit·Write) | `check_workboard_overlap.py` | 다른 과업의 `손대는 곳` 글로브에 걸리는 파일을 편집 | 경고 (추론) |
 | ⑨ | PostToolUse(Edit·Write) | `check_file_rules.py` | 저장한 파일이 게이트 위반 | **차단** |
 | ⑩ | PostToolUse(Edit·Write) | `impeccable/scripts/hook.mjs` | 항상 | 통과 (UI 리마인더) |
 | ⑪ | SubagentStop | `check_agent_return.py` | 반환이 임계 초과 | **차단** |
-| ⑫ | Stop | `check_editing_lock.py` | `EDITING.md` 에 자기 행이 **머지 후에도** 잔존 (진행 중은 통과) | 경고 (추론) |
-| ⑫-1 | 〃 | `check_editing_lock.py` | 주인 없는 행 — 머지됐고 브랜치가 origin·로컬 양쪽에 없음 | 경고 (추론) |
+| ⑫ | Stop | `check_editing_lock.py` | `.claude/workboard/` 에 자기 `#sid` 과업 파일이 **머지 후에도** 잔존 (진행 중은 통과) | 경고 (추론) |
+| ⑫-1 | 〃 | `check_editing_lock.py` | 주인 없는 과업 파일 — 머지됐고 브랜치가 origin·로컬 양쪽에 없음 | 경고 (추론) |
 | ⑬ | Stop | `check_coding_rules.py` | 전 게이트 위반 잔존 | **차단** |
 | ⑭ | Stop | `check_git_remote.py` | GitHub 원격 미설정 | **차단** + 만들 명령 제시 |
 | ⑮ | Stop | `check_worktree_residue.py` | 머지 끝난 worktree 잔존 — upstream 이 자기 브랜치일 때만 push 이력으로 센다 | 경고 (추론) + 정리 순서 제시 |
@@ -106,7 +108,7 @@ Codex patch의 모든 추가·수정·이동 대상은 payload의 작업 디렉�
 | 단계 | 근거 | 해당 훅 |
 |------|------|---------|
 | **차단**(2) | **직접 관측** — 검사기가 실제로 위반을 뱉었거나 파일이 실제로 거기 있다 | ⑧ ⑧-1 ⑧-2 ⑧-3 ⑧-4 ⑨ ⑪ ⑬ ⑭ ⑯ ⑰ |
-| **경고**(1) | **추론** — git 상태로 "끝났을 것"을 추측하거나, LLM 이 문구를 판정한다 | ⑫ ⑫-1 ⑮ ⑱ |
+| **경고**(1) | **추론** — git 상태로 "끝났을 것"을 추측하거나, 사람이 적은 글로브로 겹침을 짚거나, LLM 이 문구를 판정한다 | ⑧-5 ⑫ ⑫-1 ⑮ ⑱ |
 | **통과**(0) | 판정 불능 · **모델이 지금 고칠 수 없는 조건** | 전부 |
 
 커널 게이트가 "확실한 위반만 잡는다(오탐 0)"로 지키는 선을, 훅에서는 **끄는 대신 단계를 낮춰**
@@ -429,7 +431,7 @@ Go 픽스처(`tests/fixtures/goproj`)가 동작을 동결한다.
 
 | 단계 | 무엇이 | 어디에 |
 |---|---|---|
-| 관찰 | 차단 훅 여섯이 막을 때마다 한 줄 | `kernel/trace.py` → `harness_trace.jsonl` |
+| 관찰 | 차단·경고 훅이 막을 때마다 한 줄 | `kernel/trace.py` → `harness_trace.jsonl` |
 | 채굴 | 게이트별 빈도와 반복 지점과 마찰 종류 | `kernel/retro.py` |
 | 발동 | 관찰이 임계를 넘으면 정비 알림 | `kernel/maintenance.py` |
 | 판정 | 규칙 위반인가 게이트 오탐인가 규칙이 틀렸나 | **사람** — `harness-retro` 스킬이 절차를 잡는다 |

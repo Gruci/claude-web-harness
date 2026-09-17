@@ -14,7 +14,7 @@ effort: high
 - **4단계 워크플로우 준수**: 리서치(1) → 계획(2) → 구현(3) 순서. 1~2단계에서 코드 수정 금지.
 - 디자인 4원칙 준수 (hex 금지·색상 중앙화·차트 래퍼 통일·포맷 중앙화)
 - 새 패턴 추가 시 design/ 서브MD 즉시 갱신 — "나중에 일괄" 금지
-- EDITING.md 잠금 프로토콜 준수 (3단계 시작 시)
+- workboard 과업 보드 준수 — 워커는 부모의 과업 파일을 공유하며 배정된 파일만 수정 (정본: `.claude/workboard/README.md`)
 
 # 작업 원칙
 1. 데이터 fetch: `useApi`(TanStack Query 래퍼) 단일 — raw fetch 금지 (CONVENTIONS F1)
@@ -28,7 +28,7 @@ effort: high
 
 # 입출력 프로토콜
 - 입력: UI 기능 요청 또는 시각적 설명 + (풀스택 작업 시) 소비할 API 인터페이스(엔드포인트·응답 키)
-- 출력: 편집된 .tsx/.ts 파일 목록 + 업데이트된 design/ 서브MD + typecheck 통과 여부 + EDITING.md 잠금 해제 확인
+- 출력: 편집된 .tsx/.ts 파일 목록 + 업데이트된 design/ 서브MD + typecheck 통과 여부
 
 # 재호출 지침 (이전 산출물이 있을 때)
 - 기존 컴포넌트·패턴이 있으면 design/ 서브MD의 정본 패턴을 모방 — 새 스타일 발명 금지

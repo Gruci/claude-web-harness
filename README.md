@@ -4,7 +4,7 @@
 
 **AI가 내 코드를 망치지 않게 잡아주는 가드레일**
 
-하네스 v3.6.0
+하네스 v3.7.0
 
 [한국어](README.md) · [English](README.en.md)
 
@@ -328,7 +328,7 @@ project-root/
 ├── HARNESS.md              # 검사·훅·에이전트·스킬 전체 지도
 ├── DEVGUIDE.md             # 서버 개발 규칙 (dev/ 연계)
 ├── DESIGN_GUIDE.md         # 화면 디자인 규칙 (design/ 연계)
-├── EDITING.md              # 동시 세션 충돌 방지용 작업 현황판
+├── BACKLOG.md              # 잔여 백로그 — 진행 중 과업은 .claude/workboard/ (git 비추적 보드)
 ├── kernel/                 # 검사 판정 엔진. 프로젝트를 모릅니다
 │   ├── langs/              # 언어팩 — 언어별 선언
 │   └── archs/              # 아키텍처팩 — 프로젝트 형태별 선언
@@ -462,6 +462,7 @@ python -X utf8 -m kernel.diagram deliver  architecture docs/architecture/<이름
 
 | 버전 | 변경 내용 |
 |:--|:--|
+| **v3.7.0** | 과업 보드를 git 밖 `.claude/workboard/` 로 — 파일 하나가 과업 하나, 편집 시점 겹침 경고 훅 추가, EDITING.md → BACKLOG.md. |
 | **v3.6.0** | 검사 비용과 소음 절감. |
 | **v3.5.0** | 아키텍처 구조도 시스템 도입. |
 | **v3.4.0** | 실운영 2차 역이식. |
