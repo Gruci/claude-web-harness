@@ -129,24 +129,25 @@ svg[data-preset="blueprint"] .c-security-group,
         <!-- Edge paths -->
         <path data-edge-from="posttooluse-file_rules" data-edge-to="posttooluse-hook" data-edge-key="0" data-edge-id="posttooluse-file_rules--posttooluse-hook" data-composition-points="118,517;118,533;286,533;286,517" d="M 118 517 L 118 533 L 286 533 L 286 517" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="posttooluse-file_rules" data-edge-to="subagentstop-agent_return" data-edge-label="다음 이벤트" data-edge-key="1" data-edge-id="posttooluse-file_rules--subagentstop-agent_return" data-composition-points="118,517;118,538;32,538;32,615;48,615" d="M 118 517 L 118 538 L 32 538 L 32 615 L 48 615" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="pretooluse-bash_write" data-edge-to="pretooluse-worktree_name" data-edge-key="2" data-edge-id="pretooluse-bash_write--pretooluse-worktree_name" data-composition-points="356,367;384,367" d="M 356 367 L 384 367" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="pretooluse-bash_write" data-edge-to="pretooluse-workboard_overlap" data-edge-key="2" data-edge-id="pretooluse-bash_write--pretooluse-workboard_overlap" data-composition-points="356,367;384,367" d="M 356 367 L 384 367" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="pretooluse-context_diet" data-edge-to="posttooluse-file_rules" data-edge-label="다음 이벤트" data-edge-key="3" data-edge-id="pretooluse-context_diet--posttooluse-file_rules" data-composition-points="118,393;118,414;32,414;32,491;48,491" d="M 118 393 L 118 414 L 32 414 L 32 491 L 48 491" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="pretooluse-context_diet" data-edge-to="pretooluse-bash_write" data-edge-key="4" data-edge-id="pretooluse-context_diet--pretooluse-bash_write" data-composition-points="118,393;118,409;286,409;286,393" d="M 118 393 L 118 409 L 286 409 L 286 393" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="pretooluse-worktree_name" data-edge-to="pretooluse-workflow_script" data-edge-key="5" data-edge-id="pretooluse-worktree_name--pretooluse-workflow_script" data-composition-points="524,367;552,367" d="M 524 367 L 552 367" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-code-master" data-edge-to="sessionstart-gitcheck" data-edge-key="6" data-edge-id="sessionstart-code-master--sessionstart-gitcheck" data-composition-points="188,119;216,119" d="M 188 119 L 216 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-code-master" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="7" data-edge-id="sessionstart-code-master--userpromptsubmit-context_growth" data-composition-points="118,145;118,166;204,166;204,243;188,243" d="M 118 145 L 118 166 L 204 166 L 204 243 L 188 243" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="sessionstart-git_staleness" data-edge-to="sessionstart-maintenance" data-edge-key="8" data-edge-id="sessionstart-git_staleness--sessionstart-maintenance" data-composition-points="860,119;888,119" d="M 860 119 L 888 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-gitcheck" data-edge-to="sessionstart-harnesssetup" data-edge-key="9" data-edge-id="sessionstart-gitcheck--sessionstart-harnesssetup" data-composition-points="356,119;384,119" d="M 356 119 L 384 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-harnesssetup" data-edge-to="sessionstart-pythoncheck" data-edge-key="10" data-edge-id="sessionstart-harnesssetup--sessionstart-pythoncheck" data-composition-points="524,119;552,119" d="M 524 119 L 552 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="sessionstart-pythoncheck" data-edge-to="sessionstart-git_staleness" data-edge-key="11" data-edge-id="sessionstart-pythoncheck--sessionstart-git_staleness" data-composition-points="692,119;720,119" d="M 692 119 L 720 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stop-coding_rules" data-edge-to="stop-git_remote" data-edge-key="12" data-edge-id="stop-coding_rules--stop-git_remote" data-composition-points="356,739;384,739" d="M 356 739 L 384 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stop-editing_lock" data-edge-to="stop-coding_rules" data-edge-key="13" data-edge-id="stop-editing_lock--stop-coding_rules" data-composition-points="118,765;118,781;286,781;286,765" d="M 118 765 L 118 781 L 286 781 L 286 765" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stop-git_remote" data-edge-to="stop-worktree_residue" data-edge-key="14" data-edge-id="stop-git_remote--stop-worktree_residue" data-composition-points="524,739;552,739" d="M 524 739 L 552 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stop-mockup_residue" data-edge-to="stop-task_residue" data-edge-key="15" data-edge-id="stop-mockup_residue--stop-task_residue" data-composition-points="860,739;888,739" d="M 860 739 L 888 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stop-task_residue" data-edge-to="stop-ui_copy" data-edge-key="16" data-edge-id="stop-task_residue--stop-ui_copy" data-composition-points="958,765;958,863;188,863" d="M 958 765 L 958 863 L 188 863" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stop-worktree_residue" data-edge-to="stop-mockup_residue" data-edge-key="17" data-edge-id="stop-worktree_residue--stop-mockup_residue" data-composition-points="692,739;720,739" d="M 692 739 L 720 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="subagentstop-agent_return" data-edge-to="stop-editing_lock" data-edge-label="다음 이벤트" data-edge-key="18" data-edge-id="subagentstop-agent_return--stop-editing_lock" data-composition-points="118,641;118,662;32,662;32,739;48,739" d="M 118 641 L 118 662 L 32 662 L 32 739 L 48 739" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="userpromptsubmit-context_growth" data-edge-to="pretooluse-context_diet" data-edge-label="다음 이벤트" data-edge-key="19" data-edge-id="userpromptsubmit-context_growth--pretooluse-context_diet" data-composition-points="118,269;118,290;32,290;32,367;48,367" d="M 118 269 L 118 290 L 32 290 L 32 367 L 48 367" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="pretooluse-workboard_overlap" data-edge-to="pretooluse-worktree_name" data-edge-key="5" data-edge-id="pretooluse-workboard_overlap--pretooluse-worktree_name" data-composition-points="524,367;552,367" d="M 524 367 L 552 367" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="pretooluse-worktree_name" data-edge-to="pretooluse-workflow_script" data-edge-key="6" data-edge-id="pretooluse-worktree_name--pretooluse-workflow_script" data-composition-points="692,367;720,367" d="M 692 367 L 720 367" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-code-master" data-edge-to="sessionstart-gitcheck" data-edge-key="7" data-edge-id="sessionstart-code-master--sessionstart-gitcheck" data-composition-points="188,119;216,119" d="M 188 119 L 216 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-code-master" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="8" data-edge-id="sessionstart-code-master--userpromptsubmit-context_growth" data-composition-points="118,145;118,166;204,166;204,243;188,243" d="M 118 145 L 118 166 L 204 166 L 204 243 L 188 243" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="sessionstart-git_staleness" data-edge-to="sessionstart-maintenance" data-edge-key="9" data-edge-id="sessionstart-git_staleness--sessionstart-maintenance" data-composition-points="860,119;888,119" d="M 860 119 L 888 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-gitcheck" data-edge-to="sessionstart-harnesssetup" data-edge-key="10" data-edge-id="sessionstart-gitcheck--sessionstart-harnesssetup" data-composition-points="356,119;384,119" d="M 356 119 L 384 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-harnesssetup" data-edge-to="sessionstart-pythoncheck" data-edge-key="11" data-edge-id="sessionstart-harnesssetup--sessionstart-pythoncheck" data-composition-points="524,119;552,119" d="M 524 119 L 552 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="sessionstart-pythoncheck" data-edge-to="sessionstart-git_staleness" data-edge-key="12" data-edge-id="sessionstart-pythoncheck--sessionstart-git_staleness" data-composition-points="692,119;720,119" d="M 692 119 L 720 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="stop-coding_rules" data-edge-to="stop-git_remote" data-edge-key="13" data-edge-id="stop-coding_rules--stop-git_remote" data-composition-points="356,739;384,739" d="M 356 739 L 384 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="stop-editing_lock" data-edge-to="stop-coding_rules" data-edge-key="14" data-edge-id="stop-editing_lock--stop-coding_rules" data-composition-points="118,765;118,781;286,781;286,765" d="M 118 765 L 118 781 L 286 781 L 286 765" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="stop-git_remote" data-edge-to="stop-worktree_residue" data-edge-key="15" data-edge-id="stop-git_remote--stop-worktree_residue" data-composition-points="524,739;552,739" d="M 524 739 L 552 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="stop-mockup_residue" data-edge-to="stop-task_residue" data-edge-key="16" data-edge-id="stop-mockup_residue--stop-task_residue" data-composition-points="860,739;888,739" d="M 860 739 L 888 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="stop-task_residue" data-edge-to="stop-ui_copy" data-edge-key="17" data-edge-id="stop-task_residue--stop-ui_copy" data-composition-points="958,765;958,863;188,863" d="M 958 765 L 958 863 L 188 863" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="stop-worktree_residue" data-edge-to="stop-mockup_residue" data-edge-key="18" data-edge-id="stop-worktree_residue--stop-mockup_residue" data-composition-points="692,739;720,739" d="M 692 739 L 720 739" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="subagentstop-agent_return" data-edge-to="stop-editing_lock" data-edge-label="다음 이벤트" data-edge-key="19" data-edge-id="subagentstop-agent_return--stop-editing_lock" data-composition-points="118,641;118,662;32,662;32,739;48,739" d="M 118 641 L 118 662 L 32 662 L 32 739 L 48 739" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="userpromptsubmit-context_growth" data-edge-to="pretooluse-context_diet" data-edge-label="다음 이벤트" data-edge-key="20" data-edge-id="userpromptsubmit-context_growth--pretooluse-context_diet" data-composition-points="118,269;118,290;32,290;32,367;48,367" d="M 118 269 L 118 290 L 32 290 L 32 367 L 48 367" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
 
         <!-- Nodes -->
         <g id="node-sessionstart-code-master" data-node-id="sessionstart-code-master" data-node-label="code-master" tabindex="0" role="button" aria-label="Focus code-master, startup|resume|clear|compact, 세션 시작" aria-pressed="false" data-node-kind="backend" data-node-sublabel="startup|resume|clear|compact" data-node-context="세션 시작">
@@ -259,37 +260,47 @@ svg[data-preset="blueprint"] .c-security-group,
           <text data-detail="context" x="286" y="379" class="t-muted" font-size="8" text-anchor="middle">Bash|PowerShell</text>
         </g>
 
-        <g id="node-pretooluse-worktree_name" data-node-id="pretooluse-worktree_name" data-node-label="worktree_name" tabindex="0" role="button" aria-label="Focus worktree_name, EnterWorktree|Bash|PowerShel, 툴 실행 전" aria-pressed="false" data-node-kind="security" data-node-sublabel="EnterWorktree|Bash|PowerShel" data-node-context="툴 실행 전">
-          <title>worktree_name · EnterWorktree|Bash|PowerShel · 툴 실행 전</title>
+        <g id="node-pretooluse-workboard_overlap" data-node-id="pretooluse-workboard_overlap" data-node-label="workboard_overlap" tabindex="0" role="button" aria-label="Focus workboard_overlap, Edit|Write|MultiEdit|Noteboo, 툴 실행 전" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Edit|Write|MultiEdit|Noteboo" data-node-context="툴 실행 전">
+          <title>workboard_overlap · Edit|Write|MultiEdit|Noteboo · 툴 실행 전</title>
           <rect x="384" y="341" width="140" height="52" rx="6" class="c-mask"/>
-          <rect x="384" y="341" width="140" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(390 347) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
+          <rect x="384" y="341" width="140" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(390 347) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="454" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">worktree_name</text>
-          <text data-detail="context" x="454" y="379" class="t-muted" font-size="7.8" text-anchor="middle">EnterWorktree|Bash|PowerShel</text>
+          <text data-node-label="" data-detail-anchor="" x="454" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">workboard_overlap</text>
+          <text data-detail="context" x="454" y="379" class="t-muted" font-size="7.8" text-anchor="middle">Edit|Write|MultiEdit|Noteboo</text>
         </g>
 
-        <g id="node-pretooluse-workflow_script" data-node-id="pretooluse-workflow_script" data-node-label="workflow_script" tabindex="0" role="button" aria-label="Focus workflow_script, Workflow, 툴 실행 전" aria-pressed="false" data-node-kind="security" data-node-sublabel="Workflow" data-node-context="툴 실행 전">
-          <title>workflow_script · Workflow · 툴 실행 전</title>
+        <g id="node-pretooluse-worktree_name" data-node-id="pretooluse-worktree_name" data-node-label="worktree_name" tabindex="0" role="button" aria-label="Focus worktree_name, EnterWorktree|Bash|PowerShel, 툴 실행 전" aria-pressed="false" data-node-kind="security" data-node-sublabel="EnterWorktree|Bash|PowerShel" data-node-context="툴 실행 전">
+          <title>worktree_name · EnterWorktree|Bash|PowerShel · 툴 실행 전</title>
           <rect x="552" y="341" width="140" height="52" rx="6" class="c-mask"/>
           <rect x="552" y="341" width="140" height="52" rx="6" class="c-security" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(558 347) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="622" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">workflow_script</text>
-          <text data-detail="context" x="622" y="379" class="t-muted" font-size="8" text-anchor="middle">Workflow</text>
+          <text data-node-label="" data-detail-anchor="" x="622" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">worktree_name</text>
+          <text data-detail="context" x="622" y="379" class="t-muted" font-size="7.8" text-anchor="middle">EnterWorktree|Bash|PowerShel</text>
         </g>
 
-        <g id="node-posttooluse-file_rules" data-node-id="posttooluse-file_rules" data-node-label="file_rules" tabindex="0" role="button" aria-label="Focus file_rules, Edit|Write|MultiEdit, 저장 직후" aria-pressed="false" data-node-kind="security" data-node-sublabel="Edit|Write|MultiEdit" data-node-context="저장 직후">
-          <title>file_rules · Edit|Write|MultiEdit · 저장 직후</title>
-          <rect x="48" y="465" width="140" height="52" rx="6" class="c-mask"/>
-          <rect x="48" y="465" width="140" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(54 471) scale(0.6875)">
+        <g id="node-pretooluse-workflow_script" data-node-id="pretooluse-workflow_script" data-node-label="workflow_script" tabindex="0" role="button" aria-label="Focus workflow_script, Workflow, 툴 실행 전" aria-pressed="false" data-node-kind="security" data-node-sublabel="Workflow" data-node-context="툴 실행 전">
+          <title>workflow_script · Workflow · 툴 실행 전</title>
+          <rect x="720" y="341" width="140" height="52" rx="6" class="c-mask"/>
+          <rect x="720" y="341" width="140" height="52" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(726 347) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="790" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">workflow_script</text>
+          <text data-detail="context" x="790" y="379" class="t-muted" font-size="8" text-anchor="middle">Workflow</text>
+        </g>
+
+        <g id="node-posttooluse-file_rules" data-node-id="posttooluse-file_rules" data-node-label="file_rules" tabindex="0" role="button" aria-label="Focus file_rules, Edit|Write|MultiEdit, 저장 직후" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Edit|Write|MultiEdit" data-node-context="저장 직후">
+          <title>file_rules · Edit|Write|MultiEdit · 저장 직후</title>
+          <rect x="48" y="465" width="140" height="52" rx="6" class="c-mask"/>
+          <rect x="48" y="465" width="140" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(54 471) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="118" y="486" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">file_rules</text>
           <text data-detail="context" x="118" y="503" class="t-muted" font-size="8" text-anchor="middle">Edit|Write|MultiEdit</text>
@@ -329,13 +340,12 @@ svg[data-preset="blueprint"] .c-security-group,
           <text data-detail="context" x="118" y="751" class="t-muted" font-size="8" text-anchor="middle">항상</text>
         </g>
 
-        <g id="node-stop-coding_rules" data-node-id="stop-coding_rules" data-node-label="coding_rules" tabindex="0" role="button" aria-label="Focus coding_rules, 항상, 세션 종료" aria-pressed="false" data-node-kind="security" data-node-sublabel="항상" data-node-context="세션 종료">
+        <g id="node-stop-coding_rules" data-node-id="stop-coding_rules" data-node-label="coding_rules" tabindex="0" role="button" aria-label="Focus coding_rules, 항상, 세션 종료" aria-pressed="false" data-node-kind="backend" data-node-sublabel="항상" data-node-context="세션 종료">
           <title>coding_rules · 항상 · 세션 종료</title>
           <rect x="216" y="713" width="140" height="52" rx="6" class="c-mask"/>
-          <rect x="216" y="713" width="140" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(222 719) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
+          <rect x="216" y="713" width="140" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(222 719) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="286" y="734" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">coding_rules</text>
           <text data-detail="context" x="286" y="751" class="t-muted" font-size="8" text-anchor="middle">항상</text>
@@ -413,7 +423,8 @@ svg[data-preset="blueprint"] .c-security-group,
 
 
 
-        <g data-detail="context" data-edge-from="sessionstart-code-master" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="7" data-edge-id="sessionstart-code-master--userpromptsubmit-context_growth">
+
+        <g data-detail="context" data-edge-from="sessionstart-code-master" data-edge-to="userpromptsubmit-context_growth" data-edge-label="다음 이벤트" data-edge-key="8" data-edge-id="sessionstart-code-master--userpromptsubmit-context_growth">
           <rect x="129.6" y="146" width="62.8" height="14" rx="3" class="c-mask"/>
           <text x="161" y="156" class="t-backend" font-size="8" text-anchor="middle">다음 이벤트</text>
         </g>
@@ -427,11 +438,11 @@ svg[data-preset="blueprint"] .c-security-group,
 
 
 
-        <g data-detail="context" data-edge-from="subagentstop-agent_return" data-edge-to="stop-editing_lock" data-edge-label="다음 이벤트" data-edge-key="18" data-edge-id="subagentstop-agent_return--stop-editing_lock">
+        <g data-detail="context" data-edge-from="subagentstop-agent_return" data-edge-to="stop-editing_lock" data-edge-label="다음 이벤트" data-edge-key="19" data-edge-id="subagentstop-agent_return--stop-editing_lock">
           <rect x="43.6" y="642" width="62.8" height="14" rx="3" class="c-mask"/>
           <text x="75" y="652" class="t-backend" font-size="8" text-anchor="middle">다음 이벤트</text>
         </g>
-        <g data-detail="context" data-edge-from="userpromptsubmit-context_growth" data-edge-to="pretooluse-context_diet" data-edge-label="다음 이벤트" data-edge-key="19" data-edge-id="userpromptsubmit-context_growth--pretooluse-context_diet">
+        <g data-detail="context" data-edge-from="userpromptsubmit-context_growth" data-edge-to="pretooluse-context_diet" data-edge-label="다음 이벤트" data-edge-key="20" data-edge-id="userpromptsubmit-context_growth--pretooluse-context_diet">
           <rect x="43.6" y="270" width="62.8" height="14" rx="3" class="c-mask"/>
           <text x="75" y="280" class="t-backend" font-size="8" text-anchor="middle">다음 이벤트</text>
         </g>

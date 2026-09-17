@@ -4,9 +4,9 @@
   "kind": "sequence",
   "source": "docs/architecture/edit-trip.sequence.json",
   "output": "docs/architecture/edit-trip.sequence.html",
-  "spec_sha256_lf": "3713fa3b4062f2b2cc23e4a93d0a0355e655628324037ec2d30c0be9c5961eea",
-  "revision": "a14a17f83c61d736a9f6ead3e8c3e33f32df453f",
-  "delivered_at": "2026-09-15T20:36:55",
+  "spec_sha256_lf": "1ccdc3e4e2f71fef9fbb5b78a4b099f390329faec121dbe4f341480aebbf710f",
+  "revision": "7c3e93e47c8217ee821677e4d11c5ee20f505457",
+  "delivered_at": "2026-09-17T16:53:42",
   "validation": {
     "checksPassed": 9,
     "checkCount": 9,
@@ -20,14 +20,14 @@
     "ok": true,
     "command": "deliver",
     "type": "sequence",
-    "input": "C:\\dev_project\\claude-web-harness\\docs\\architecture\\edit-trip.sequence.json",
-    "output": "C:\\dev_project\\claude-web-harness\\docs\\architecture\\edit-trip.sequence.html",
+    "input": "D:\\0.Python\\claude-web-harness\\docs\\architecture\\edit-trip.sequence.json",
+    "output": "D:\\0.Python\\claude-web-harness\\docs\\architecture\\edit-trip.sequence.html",
     "specification": {
-      "sha256": "70f15972828720a7cfbced9cbbf72e60ba2f61b35f6f313511f9648b0e3484fb",
+      "sha256": "bfc900e1df7dd2485c88484710c6da5e498dca2e9843e3fb435225ddbff92116",
       "bytes": 5310
     },
     "artifact": {
-      "sha256": "8aaf000963e3e1df6466f5fa4562a374cef1e4e63d74f1ae40d7215a3d108a65",
+      "sha256": "9a92df2e07b36cf632e6e9d9e8b269c129d2f49bf58a467fb249daa7523a6e86",
       "bytes": 823139
     },
     "validation": {

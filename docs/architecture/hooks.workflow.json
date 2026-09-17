@@ -7,7 +7,7 @@
     "animation": "trace",
     "repository": {
       "url": "https://github.com/Gruci/claude-web-harness",
-      "revision": "a14a17f83c61d736a9f6ead3e8c3e33f32df453f"
+      "revision": "7c3e93e47c8217ee821677e4d11c5ee20f505457"
     },
     "views": [
       {
@@ -109,9 +109,9 @@
         },
         {
           "path": ".claude/hooks/git_staleness.py",
-          "line": 42,
-          "end_line": 67,
-          "label": "⑤ 정렬"
+          "line": 89,
+          "end_line": 113,
+          "label": "⑤ 과업 주입·정렬"
         },
         {
           "path": ".claude/hooks/check_maintenance.py",
@@ -156,13 +156,13 @@
         {
           "path": ".claude/hooks/check_bash_write.py",
           "line": 286,
-          "end_line": 351,
+          "end_line": 350,
           "label": "⑧-1 셸"
         },
         {
           "path": ".claude/hooks/check_worktree_name.py",
-          "line": 125,
-          "end_line": 156,
+          "line": 157,
+          "end_line": 197,
           "label": "⑧-2 worktree"
         }
       ]
@@ -218,12 +218,12 @@
       "sources": [
         {
           "path": ".claude/hooks/check_editing_lock.py",
-          "line": 178,
-          "end_line": 218,
+          "line": 169,
+          "end_line": 206,
           "label": "main"
         },
         {
-          "path": "EDITING.md",
+          "path": ".claude/workboard/README.md",
           "label": "샘플"
         }
       ]
@@ -266,8 +266,8 @@
         },
         {
           "path": ".claude/hooks/check_task_residue.py",
-          "line": 89,
-          "end_line": 104,
+          "line": 84,
+          "end_line": 98,
           "label": "⑰ 산출물"
         },
         {
