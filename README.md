@@ -464,7 +464,7 @@ python -X utf8 -m kernel.diagram deliver  architecture docs/architecture/<이름
 
 | 버전 | 변경 내용 |
 |:--|:--|
-| **v3.7.0** | 과업 보드를 git 밖 루트 `workboard/` 로 — 파일 하나가 과업 하나, 편집 시점 겹침 경고(Claude 훅 + Codex 진입점 공용 판정), worktree 자리도 루트 `worktrees/` 로 에이전트 중립화, EDITING.md → BACKLOG.md. |
+| **v3.7.0** | 에이전트 중립화. |
 | **v3.6.0** | 검사 비용과 소음 절감. |
 | **v3.5.0** | 아키텍처 구조도 시스템 도입. |
 | **v3.4.0** | 실운영 2차 역이식. |
