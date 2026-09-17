@@ -6,7 +6,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/Gruci/claude-web-harness",
-      "revision": "7c3e93e47c8217ee821677e4d11c5ee20f505457"
+      "revision": "75f4160a3b7631c7ea3df31351ff86cb553c1960"
     },
     "views": [
       {
@@ -571,7 +571,7 @@
         "context_diet: PreToolUse(Read) hook — 대용량 파일 통읽기 기계 차단 (컨텍스트 가드 ①).",
         "bash_write: PreToolUse(Bash|PowerShell) 훅 — 셸 명령이 깨면 안 되는 계약 4종을 사전 차단.",
         "workboard_overlap: PreToolUse(Edit|Write) hook — 남이 잡은 곳을 건드리면 알린다.",
-        "worktree_name: PreToolUse(EnterWorktree|Bash|PowerShell) 훅 — 새 worktree 이름에 세션 식별자 접미를 강제.",
+        "worktree_name: PreToolUse(EnterWorktree|Bash|PowerShell) 훅 — 새 worktree 의 이름·자리 규약을 강제.",
         "workflow_script: PreToolUse(Workflow) 훅 — 워크플로우 스크립트의 `agent()` 에 model 미지정을 차단."
       ]
     },
@@ -594,7 +594,7 @@
       "dot": "rose",
       "title": "세션 종료 — 무엇을 검사하나",
       "items": [
-        "editing_lock: Stop hook — `.claude/workboard/` 에 '끝난' 과업 파일이 남아있으면 알린다.",
+        "editing_lock: Stop hook — `workboard/` 에 '끝난' 과업 파일이 남아있으면 알린다.",
         "coding_rules: Claude Stop adapter for the shared full gate in kernel.hook.",
         "git_remote: Stop hook — GitHub 원격(origin) 미설정 시 세션 종료 차단.",
         "worktree_residue: Stop hook — 일이 끝난 worktree 가 남아있으면 세션 종료를 막는다.",

@@ -7,7 +7,7 @@
     "animation": "trace",
     "repository": {
       "url": "https://github.com/Gruci/claude-web-harness",
-      "revision": "7c3e93e47c8217ee821677e4d11c5ee20f505457"
+      "revision": "75f4160a3b7631c7ea3df31351ff86cb553c1960"
     },
     "views": [
       {
@@ -109,8 +109,8 @@
         },
         {
           "path": ".claude/hooks/git_staleness.py",
-          "line": 89,
-          "end_line": 113,
+          "line": 93,
+          "end_line": 117,
           "label": "⑤ 과업 주입·정렬"
         },
         {
@@ -161,8 +161,8 @@
         },
         {
           "path": ".claude/hooks/check_worktree_name.py",
-          "line": 157,
-          "end_line": 197,
+          "line": 184,
+          "end_line": 254,
           "label": "⑧-2 worktree"
         }
       ]
@@ -218,12 +218,12 @@
       "sources": [
         {
           "path": ".claude/hooks/check_editing_lock.py",
-          "line": 169,
-          "end_line": 206,
+          "line": 149,
+          "end_line": 186,
           "label": "main"
         },
         {
-          "path": ".claude/workboard/README.md",
+          "path": "workboard/README.md",
           "label": "샘플"
         }
       ]
